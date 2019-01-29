@@ -4,6 +4,7 @@ The project’s focus is the valorisation and the mediation of the capabilities 
 
 ## Dependencies
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 6.0.0.
+
 This project uses [MongoDB](https://www.mongodb.com/) for the database.
 
 ## Demo
