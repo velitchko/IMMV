@@ -110,43 +110,5 @@ let EventSchema = new mongoose.Schema({
 // allows for fulltext (partial string matching) querying
 EventSchema.index({'$**': 'text'});
 
-
-EventSchema.pre('save', function(next) {
-  next();
-  // uncomment if geocoding should be done
-  // let _self: any = this;
-  // if(_self.geodata.streetName) {
-  //   console.log(_self.geodata +' shouldnt be undef');
-  //   let options = {
-  //     method: 'GET',
-  //     url: 'https://maps.googleapis.com/maps/api/geocode/json',
-  //     qs: {
-  //       address: `${_self.geodata.streetName} ${_self.geodata.streetNumber} ${_self.geodata.districtNumber}, Wien`,
-  //       key: environment.GMAPS_API_KEY // Need to get API Key From Google
-  //     }
-  //   };
-  //
-  //   console.log('requesting ' + options.qs.address);
-  //   request(options, function(error, response, body) {
-  //     if(error) {
-  //       console.log(error);
-  //     }
-  //     if(JSON.parse(body).status !== 'OK') {
-  //       console.log(body.status);
-  //     } else {
-  //       // set lat/lng and save
-  //       let coords = JSON.parse(body).results[0].geometry.location;
-  //       console.log(coords);
-  //       _self.geodata.lat = coords.lat;
-  //       _self.geodata.lng = coords.lng;
-  //       next();
-  //     }
-  //   });
-  // } else {
-  //   // no geodata
-  //   next();
-  // }
-});
-
-let EventModel = mongoose.model('Events', EventSchema);
-module.exports = EventModel;
+let Event = mongoose.model('Events', EventSchema);
+module.exports = Event;
