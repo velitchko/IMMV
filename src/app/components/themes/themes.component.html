@@ -1,0 +1,17 @@
+<div class="loader" *ngIf="loading">
+    <div class="spinner">
+      <mat-spinner></mat-spinner>
+      <p class="spinner-text">Loading up some themes for you...</p>
+    </div>
+  </div>
+  
+  <div id="cloud"></div>
+  <div *ngIf="!loading" class="app-wrapper">
+    <mat-nav-list>
+      <mat-list-item *ngFor="let t of distribution | mapValues">
+        <a matLine href="javascript:void(0)">{{ t.key }} | {{ t.value }}</a>
+      </mat-list-item>
+    </mat-nav-list>
+  
+  </div>
+  

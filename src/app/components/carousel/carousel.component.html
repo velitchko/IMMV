@@ -1,0 +1,39 @@
+<div *ngIf="loadingContent" class="loader">
+    <div class="spinner">
+        <mat-spinner></mat-spinner>
+        <p class="spinner-text">Loading up some media...</p>
+    </div>
+</div>
+<div class="carousel" *ngIf="!loadingContent && slides.length !== 0" #carouselComponent>
+    <div class="carousel-arrows previous" #prevArrow>
+        <button mat-icon-button (click)="previousSlide(); pause();"><mat-icon>chevron_left</mat-icon></button>
+    </div>
+    <ul class="carousel-slides" #slideContainer>
+        <li *ngFor="let slide of slides; let idx = index" class="slide" (click)="open(slides, idx)">
+            <div [ngClass]="{'active': currentSlide === idx, 'inactive': currentSlide !== idx}">
+                <div class="slide-inner">
+                    <h2 class="slide-title">{{ slide.title }}</h2>
+                    <!-- object type should work for images/videos/pdfs coming from server (excl. external resources) -->
+                    <object *ngIf="isPDF(slide.url)" [data]="slide.url | safeURL"></object>
+                    <video *ngIf="isVideo(slide.url)" controls >
+                        <source [src]="slide.url">
+                    </video>
+                    <img *ngIf="isImage(slide.url)" [src]="slide.url"/>
+                    <audio *ngIf="isAudio(slide.url)" controls>
+                        <source [src]="slide.url">
+                    </audio>
+                </div>
+            </div>
+        </li>
+    </ul>
+    <div class="carousel-arrows next" #nextArrow>
+        <button mat-icon-button (click)="nextSlide(); pause();"><mat-icon>chevron_right</mat-icon></button>
+    </div>
+</div>
+<div class="carousel" *ngIf="slides.length === 0">
+    <div class="carousel-slides" #slideContainer>
+        <div class="slide-inner active">
+            <p class="no-content">No media found.</p>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,102 @@
+<div class="preview-carousel" *ngIf="eventLoaded">
+    <app-carousel [source]="eventMedia" [autoplay]="true" [height]="400"></app-carousel>
+  </div>
+<div class="previewpanel-container" *ngIf="eventLoaded && event">
+  <h2>{{ event.name }}</h2>
+  <p>{{ prettyPrintDate(event.startDate, false) }}{{ prettyPrintDate(event.endDate, true) }}</p>
+  <div class="location-container" *ngIf="event.routes.length !== 0">
+    <ul class="location-list" *ngFor="let rs of event.routes">
+      <li style="padding-right: 1em;"><mat-icon style="transform: scale(1.5);">location_on</mat-icon></li>
+      <li class="location-item" *ngFor="let r of rs" [matTooltip]="r.streetName + (r.streetNumber ? ' ' + r.streetNumber : '') + (r.districtNumber ? ', ' + r.districtNumber : '')" matTooltipPosition="above">    
+        <span class="location-line"></span>
+      </li>
+    </ul>
+  </div>
+  <div class="dialog-themes">
+    <mat-chip-list>
+      <mat-chip *ngFor="let t of event.themes" selected="true" color="primary" [style.backgroundColor]="getColorForCategory(t.theme.name)">{{ t.theme.name }}</mat-chip>
+    </mat-chip-list>
+  </div>
+  <div class="dialog-people" *ngIf="event.peopleOrganizations.length">
+    <mat-accordion>
+      <mat-expansion-panel hideToggle="false">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>account_circle</mat-icon>
+          <span style="padding-top: 0.25em; padding-left:1em;">Related People/Organizations:</span>
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <div>
+        <div *ngFor="let p of event.peopleOrganizations">
+          <a href="javascript:void(0)" (click)="goToPerson(p)">{{ p.personOrganization.name }}</a>
+        </div>
+      </div>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </div>
+  <div class="dialog-events" *ngIf="event.events.length > 0">
+    <mat-accordion>
+      <mat-expansion-panel hideToggle="false">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>event</mat-icon>
+          <span style="padding-top: 0.25em; padding-left:1em;">Related Events:</span>
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <div>
+        <div *ngFor="let e of event.events">
+          <a href="javascript:void(0)" (click)="goToEvent(e)">{{ e.event.name }}</a>
+        </div>
+      </div>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </div>
+  <div class="dialog-locations"*ngIf="event.locations.length">
+    <mat-accordion>
+      <mat-expansion-panel hideToggle="false">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>place</mat-icon>
+          <span style="padding-top: 0.25em; padding-left:1em;">Related Locations:</span>
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <div>
+        <app-minimap [location]="event.geodata"></app-minimap>
+        <div *ngFor="let l of event.locations">
+          <a href="javascript:void(0)" (click)="goToLocation(l)">{{ l.name }}</a>
+        </div>
+      </div>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </div>
+  <div class="dialog-sources" *ngIf="event.sources.length">
+    <mat-accordion>
+      <mat-expansion-panel hideToggle="false">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>collections</mat-icon>
+          <span style="padding-top: 0.25em; padding-left:1em;">Related Media:</span>
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <div>
+        <div *ngFor="let s of event.sources">
+          <!-- <div class="media-collection">
+            <div *ngFor="let f of s.source.identifiers; let i = index" class="media-item">
+              <a href="javascript:void(0)" (click)="open(s.files, i)"><mat-icon>{{ getMediaIcon(f) }}</mat-icon></a>
+            </div>
+          </div> -->
+          <div>
+            <h3>{{ s.source.name }}</h3>
+            <mat-list class="sources-list" dense>
+              <mat-list-item *ngFor="let si of s.source.identifiers">
+                <mat-icon matListIcon>link</mat-icon>
+                <a [href]="si.url" target="_blank">{{ getHost(si.url) }}</a>
+              </mat-list-item>
+            </mat-list>
+          </div>
+        </div>
+      </div>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </div>
+</div>
