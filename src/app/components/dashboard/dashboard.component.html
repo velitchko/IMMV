@@ -1,0 +1,37 @@
+<div class="app-wrapper">
+  <div class="dashboard-carousel" *ngIf="sourceLoaded">
+      <app-carousel [source]="source" [autoplay]="true"></app-carousel>
+  </div>
+  <div class="dashboard-navigation">
+    <a href="javascript:void(0)" class="dashboard-navigation-icon" routerLink="/music-map">
+      <button mat-fab matTooltip="Music Map" matTooltipPosition="below"><mat-icon>explore</mat-icon></button>
+    </a>
+    <a href="javascript:void(0)" class="dashboard-navigation-icon" routerLink="/people">
+      <button mat-fab matTooltip="People" matTooltipPosition="below"><mat-icon>face</mat-icon></button>
+    </a>
+    <a href="javascript:void(0)" class="dashboard-navigation-icon" routerLink="/themes">
+      <button mat-fab matTooltip="Themes" matTooltipPosition="below"><mat-icon>donut_large</mat-icon></button>
+    </a>
+    <a href="javascript:void(0)" class="dashboard-navigation-icon" routerLink="/help">
+      <button mat-fab matTooltip="Help" matTooltipPosition="below"><mat-icon>info_outline</mat-icon></button>
+    </a>
+    <a href="javascript:void(0)" class="dashboard-navigation-icon" routerLink="/about">
+      <button mat-fab matTooltip="Info" matTooltipPosition="below"><mat-icon>help_outline</mat-icon></button>
+    </a>
+  </div>
+  <div class="dashboard-content-wrapper">
+    <mat-grid-list class="dashboard-content-grid" [cols]="breakpoint" gutterSize="4em" rowHeight="3:1">
+      <mat-grid-tile class="dashboard-content-grid-tile" colspan="1" >
+        <h1 class="dashboard-content-header">Interactive Music Mapping Vienna</h1>
+        <p class="dashboard-content-text">The project’s focus is the valorisation and the mediation of the capabilities of music as an urban identification tool. The interaction between music and urban texture (identity, political symbolism, mental determination, imagination) should be made accessible to academic and to a wide audience through interactive Visual Analytic Technologies.</p>
+        <a href="javascript:void(0)">Click for more info...</a>
+      </mat-grid-tile>
+      <mat-grid-tile class="dashboard-content-grid-tile" colspan="1">
+        <h1 class="dashboard-content-header">Interactive Music Mapping Vienna</h1>
+        <p class="dashboard-content-text">The project’s focus is the valorisation and the mediation of the capabilities of music as an urban identification tool. The interaction between music and urban texture (identity, political symbolism, mental determination, imagination) should be made accessible to academic and to a wide audience through interactive Visual Analytic Technologies.</p>
+        <a href="javascript:void(0)">Click for more info...</a>
+      </mat-grid-tile>
+    </mat-grid-list>
+  </div>  
+</div>
+  
