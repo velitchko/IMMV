@@ -1,0 +1,52 @@
+.wrapper {
+    position: relative;
+    top: 4em;
+    left: 4em;
+}
+
+.search mat-form-field {
+    width: 400px;
+}
+#people-wrapper {
+    position: relative;
+    top: 2em;
+}
+
+.controls {
+    position: fixed;
+    top: 1em;
+    left: 3em;
+}
+
+::ng-deep circle {
+    stroke-width: 1.5px;
+  }
+::ng-deep line {
+stroke: #999;
+}
+
+::ng-deep .pie {
+    cursor: pointer;
+}
+
+::ng-deep .node,
+::ng-deep .link,
+::ng-deep .label {
+    transition: opacity 0.5s ease-in-out;
+    user-select: none;
+}
+
+::ng-deep .slice-extension {
+    position: absolute;
+    // z-index: -1;
+    width: 200px;
+    height: 75px;
+
+    &:hover {
+        opacity: 1 !important;
+    }
+
+    & p {
+        color: white;
+    }
+}

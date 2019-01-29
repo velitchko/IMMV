@@ -1,0 +1,23 @@
+<div class="wrapper">
+    <div class="controls">
+        <mat-slide-toggle color="accent" checked="false" (change)="toggleNodes($event)">Toggle node visibility</mat-slide-toggle>
+        <mat-slide-toggle color="accent" checked="false" (change)="toggleLinks($event)">Toggle link visibility</mat-slide-toggle>
+        <mat-slide-toggle color="accent" checked="false" (change)="toggleUnlinked($event)">ONLY nodes with no
+            relationships</mat-slide-toggle>
+        <mat-slide-toggle color="accent" checked="false" (change)="toggleLinked($event)">ONLY nodes with relationships</mat-slide-toggle>
+        <button mat-mini-fab *ngIf="highlighted" (click)="clearHighlighting(); highlighted = false;">
+            <mat-icon>clear</mat-icon>
+        </button>
+        <div class="search">
+            <mat-form-field>
+                <input matInput placeholder="Look for events..." [matAutocomplete]="auto" [formControl]="eventCtrl">
+                <mat-autocomplete #auto="matAutocomplete">
+                    <mat-option *ngFor="let e of filteredEvents | async" [value]="e.name">
+                        <a href="javascript:void(0)" (click)="selectedItem(e)">{{e.name}}</a>
+                    </mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+        </div>
+    </div>
+    <div id="people-wrapper"></div>
+</div>
