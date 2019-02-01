@@ -93,7 +93,6 @@ export class DatabaseService {
                             })
                             resolve(this.events);
                         }).catch((err) => {
-                            console.log('err');
                             console.log(err);
                         })
                     } else {
@@ -200,7 +199,6 @@ export class DatabaseService {
             });
             return event;
         }).catch((err) => {
-            console.log('err');
             console.log(err);
             return null;
         });
@@ -229,7 +227,6 @@ export class DatabaseService {
                             })
                             resolve(this.historicEvents);
                         }).catch((err) => {
-                            console.log('err');
                             console.log(err);
                         })
                     } else {
@@ -295,7 +292,6 @@ export class DatabaseService {
             });
             return historicEvent;
         }).catch((err) => {
-            console.log('err');
             console.log(err);
         })
 
@@ -329,7 +325,6 @@ export class DatabaseService {
                             })
                             resolve(this.people.concat(this.organizations));
                         }).catch((err) => {
-                            console.log('err');
                             console.log(err);
                         })
                     } else {
@@ -426,7 +421,6 @@ export class DatabaseService {
                             })
                             resolve(this.themes);
                         }).catch((err) => {
-                            console.log('err');
                             console.log(err);
                         })
                     } else {
@@ -495,9 +489,9 @@ export class DatabaseService {
     }
 
     /**
-* Performs HTTP GET to recieve all events from the DB
-* @return promise - either resolve and return all events or reject with error
-*/
+    * Performs HTTP GET to recieve all events from the DB
+    * @return promise - either resolve and return all events or reject with error
+    */
     getAllLocations(): Promise<any> {
         let promise = new Promise((resolve, reject) => {
             this.http.get(environment.API_URL + 'locations/').subscribe(
@@ -513,7 +507,6 @@ export class DatabaseService {
                             })
                             resolve(this.locations);
                         }).catch((err) => {
-                            console.log('err');
                             console.log(err);
                         })
                     } else {
@@ -595,7 +588,6 @@ export class DatabaseService {
                             })
                             resolve(this.sources);
                         }).catch((err) => {
-                            console.log('err');
                             console.log(err);
                         })
                     } else {
