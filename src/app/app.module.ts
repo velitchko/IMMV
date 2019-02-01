@@ -22,6 +22,7 @@ import { PreviewComponent } from './components/preview-panel/preview-panel.compo
 import { SearchComponent } from './components/search/search.component';
 import { ThemeComponent } from './components/themes/themes.component';
 import { TimelineComponent } from './components/timeline/timeline.component';
+import { PeopleTimelineComponent } from './components/people-timeline/people-timeline.component';
 import { TestComponent } from './components/test.component/test.component';
 // Services
 import { EventService } from './services/event.service';
@@ -91,6 +92,7 @@ export const APP_ID = 'my-app';
     SearchComponent,
     ThemeComponent,
     TimelineComponent,
+    PeopleTimelineComponent,
     TestComponent,
     MapValuesPipe,
     SafeHtmlPipe,

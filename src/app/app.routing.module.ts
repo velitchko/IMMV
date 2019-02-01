@@ -5,6 +5,7 @@ import { DashboardComponent }   from './components/dashboard/dashboard.component
 import { ThemeComponent }       from './components/themes/themes.component';
 import { MusicMapComponent }    from './components/music-map/music-map.component';
 import { PersonOrganizationComponent } from './components/personorganization/personorganization.component';
+import { PeopleTimelineComponent } from './components/people-timeline/people-timeline.component';
 import { TestComponent } from './components/test.component/test.component';
 
 const routes: Routes = [
@@ -13,6 +14,7 @@ const routes: Routes = [
   { path: 'people', component: PersonOrganizationComponent },
   { path: 'themes', component: ThemeComponent },
   { path: 'test', component: TestComponent },
+  { path: 'chrono', component: PeopleTimelineComponent },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
   { path: '**', redirectTo: '/dashboard'},
 ];
