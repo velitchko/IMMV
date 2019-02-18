@@ -31,7 +31,7 @@ import { PersonOrganizationService } from './services/people.organizations.servi
 import { SourceService } from './services/sources.service';
 import { ThemeService } from './services/themes.service';
 import { MusicMapService } from './services/musicmap.service';
-import { ColorService } from './services/color.service';
+// import { ColorService } from './services/color.service';
 import { DatabaseService } from './services/db.service';
 // Resize module
 import { AngularResizedEventModule } from 'angular-resize-event';
@@ -151,7 +151,7 @@ export const APP_ID = 'my-app';
     SourceService,
     ThemeService,
     MusicMapService,
-    ColorService,
+    // ColorService,
     DatabaseService,
     MapValuesPipe,
     SafeHtmlPipe,

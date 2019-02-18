@@ -10,6 +10,7 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { Geodata } from '../../models/location';
 import { MapClusterTooltipComponent } from '../map-cluster-tooltip/map-cluster-tooltip.component';
 import * as D3 from 'd3';
+import { DatabaseService } from 'src/app/services/db.service';
 
 declare var L: any;
 declare var d3: any;
@@ -58,6 +59,7 @@ export class MapComponent implements OnChanges {
     private resolver: ComponentFactoryResolver,
     private appRef: ApplicationRef,
     private injector: Injector,
+    private db: DatabaseService,
     private http: HttpClient) {
     // have to check if we are client
     // else window is not defined errors
@@ -411,7 +413,10 @@ export class MapComponent implements OnChanges {
   handleClick(): (e: any) => void {
     return (e: any) => {
       let event = this.findEvent(e.target.objectId); // event we have clicked
-      this.mms.setSelectedEvent(event);
+      this.db.getAsEvent(event).then((success) => {
+        console.log(success);
+        this.mms.setSelectedEvent(success);
+      });
     }
   }
 
@@ -440,8 +445,8 @@ export class MapComponent implements OnChanges {
       //marker._icon = markerIcon;
       mainMarker.name = event.name;
       mainMarker.fromSearch = false;
-      mainMarker.startDate = new Date(event.startDate);
-      mainMarker.endDate = new Date(event.endDate);
+      mainMarker.startDate = event.startDate;
+      mainMarker.endDate = event.endDate;
       mainMarker.setOpacity(0.75);
       mainMarker.themes = event.themes; // need to add this so our cluster icon can compute the donut chart
       tempMarkers.push(mainMarker);
@@ -462,8 +467,8 @@ export class MapComponent implements OnChanges {
           //marker._icon = markerIcon;
           marker.name = event.name;
           marker.fromSearch = false;
-          marker.startDate = new Date(event.startDate);
-          marker.endDate = new Date(event.endDate);
+          marker.startDate = event.startDate;
+          marker.endDate = event.endDate;
           marker.setOpacity(0.75);
           marker.themes = event.themes; // need to add this so our cluster icon can compute the donut chart
           tempMarkers.push(marker);
@@ -544,7 +549,7 @@ export class MapComponent implements OnChanges {
     // <i class=\"material-icons\">face</i>${e.people.length}
     return `<div class=\"tooltip\">
     <h3>${e.name}</h3>
-    ${this.mms.prettyPrintDate(new Date(e.startDate), false)}${this.mms.prettyPrintDate(new Date(e.endDate), true)}
+    ${this.mms.prettyPrintDate(e.startDate, false)}${this.mms.prettyPrintDate(e.endDate, true)}
     <p>
       
       <i class=\"material-icons\">domain</i>${e.peopleOrganizations.length}
@@ -685,8 +690,8 @@ export class MapComponent implements OnChanges {
         //marker._icon = markerIcon;
         marker.name = i.name;
         marker.fromSearch = false;
-        marker.startDate = new Date(i.startDate);
-        marker.endDate = new Date(i.endDate);
+        marker.startDate =i.startDate;
+        marker.endDate = i.endDate;
         marker.setOpacity(0.75);
         marker.themes = i.themes; // need to add this so our cluster icon can compute the donut chart
         this.markers.push(marker);
