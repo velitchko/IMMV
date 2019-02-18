@@ -75,7 +75,8 @@ export class MusicMapService {
 
   getColorAssignmentForCategory(category: string): string {
     // console.log(category, this.colorAssignment.getValue().get(category));
-    return this.colorAssignment.getValue().get(category);
+    // return this.colorAssignment.getValue().get(category);
+    return '#dadada';
   }
 
   /**
