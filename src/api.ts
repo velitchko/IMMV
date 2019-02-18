@@ -9,7 +9,7 @@ let LocationSchema = require('./database/schemas/location');
 let ThemeSchema = require('./database/schemas/theme');
 let PersonOrganizationSchema = require('./database/schemas/personorganization');
 let SourceSchema = require('./database/schemas/source');
-const DATABASE_COLLECTION = 'immv_beta';
+const DATABASE_COLLECTION = 'immv_db';
 
 
 export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
@@ -56,6 +56,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   api.get('/api/v1/peopleorganizations', (req: express.Request, res: express.Response) => {
     PersonOrganizationSchema.find({}, (err, peopleOrganizations) => {
       if(err) {
+        console.log('NIG')
         console.log(err);
         res.status(404).json({ "message" : 'No documents matching ' + req.body.query + ' were found.'})
       }
