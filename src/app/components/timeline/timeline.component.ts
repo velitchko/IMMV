@@ -3,7 +3,7 @@ import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { environment } from '../../../environments/environment';
 import { MusicMapService } from '../../services/musicmap.service';
-import { ColorService } from '../../services/color.service';
+// import { ColorService } from '../../services/color.service';
 import { Event } from '../../models/event';
 import * as d3 from 'd3';
 import { DataSet, Timeline } from 'vis';
@@ -60,7 +60,7 @@ export class TimelineComponent implements OnChanges {
               @Inject('WINDOW') private window: any,
 
               private mms: MusicMapService,
-              private cs: ColorService,
+              // private cs: ColorService,
               private element: ElementRef,
               public dialog: MatDialog
             ) {
@@ -75,6 +75,7 @@ export class TimelineComponent implements OnChanges {
     if(changes) {
       if(this.isBrowser) {
         this.setupData();
+        this.createTimeline();
         this.mms.currentColorAssignment.subscribe((colorMap: Map<string, string>) => {
           if(!colorMap) return;
           this.colorAssignment = colorMap;
@@ -142,24 +143,23 @@ export class TimelineComponent implements OnChanges {
    // range meaning interval default unless we detect otherwise
     for(let i of this.items) {
     // if its a subevent we do not want to display an entry in the timeline
-      if(!i.isMainEvent || !i.startDate ) continue;
+      if(!i.startDate ) continue;
       //console.log(i);
       let type = 'point';
-      let dateDiff = this.dateDifference(new Date(i.startDate), new Date(i.endDate));
+      let dateDiff = this.dateDifference(i.startDate, i.endDate);
       //console.log(`diff is : ${dateDiff}`);
-      if(new Date(i.startDate).valueOf() === new Date(i.endDate).valueOf() || dateDiff <= 1) {
+      if(!i.endDate || i.startDate.valueOf() === i.endDate.valueOf() || dateDiff <= 1) {
         //console.log(`${i.name} ${i.startDate} ${i.endDate}`);
         type = 'point';
       } else {
         type = 'range';
       }
-      if(isNaN(i.endDate.getTime())) type = 'point';
-
+      // if(isNaN(i.endDate.getTime())) type = 'point';
       let dataitem = {
         group: 0,
         id: i.objectId,
         start: i.startDate,
-        end: i.endDate,
+        // end: i.endDate,
         //content: i.name,
         title: this.getHTMLTooltip(i),
         type: type,
@@ -170,6 +170,7 @@ export class TimelineComponent implements OnChanges {
         locations: i.locations,
         // className: i.geodata.length !== 0 ? 'has-location' : 'no-location'
       };
+      if(i.endDate) dataitem['end'] = i.endDate;
       this.datasetItems.add(dataitem);
     }
     /**
@@ -200,6 +201,7 @@ export class TimelineComponent implements OnChanges {
    * @return result - difference between dates in days (floored)
    */
   dateDifference(a: Date, b: Date): number {
+    if(!b) return;
     // a and b are javascript Date objects
     let _MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -218,7 +220,7 @@ export class TimelineComponent implements OnChanges {
       //  <i class=\"material-icons\">domain</i>${e.organizations.length}
     return `<div class=\"tooltip\">
     <h3>${e.name}</h3>
-    ${this.mms.prettyPrintDate(new Date(e.startDate), false)}${this.mms.prettyPrintDate(new Date(e.endDate), true)}
+    ${this.mms.prettyPrintDate(e.startDate, false)}${this.mms.prettyPrintDate(e.endDate, true)}
     <p>
       <i class=\"material-icons\">face</i>${e.peopleOrganizations.length}
       <i class=\"material-icons\">location_on</i>${e.locations.length}
@@ -521,6 +523,7 @@ export class TimelineComponent implements OnChanges {
         //console.log(`s`);
         // could conditionally display info based on the type of what
         let e = this.findEvent(properties.items[0]);
+
         // here we might want to perform GET's for the recordId's of the related
         // events, people, locations, themes, sources, etc.
         //this.openDialog(e);
@@ -653,7 +656,7 @@ export class TimelineComponent implements OnChanges {
    */
   type(d: Event): any {
     d.startDate = new Date(d.startDate);
-    d.endDate = new Date(d.endDate);
+    if(d.endDate) d.endDate = new Date(d.endDate);
     return d;
   }
 }

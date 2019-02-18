@@ -6,7 +6,7 @@ import { Theme } from '../../models/theme';
 import { ThemeService } from '../../services/themes.service';
 import { EventService } from '../../services/event.service';
 import { MusicMapService } from '../../services/musicmap.service';
-import { ColorService } from '../../services/color.service';
+// import { ColorService } from '../../services/color.service';
 import * as D3 from 'd3';
 // for the layout.cloud function
 declare var d3: any;
@@ -44,7 +44,7 @@ export class ThemeComponent implements OnInit {
               private ts: ThemeService,
               private es: EventService,
               private mms: MusicMapService,
-              private cs: ColorService
+              // private cs: ColorService
               ) {
     this.isBrowser = isPlatformBrowser(this._platformId);
     // this.width = 800 - this.margin.left - this.margin.right;
@@ -126,7 +126,8 @@ export class ThemeComponent implements OnInit {
         }
     }
     // assign colors
-    this.colors = this.cs.getColors(this.distribution.size);
+    this.colors = [];
+    // this.colors = this.cs.getColors(this.distribution.size);
     // here we want to update the color assignment in the MusicMapService
     // so we can share the color assignment to our markers in the map / tl
     this.updateColorAssignment();
