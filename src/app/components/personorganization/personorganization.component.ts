@@ -9,6 +9,7 @@ import { Observable } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 import * as d3 from 'd3';
 import { SimulationNodeDatum, SimulationLinkDatum } from 'd3';
+import { link } from 'fs';
 // import { interpolate } from 'flubber';
 @Component({
   selector: 'app-personorganization',
@@ -30,19 +31,32 @@ export class PersonOrganizationComponent implements AfterViewInit {
   links: Array<any>;
   linkSVG: any;
   labelSVG: any;
+  nodeLabelSVG: any;
   tooltip: any;
   line: any;
+  g: any;
+  zoom: any;
+
+  colors: Map<string, string>;
 
   // Size setup
   private SVG_WIDTH: number = 1850;
   private SVG_HEIGHT: number = 860;
-  private GLYPH_WIDTH: number = 75;
-  private GLYPH_HEIGHT: number = 75;
+  private GLYPH_WIDTH: number = 10;
+  private GLYPH_HEIGHT: number = 10;
   private LINK_DISTANCE: number = 500;
 
   constructor(private db: DatabaseService,
               @Inject(PLATFORM_ID) private _platformId: Object) {
     this.isBrowser = isPlatformBrowser(this._platformId);
+    this.colors = new Map<string, string>();
+    this.colors.set('location', '#01aef2');
+    this.colors.set('personorganization', '#8ff161');
+    this.colors.set('event', '#fff400');
+    this.colors.set('theme', '#fa4c71');
+    this.colors.set('source', '#ffb400');
+    this.colors.set('historicevent', '#c000ff');
+
     this.nodes = new Array<SimulationNodeDatum>();
     this.links = new Array<SimulationLinkDatum<SimulationNodeDatum>>();
     this.items = new Array<Event>();
@@ -55,32 +69,25 @@ export class PersonOrganizationComponent implements AfterViewInit {
   }
   
   ngAfterViewInit(): void {
-    this.db.getAllEvents().then((success) => {
-      this.items = success;
-      if(this.isBrowser) {
-        this.setupData();
-
+      this.db.getAllEvents().then((success) => {
+        this.items = success;
+      });
+  }
+  
+  selectedItem(event: Event): void {
+    // this.highlightConnections(event);   
+    this.db.getAsEvent(event).then((success) => {
+      if(!this.force) {
+        this.setupData(success);
         this.createForce();
-        // this.tooltip = d3.select('#people-wrapper')
-        // .append('div')
-        // .attr('class', 'slice-extension')
-        // .style('opacity', 0);
-        // this.svg = d3.select('#people-wrapper').append('svg')
-        // .attr('width', this.SVG_WIDTH)
-        // .attr('height', this.SVG_HEIGHT);
-        // this.createNode(this.peopleOrganizations[0], 'svg');
-        // this.createNode(this.peopleOrganizations[1], 'svg');
+      } else {
+        this.updateData(success);
       }
     });
-  }
-  selectedItem(event: Event): void {
-    console.log(event);
-    this.highlightConnections(event);   
   }
   
   private filterEvents(value: string): Array<Event> {
     const filterValue = value.toLowerCase();
-
     return this.items.filter(event => event.name.toLowerCase().indexOf(filterValue) === 0);
   }
 
@@ -156,141 +163,464 @@ export class PersonOrganizationComponent implements AfterViewInit {
     // console.log(connections);
   }
 
-  getIndexById(id: string): number {
-    return this.items.map((p: Event) => { return p.objectId}).indexOf(id);
-  }
+  // getIndexById(id: string): number {
+  //   return this.items.map((p: Event) => { return p.objectId}).indexOf(id);
+  // }
 
-  setupData(): void {
+  setupData(data: any): void {
     // this is where we will create our nodes and links array
     // node {x,y} link {source, target}
-    this.items.forEach((p: Event) => {
-      this.nodes.push(<SimulationNodeDatum>p);
-    });
-    this.items.forEach((p: Event) => {
-      p.events.forEach((rel: any) => {
-        // rel.personOrganization id
-        // rel.relationship 
-          // let s = this.getIndexById(p.objectId);
-          // console.log(rel);
-          // let t = this.getIndexById(rel.event.objectId);
-          // console.log(s,t);
+
+    // ALL NODES (everything related to the ego node)
+    let root = <SimulationNodeDatum>data;
+    root['type'] = 'event';
+    this.nodes.push(root);
+
+    
+    for(let i = 0; i < data.events.length; i++) {
+      let e = data.events[i];
+        let node = <SimulationNodeDatum>e.event;
+        node['type'] = 'event';
+        this.nodes.push(node);
+    }
+    for(let i = 0; i < data.themes.length; i++) {
+      let t = data.themes[i];
+        let node = <SimulationNodeDatum>t.theme;
+        node['type'] = 'theme';
+        this.nodes.push(node);
+    }
+    for(let i = 0; i < data.locations.length; i++) {
+      let l = data.locations[i];
+        let node = <SimulationNodeDatum>l.location;
+        node['type'] = 'location';
+        this.nodes.push(node);
+    }
+    for(let i = 0; i < data.historicEvents.length; i++) {
+      let h = data.historicEvents[i];
+        let node = <SimulationNodeDatum>h.historicEvent;
+        node['type'] = 'historicevent';
+        this.nodes.push(node);
+    }
+    for(let i = 0; i < data.peopleOrganizations.length; i++) {
+      let p = data.peopleOrganizations[i];
+      if(!this.checkIfNodeExists(p.personOrganization.objectId)) {
+        let node = <SimulationNodeDatum>p.personOrganization;
+        node['type'] = 'personorganization';
+        this.nodes.push(node);
+      }
+    }
+    for(let i = 0; i < data.sources.length; i++) {
+      let s = data.sources[i];
+        let node = <SimulationNodeDatum>s.source;
+        node['type'] = 'source';
+        this.nodes.push(node);
+    }
+
+
+    // ALL LINKS
+    data.events.forEach((e: any) => {
+      if(!this.checkIfLinkExists(data.objectId, e.event.objectId)) {
         this.links.push({
-          source: this.getIndexById(p.objectId),
-          sourceId: p.objectId,
-          target: this.getIndexById(rel.event.objectId),
-          targetId: rel.event.objectId,
-          label: rel.relationship
-        })
-      })
+          source: data,
+          sourceId: data.objectId,
+          target: e.event,
+          targetId: e.event.objectId,
+          label: e.relationship
+        });
+      }
     });
-    let cycles = new Set<number>();
-    this.links.forEach((s: any, tIdx: number) => {
-      this.links.forEach((t: any) => {
-          if(s.targetId === t.sourceId && s.sourceId === t.targetId) {
-            // cycle 
-            cycles.add(tIdx);
-          }
-        })
-      });
-    // remove cycles
-    cycles.forEach((c: number) => { this.links.splice(c, 1); });
-    // remove isolated nodes
+    data.themes.forEach((t: any) => {
+      if(!this.checkIfLinkExists(data.objectId, t.theme.objectId)) {
+        this.links.push({
+          source: data,
+          sourceId: data.objectId,
+          target: t.theme,
+          targetId: t.theme.objectId,
+          label: t.relationship
+        });
+      }
+    });
+    data.locations.forEach((e: any) => {
+      if(!this.checkIfLinkExists(data.objectId, e.location.objectId)) {
+        this.links.push({
+          source: data,
+          sourceId: data.objectId,
+          target: e.location,
+          targetId: e.location.objectId,
+          label: e.relationship
+        });
+      }
+    });
+    data.historicEvents.forEach((h: any) => {
+      if(!this.checkIfLinkExists(data.objectId, h.historicEvent.objectId)) {
+        this.links.push({
+          source: data,
+          sourceId: data.objectId,
+          target: h.historicEvent,
+          targetId: h.historicEvent.objectId,
+          label: h.relationship
+        });
+      }
+    });
+    data.peopleOrganizations.forEach((p: any) => {
+      if(!this.checkIfLinkExists(data.objectId, p.personOrganization.objectId)) {
+        this.links.push({
+          source: data,
+          sourceId: data.objectId,
+          target: p.personOrganization,
+          targetId: p.personOrganization.objectId,
+          label: p.relationship
+        });
+      }
+    });
+    data.sources.forEach((s: any) => {
+      if(!this.checkIfLinkExists(data.objectId, s.source.objectId)) {
+        this.links.push({
+          source: data,
+          sourceId: data.objectId,
+          target: s.source,
+          targetId: s.source.objectId,
+          label: s.relationship
+        });
+      }
+    });
+  }
+
+  checkIfNodeExists(objectId: string): boolean {
+    let nodeExists = false;
+    for(let i = 0; i < this.nodes.length; i++) {
+      let l = this.nodes[i];
+
+      if(l.objectId === objectId) {
+        nodeExists = true;
+        return nodeExists;
+      }
+    }
+    return nodeExists;
+  }
+
+  checkIfLinkExists(sourceId: string, targetId: string): boolean {
+    let linkExists = false;
+    for(let i = 0; i < this.links.length; i++) {
+      let l = this.links[i];
+
+      if(sourceId === l.sourceId && targetId === l.targetId || 
+        sourceId === l.targetId && targetId === l.sourceId) {
+        linkExists = true;
+        return linkExists;
+      }
+    }
+    
+    return linkExists;
+  }
+
+  // TODO: -> TL support?  (https://github.com/alangrafu/timeknots/blob/master/src/timeknots.js) something simple
+  // TODO: Links between multiple graph clusters (when adding/selecting new event)
+  // Maybe lookinto visjs network
+  // we only check if node !exists then if edge exists we skip
+  // if node exists we dont check edges -> FIXME:
+  updateData(data: any): void {
+    if(!this.checkIfNodeExists(data.objectId)) {
+      let root = <SimulationNodeDatum>data;
+      root['type'] = 'event';
+      this.nodes.push(root);
+    }
+    
+    if(data.events) {  
+      for(let i = 0; i < data.events.length; i++) {
+        let e = data.events[i];
+        // NODES
+        if(!this.checkIfNodeExists(e.event.objectId)) {
+          let node = <SimulationNodeDatum>e.event;
+          node['type'] = 'event';
+          this.nodes.push(node);
+          // if node doesnt exist the link doesnt as well
+          if(this.checkIfLinkExists(data.objectId, e.event.objectId)) continue;
+          this.links.push({
+            source: data,
+            sourceId: data.objectId,
+            target: e.event,
+            targetId: e.event.objectId,
+            label: e.relationship
+          });
+        }
+      }
+    }
+    if(data.locations) {
+      for(let i = 0; i < data.locations.length; i++) {
+        let e = data.locations[i];
+        // NODES
+        if(!this.checkIfNodeExists(e.location.objectId)) {
+          let node = <SimulationNodeDatum>e.location;
+          node['type'] = 'location';
+          this.nodes.push(node);
+          if(this.checkIfLinkExists(data.objectId, e.location.objectId)) continue;
+          this.links.push({
+            source: data,
+            sourceId: data.objectId,
+            target: e.location,
+            targetId: e.location.objectId,
+            label: e.relationship
+          });
+        } 
+      }
+    }
+
+    if(data.peopleOrganizations) {
+      for(let i = 0; i < data.peopleOrganizations.length; i++) {
+        let e = data.peopleOrganizations[i];
+        // NODES
+        if(!this.checkIfNodeExists(e.personOrganization.objectId)) {
+          let node = <SimulationNodeDatum>e.personOrganization;
+          node['type'] = 'personorganization';
+          this.nodes.push(node);
+          if(this.checkIfLinkExists(data.objectId, e.personOrganization.objectId)) continue;
+          this.links.push({
+            source: data,
+            sourceId: data.objectId,
+            target: e.personOrganization,
+            targetId: e.personOrganization.objectId,
+            label: e.relationship
+          });
+        }
+      }
+    }
+
+    if(data.sources) {
+      for(let i = 0; i < data.sources.length; i++) {
+        let e = data.sources[i];
+        // NODES
+        if(!this.checkIfNodeExists(e.source.objectId)) {
+          let node = <SimulationNodeDatum>e.source;
+          node['type'] = 'source';
+          this.nodes.push(node);
+          if(this.checkIfLinkExists(data.objectId, e.source.objectId)) continue;
+          this.links.push({
+            source: data,
+            sourceId: data.objectId,
+            target: e.source,
+            targetId: e.source.objectId,
+            label: e.relationship
+          });
+        }
+      }
+    }
+
+    if(data.themes) {
+      for(let i = 0; i < data.themes.length; i++) {
+        let e = data.themes[i];
+        // NODES
+        if(!this.checkIfNodeExists(e.theme.objectId)) {
+          let node = <SimulationNodeDatum>e.theme;
+          node['type'] = 'theme';
+          this.nodes.push(node);
+          if(this.checkIfLinkExists(data.objectId, e.theme.objectId)) continue;
+          this.links.push({
+            source: data,
+            sourceId: data.objectId,
+            target: e.theme,
+            targetId: e.theme.objectId,
+            label: e.relationship
+          });
+        }
+      }
+    }
+
+    if(data.historicEvents) {
+      for(let i = 0; i < data.historicEvents.length; i++) {
+        let e = data.historicEvents[i];
+        // NODES
+        if(!this.checkIfNodeExists(e.historicEvent.objectId)) {
+          let node = <SimulationNodeDatum>e.historicEvent;
+          node['type'] = 'historicevent';
+          this.nodes.push(node);
+          if(this.checkIfLinkExists(data.objectId, e.historicEvent.objectId)) continue;
+          this.links.push({
+            source: data,
+            sourceId: data.objectId,
+            target: e.historicEvent,
+            targetId: e.historicEvent.objectId,
+            label: e.relationship
+          });
+        }
+      }
+    }
+    this.updateElements();
+  }
+
+  lookupItem(item: any): void {
+    switch(item.type) {
+      case 'event':
+        this.db.getAsEvent(item).then((success) => {
+          success.vx = item.vx;
+          success.vy = item.vy;
+          success.x = item.x;
+          success.y = item.y;
+          this.updateData(success);
+        });
+        return;
+      case 'historicevent':
+        this.db.getAsHistoricEvent(item).then((success) => {
+          success.vx = item.vx;
+          success.vy = item.vy;
+          success.x = item.x;
+          success.y = item.y;
+          this.updateData(success);
+        });
+        return;
+      case 'location':
+        this.db.getAsLocation(item).then((success) => {
+          success.vx = item.vx;
+          success.vy = item.vy;
+          success.x = item.x;
+          success.y = item.y;
+          this.updateData(success);
+        });
+        return;
+      case 'theme':
+        this.db.getAsTheme(item).then((success) => {
+          success.vx = item.vx;
+          success.vy = item.vy;
+          success.x = item.x;
+          success.y = item.y;
+          this.updateData(success);
+        });
+        return;
+      case 'source':
+        this.db.getAsSource(item).then((success) => {
+          success.vx = item.vx;
+          success.vy = item.vy;
+          success.x = item.x;
+          success.y = item.y;
+          this.updateData(success);
+        });
+        return;
+      case 'personorganization':
+        this.db.getAsPersonOrganization(item).then((success) => {
+          success.vx = item.vx;
+          success.vy = item.vy;
+          success.x = item.x;
+          success.y = item.y;
+          this.updateData(success);
+        });
+        return;
+      default: return;
+    }
   }
 
   createForce(): void {
     // this is where we will create our force simulation
-    this.force = d3.forceSimulation(this.nodes)
-                   .velocityDecay(0.1)
-                   .force('charge', d3.forceManyBody().strength(-250))
-                   .force('x', d3.forceX(this.SVG_WIDTH / 2).strength(.05))
-                   .force('y', d3.forceY(this.SVG_HEIGHT / 2).strength(.05))
-                   .force('center', d3.forceCenter(this.SVG_WIDTH/2, this.SVG_HEIGHT/2))
-                   .force('collision', d3.forceCollide().radius((d: any) => { return this.GLYPH_WIDTH/2; }))
-                   .force('link', d3.forceLink().distance(this.GLYPH_WIDTH + this.LINK_DISTANCE).strength(2));
-    this.force.on('tick', this.ticked.bind(this));
+    // elements and apply the enter, update, exit, merge pattern in d3
 
+    // TODO: improve the force(s) - currently pushing clusters too far away
     this.createElements();
   }
+
+  updateElements(): void {  
+    this.force.stop();
+
+    this.linkSVG = this.linkSVG.data(this.links, (d: any) => { return d.source.sourceId + '-' + d.target.targetId; });
+    this.linkSVG.exit().remove();
+    this.linkSVG = this.linkSVG.enter().append('line').attr('class', 'link').merge(this.linkSVG);
+
+
+    this.nodeSVG = this.nodeSVG.data(this.nodes, (d: any) => { return d.objectId; });
+    this.nodeSVG.exit().remove();
+    this.nodeSVG = this.nodeSVG.enter()
+                    .append('circle')
+                    .attr('fill', (d: any) => { return this.colors.get(d.type); })
+                    .attr('r', this.GLYPH_WIDTH/2)
+                    .on('click', (d: any) => {
+                      this.lookupItem(d);
+                    })
+                    .on('mouseover', (d: any) => {
+                      this.tooltip.transition()		
+                                  .duration(200)		
+                                  .style("opacity", .9);		
+                      this.tooltip.html(d.name)	
+                                  .style("left", (d3.event.pageX) + "px")		
+                                  .style("top", (d3.event.pageY - 28) + "px");	
+                    })
+                    .on('mouseout', () => {
+                      this.tooltip.transition()
+                                  .duration(200)
+                                  .style('opacity', 0);
+                    })
+                    .merge(this.nodeSVG);
+                    
+    this.force.nodes(this.nodes);
+    this.force.force('link').links(this.links);
+    this.force.alpha(1);
+    this.force.restart();
+  }
+
 
   createElements(): void {
     this.svg = d3.select('#people-wrapper').append('svg')
                  .attr('width', this.SVG_WIDTH)
                  .attr('height', this.SVG_HEIGHT);
-
-    let wrapper = this.svg.append('g').attr('class', 'wrapper');
-    // Force-directed edge bundling https://bl.ocks.org/vasturiano/7c5f24ef7d4237f7eb33f17e59a6976e
-    this.linkSVG = wrapper.append('g').attr('class', 'links').selectAll('line').data(this.links).enter().append('line')
-
-    this.nodeSVG = wrapper.append('g').attr('class', 'nodes').selectAll('g').data(this.nodes).enter().append('g');
-   
-    this.nodeSVG.each((d: any, i: number, n: any) => {
-        this.createNode(this.items[i], n[i]);
+                 
+    this.g = this.svg.append('g');
+    
+    this.linkSVG = this.g.append('g')
+                          .selectAll('link')
+                          .enter()
+                          .data(this.links, (d: any) => { return d.source.sourceId + '-' + d.target.targetId; });
+                          
+    this.nodeSVG = this.g.append('g')
+                          .selectAll('node')
+                          .enter()
+                          .data(this.nodes, (d: any) => { return d.objectId; });
+    
+    this.zoom = d3.zoom().on('zoom', () => {
+      this.g.attr("transform", d3.event.transform);
     });
 
-    this.labelSVG = wrapper.append('g')
-                            .attr('class', 'labels')
-                            .selectAll('g')
-                            .data(this.links)
-                            .enter()
-                            .append('g')
-                            .append('text');
-    
-    // this.tooltip = d3.select('#people-wrapper')
-    //                  .append('div')
-    //                  .attr('class', 'slice-extension')
-    //                  .style('opacity', 0);
+    // TODO: when using #people-wrapper the tooltip is off probably CSS issue
+    this.tooltip = d3.select('body').append('div').attr('class', 'tooltip').style('opacity', 0);
 
-    this.force.nodes(this.nodes);
-    this.force.force('link').links(this.links);
+    this.zoom(this.svg);
 
-    let zoom = d3.zoom()
-                 .translateExtent([[0,0], [this.SVG_WIDTH, this.SVG_HEIGHT]])
-                 .on('zoom', () => {
-                   wrapper.attr('transform', d3.event.transform)
-                 });
-    zoom(wrapper);
+    this.force = d3.forceSimulation()
+    // .alphaDecay(0.5)
+    // .alphaTarget(1)
+    .force('link', d3.forceLink().distance(50).strength(1)) //distance(this.LINK_DISTANCE/5) //
+    .force('charge', d3.forceManyBody().strength(-1000))
+    // .force('xPos', d3.forceX(this.SVG_WIDTH / 2))
+    // .force('yPos', d3.forceY(this.SVG_HEIGHT / 2))
+    .force('center', d3.forceCenter(this.SVG_WIDTH/2, this.SVG_HEIGHT/2))
+    // .force('collision', d3.forceCollide().radius((d: any) => { return this.GLYPH_WIDTH/2; }))
+    .on('tick', () => {
+      this.ticked()
+    });
+
+    // this.force.stop();
+
+     this.updateElements();
+    // Force-directed edge bundling https://bl.ocks.org/vasturiano/7c5f24ef7d4237f7eb33f17e59a6976e
   }
   
   ticked(): void {
     this.nodeSVG.attr('class', 'node')
-                .attr('id',(d: any) => { return d.objectId; })
-                .attr('x', (d: any) => { return d.x + this.GLYPH_WIDTH/2; })
-                .attr('y', (d: any) => { return d.y + this.GLYPH_HEIGHT/2; })
-                .attr('transform', (d: any) => { 
-                  return `translate(${d.x + this.GLYPH_WIDTH/2}, ${d.y + this.GLYPH_HEIGHT/2})`;
-                });
+                .attr('id', (d: any) => { return d.objectId; })
+                .attr('cx', (d: any) => { return d.x; })
+                .attr('cy', (d: any) => { return d.y; });
 
     this.linkSVG.attr('class', 'link')
                 // .attr('d', () => { return this.line; })
                 .attr('source', (d: any) => { return d.sourceId; })
                 .attr('target', (d: any) => { return d.targetId; })
-                .attr('x1', (d: any) => { return d.source.x + this.GLYPH_WIDTH/2; })
-                .attr('y1', (d: any) => { return d.source.y + this.GLYPH_HEIGHT/2; })
-                .attr('x2', (d: any) => { return d.target.x + this.GLYPH_WIDTH/2; })
-                .attr('y2', (d: any) => { return d.target.y + this.GLYPH_HEIGHT/2; });
-
-    this.labelSVG.attr('class', 'label')
-                 .attr('source', (d: any) => { return d.sourceId; })
-                 .attr('target', (d: any) => { return d.targetId; })
-                 .attr('x', (d: any) => { 
-                      return (d.source.x + d.target.x)/2;
-                  })
-                 .attr('y', (d: any) => { 
-                     return (d.source.y + d.target.y)/2;
+                .attr('x1', (d: any) => { 
+                  let source = this.nodes.find((n: any) => { return n.objectId === d.sourceId; });
+                  return source ? source.x : d.source.x;
+                })
+                .attr('y1', (d: any) => { 
+                  let target = this.nodes.find((n: any) => { return n.objectId === d.sourceId; });
+                  return target ? target.y : d.target.y;
                  })
-                 .attr('transform', function(d: any, i: number) {
-                  //  if(d.target.x < d.source.x) {
-                  //    let bbox = this.getBBox();
-                  //    let rx = bbox.x + bbox.width/2;
-                  //    let ry = bbox.y + bbox.height/2;
-                  //    return `rotate(180 ${rx} ${ry})`;
-                  //  } else {
-                     return 'rotate(0)';
-                  //  }
-                 })
-                 .text((d: any ) => { return d.label; });;
+                .attr('x2', (d: any) => { return d.target.x; })
+                .attr('y2', (d: any) => { return d.target.y; });
   }
-  
 
   createNode(event: Event, nodeElement: any): void {
     let data = [
@@ -314,8 +644,7 @@ export class PersonOrganizationComponent implements AfterViewInit {
     let g = glyph.append('g') 
                  .attr('class', 'pie')
                  .attr('width', width)
-                 .attr('height', height)
-                //  .attr('transform', `translate(${this.SVG_WIDTH/2}, ${this.SVG_HEIGHT/2})`);
+                 .attr('height', height);
     
     g.append('circle').attr('r', (this.GLYPH_HEIGHT/2) - 2).attr('fill', 'white');
     
@@ -352,32 +681,7 @@ export class PersonOrganizationComponent implements AfterViewInit {
       .text(`${event.name}`)
       .attr('text-anchor', 'middle')
       .attr('dy', '-2.6em');
-      // .on('mouseover', function(d: any) {
-      //     let g = d3.select(this)
-      //       .style('cursor', 'pointer')
-      //       .style('fill', 'black')
-      //       .append('g')
-      //       .attr('class', 'text-group');
-      //       // REF: http://jsfiddle.net/henbox/88t18rqg/6/
-      //       // add image inside of arc section
-      //     g.append('text')
-      //       .attr('class', 'name-text')
-      //       .text(`${event.name}`)
-      //       .attr('text-anchor', 'middle')
-      //       .attr('dy', '-2.6em');
       
-      //     // g.append('text')
-      //     //   .attr('class', 'value-text')
-      //     //   .text(`${d.data.value}`)
-      //     //   .attr('text-anchor', 'middle')
-      //     //   .attr('dy', '.6em');
-      // })
-      // .on('mouseout', function(d: any) {
-      //     d3.select(this)
-      //       .style('cursor', 'none')  
-      //       .style('fill', color(this['_current']))
-      //       .select('.text-group').remove();
-      // })
       path.append('path')
       .attr('d', <any>arc)
       .attr('fill', (d: any,i: any) => color(i))
@@ -389,28 +693,7 @@ export class PersonOrganizationComponent implements AfterViewInit {
           .attr('d', extArc)
           .style('cursor', 'pointer')
           .style('fill', color(n[i]['_current']));
-
-          // let parent = (<HTMLElement>n[i]).parentNode.parentNode.parentNode;
-          // let xOff = d3.select(parent).attr('x');
-          // let yOff = d3.select(parent).attr('y');
-          // let x = coords[i].x;
-          // let y = coords[i].y;
-          // console.log(xOff, x, yOff, y);
-          
-          // this.tooltip
-           
-            // d3.select(parent)
-            // .append('div')
-            // .html('<p>Tooltippy boi</p>')
-            // .transition()
-            // .delay(250)
-            // .attr('class', 'slice-extension')
-            // .style('opacity', 1)
-            // // .style('transform', `translate(${xOff}, ${yOff})`)
-            // .style('background-color', color(n[i]['_current']))
-            // .style('left', `${x}px`)
-            // .style('top', `${y}px`);;
-        })
+      })
       .on('mouseout', (d: any, i: any, n: any) => {
           d3.select(n[i])
           .transition()
@@ -418,16 +701,7 @@ export class PersonOrganizationComponent implements AfterViewInit {
           .attr('d', arc)
           .style('cursor', 'none')  
           .style('fill', color(n[i]['_current']));
-
-          // let parent = (<HTMLElement>n[i]).parentNode.parentNode.parentNode;
-          // d3.select(parent).selectAll('.slice-extension').remove();
-          // // d3.select((<HTMLElement>this).parentNode).selectAll('rect').remove();
-
-          // this.tooltip
-          //   .transition()
-          //   .delay(250)
-          //   .style('opacity', 0);
-        })
+      })
       .each(function(d: any, i: any) { this['_current'] = i; });
       
     g.append('text')
