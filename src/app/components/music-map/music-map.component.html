@@ -17,7 +17,7 @@
             <mat-icon>close</mat-icon>
           </button>
         </div>
-        <app-previewpanel [event]="eventToBeDisplayed"></app-previewpanel>
+        <app-previewpanel *ngIf="eventToBeDisplayed" [event]="eventToBeDisplayed"></app-previewpanel>
       </mat-drawer>
       <!-- MAIN MUSIC MAP DRAWER CONTENT -->
       <mat-drawer-content>
