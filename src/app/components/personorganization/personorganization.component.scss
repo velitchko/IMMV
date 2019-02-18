@@ -50,3 +50,15 @@ stroke: #999;
         color: white;
     }
 }
+
+::ng-deep .tooltip {	
+    position: absolute;			
+    text-align: center;			
+    width: auto;					
+    height: auto;					
+    padding: 1em;				
+    background: white;	
+    border: 0px;		
+    pointer-events: none;	
+    z-index: 9999;		
+}
