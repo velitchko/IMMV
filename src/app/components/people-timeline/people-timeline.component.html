@@ -1,5 +1,7 @@
 <div class="wrapper">
     <div class="search">
+        <button mat-button (click)="restart()">Show default</button>
+        <button mat-button (click)="loadExile()">Show exiles</button>
         <mat-form-field>
             <input class="search-input" matInput placeholder="Search..." [matAutocomplete]="auto" [formControl]="searchCtrl">
             <button mat-button *ngIf="showClear" matSuffix mat-icon-button aria-label="Clear" (click)="clearSearch()">
