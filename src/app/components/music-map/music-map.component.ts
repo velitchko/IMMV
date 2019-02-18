@@ -8,7 +8,7 @@ import { ModalDialogComponent } from '../modal/modal.component';
 import { SearchComponent } from '../search/search.component';
 import { MusicMapService } from '../../services/musicmap.service';
 import { ThemeService } from '../../services/themes.service';
-import { ColorService } from '../../services/color.service';
+// import { ColorService } from '../../services/color.service';
 import { MapValuesPipe } from '../../pipes/map.pipe/map.pipe';
 import { DatabaseService } from 'src/app/services/db.service';
 
@@ -36,17 +36,17 @@ export class MusicMapComponent implements AfterViewInit {
   ];
   @ViewChild('themedrawer') themedrawer: any;
   @ViewChild('previewdrawer') previewdrawer: any;
-  colors: Array<string>;
+  // colors: Array<string>;
   selectedEntries: Array<any>;
   eventToBeDisplayed: Event;
 
   constructor(private db: DatabaseService,
               private mms: MusicMapService,
-              private cs: ColorService,
-              private ts: ThemeService
+              // private cs: ColorService,
+              // private ts: ThemeService
             ) {
     this.currentDrawerType = 'themes';
-    this.colors = new Array<string>();
+    // this.colors = new Array<string>();
     this.drawerTypes = [
       {
         value: 'themes',
@@ -98,10 +98,11 @@ export class MusicMapComponent implements AfterViewInit {
           // get and clean data
           // so we are guarenteed to have start and end dates (locations later)
           this.events = success;
+       
           // let idxArr = this.es.cleanData();
           // this.es.removeIDs(idxArr);
           // this.es.checkForHierarchicalEvents();
-          this.computeDist();
+          // this.computeDist();
           // get historic events as well
           if(this.db.getHistoricEvents().length === 0) {
             this.db.getAllHistoricEvents().then(
@@ -122,7 +123,7 @@ export class MusicMapComponent implements AfterViewInit {
           }
         },
         (error) => {
-          //console.log(error);
+          console.log(error);
         }
       );
     } else {
@@ -156,7 +157,7 @@ export class MusicMapComponent implements AfterViewInit {
     }
     console.log(this.resultMap);
     // assign colors
-    this.colors = this.cs.getColors(this.resultMap.size);
+    // this.colors = this.cs.getColors(this.resultMap.size);
     // here we want to update the color assignment in the MusicMapService
     // so we can share the color assignment to our markers in the map / tl
     this.updateColorAssignment();
@@ -166,18 +167,18 @@ export class MusicMapComponent implements AfterViewInit {
    * Shares the color assignment computed from this component with the MusicMapService
    */
   updateColorAssignment(): void {
-    let colorAssignmentMap = new Map<string, string>();
-    //sort and construct map
-    // console.log(this.resultMap);
-    Array.from(this.resultMap.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map((m) => { return m[0]; })
-      .forEach(
-        (k, idx) => {
-          colorAssignmentMap.set(k, this.colors[idx]);
-        }
-    );
-    this.mms.setColorAssignment(colorAssignmentMap);
+    // let colorAssignmentMap = new Map<string, string>();
+    // //sort and construct map
+    // // console.log(this.resultMap);
+    // Array.from(this.resultMap.entries())
+    //   .sort((a, b) => b[1] - a[1])
+    //   .map((m) => { return m[0]; })
+    //   .forEach(
+    //     (k, idx) => {
+    //       colorAssignmentMap.set(k, this.colors[idx]);
+    //     }
+    // );
+    // this.mms.setColorAssignment(colorAssignmentMap);
   }
 
   /**
@@ -226,7 +227,8 @@ export class MusicMapComponent implements AfterViewInit {
   //    color = this.colors[idx];
   //  }
    //console.log(color);
-   return this.colors[idx];
+  //  return this.colors[idx];
+  return '#fff';
   }
 
   /**
