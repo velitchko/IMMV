@@ -9,7 +9,7 @@ const progressBar = new cli.Bar({}, cli.Presets.shades_classic);
 let results = [];
 
 let throttle = throttledQueue(1, 1000);
-mongoose.connect('mongodb://localhost:27017/immv_beta', function(err) {
+mongoose.connect('mongodb://localhost:27017/immv_db', function(err) {
     console.log('DB Connected');
     if(err) {
         console.log(err);
