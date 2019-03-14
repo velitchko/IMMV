@@ -1,6 +1,6 @@
 <div class="preview-carousel" *ngIf="eventLoaded">
     <app-carousel [source]="eventMedia" [autoplay]="true" [height]="400"></app-carousel>
-  </div>
+</div>
 <div class="previewpanel-container" *ngIf="eventLoaded && event">
   <h2>{{ event.name }}</h2>
   <p>{{ prettyPrintDate(event.startDate, false) }}{{ prettyPrintDate(event.endDate, true) }}</p>
