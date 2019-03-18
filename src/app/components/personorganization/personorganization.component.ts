@@ -1,5 +1,6 @@
 import { Component, OnInit, Inject, AfterViewInit, PLATFORM_ID, ViewChild, ElementRef } from '@angular/core';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
+import { MatSnackBar } from '@angular/material';
 import { FormControl } from '@angular/forms';
 import { ColorService } from '../../services/color.service';
 import { DatabaseService } from '../../services/db.service';
@@ -13,7 +14,7 @@ import * as moment from 'moment';
 @Component({
   selector: 'app-personorganization',
   templateUrl: './personorganization.component.html',
-  styleUrls: [ './personorganization.component.scss' ]
+  styleUrls: ['./personorganization.component.scss']
 })
 export class PersonOrganizationComponent implements AfterViewInit {
   @ViewChild('network') networkContainer: ElementRef;
@@ -21,10 +22,13 @@ export class PersonOrganizationComponent implements AfterViewInit {
 
   items: Array<Event>;
   isBrowser: boolean;
-  highlighted: boolean = false;
-  
+  pathSelection: boolean = false; // path selection mode
+  typeSelected: boolean = false; // node type selection
+  pathSelected: boolean = false; // when a path has been selected
+
   eventCtrl = new FormControl();
   filteredEvents: Observable<Array<Event>>;
+  selectedNode: any;
 
   startDate: any;
   endDate: any;
@@ -34,6 +38,7 @@ export class PersonOrganizationComponent implements AfterViewInit {
   events: DataSet;
   colors: Map<string, string>;
   legendColor: Array<any>;
+  selectedNodes: Set<any>;
 
   network: Network;
   timeline: Timeline;
@@ -42,7 +47,8 @@ export class PersonOrganizationComponent implements AfterViewInit {
   timelineInitialized: boolean;
 
   constructor(private db: DatabaseService,
-              @Inject(PLATFORM_ID) private _platformId: Object) {
+    private snackBar: MatSnackBar,
+    @Inject(PLATFORM_ID) private _platformId: Object) {
     this.isBrowser = isPlatformBrowser(this._platformId);
     this.colors = new Map<string, string>();
     this.colors.set('location', '#01aef2');
@@ -65,54 +71,108 @@ export class PersonOrganizationComponent implements AfterViewInit {
     this.events = new DataSet();
 
     this.items = new Array<Event>();
+    this.selectedNodes = new Set<any>();
+
     this.networkInitialized = false;
     this.timelineInitialized = false;
-    
+    this.pathSelection = false;
+    this.pathSelected = false;
+    this.typeSelected = false;
+
+    this.selectedNode = null;
     this.filteredEvents = this.eventCtrl.valueChanges
       .pipe(
         startWith(''),
         map(event => event ? this.filterEvents(event) : this.items.slice())
       );
   }
-  
+
   ngAfterViewInit(): void {
-      this.db.getAllEvents().then((success) => {
-        this.items = success;
-      });
+    this.db.getAllEvents().then((success) => {
+      this.items = success;
+    });
   }
+
   // TODO: set a boolean prohibiting the reseting on blurNode / blurEdge / hoverNode / hoverEdge?
   highlightNodeType($event: string): void {
+    this.clearHighlightedNodesLinks();
+    this.typeSelected = true;
+    this.openSnackBar(`Highlighting ${$event} nodes`);
     let type = $event.toLowerCase().replace(' ', '').trim();
 
     let connectedIds = new Set<string>();
     this.nodes.forEach((node: any) => {
-      if(node.objectType !== type) {
-        this.nodes.update({id: node.id, hidden: true});
+      if (node.objectType !== type) {
+        this.nodes.update({ id: node.id, hidden: true });
       } else {
         connectedIds.add(node.id);
       }
     });
+
     // TODO: constraint on displayling links betweeen nodes should be relaxed
     // could find a path connecting the set of nodes above somehow and display that
     this.links.forEach((link: any) => {
-      if(!connectedIds.has(link.from) && !connectedIds.has(link.to)) {
-        this.links.update({id: link.id, hidden: true}); 
+      if (!connectedIds.has(link.from) && !connectedIds.has(link.to)) {
+        this.links.update({ id: link.id, hidden: true });
       }
     });
   }
 
-  clearHighlightedNodeType(): void {
-    this.nodes.forEach((node: any) => { this.nodes.update({id: node.id, hidden: false}); });
-    this.links.forEach((link: any) => { this.links.update({id: link.id, hidden: false}); });
+  clearHighlightedNodesLinks(): void {
+    this.typeSelected = false;
+    this.nodes.forEach((node: any) => { this.nodes.update({ id: node.id, hidden: false }); });
+    this.links.forEach((link: any) => { this.links.update({ id: link.id, hidden: false }); });
   }
 
-  enablePathSelection(): void {}
+  enablePathSelection(): void {
+    this.clearHighlightedNodesLinks();
+    this.pathSelection = true;
+    this.openSnackBar('Path selection enabled');
 
+    this.nodes.forEach((node: any) => {
+      this.nodes.update({ id: node.id, shapeProperties: { borderDashes: [10, 10] } });
+    });
+
+    this.links.forEach((link: any) => {
+      this.links.update({ id: link.id, dashes: [10, 10] });
+    });
+  }
+
+  disablePathSelection(): void {
+    this.pathSelection = false;
+
+    this.openSnackBar('Path selection disabled');
+    this.nodes.forEach((node: any) => {
+      this.nodes.update({ id: node.id, shapeProperties: { borderDashes: false } });
+    });
+
+    this.links.forEach((link: any) => {
+      this.links.update({ id: link.id, dashes: false });
+    });
+  }
+
+  displayPathSelection(): void {
+    this.pathSelected = true;
+
+    this.openSnackBar('Displaying path');
+    this.nodes.forEach((node: any) => {
+      if (!this.selectedNodes.has(node.id)) this.nodes.update({ id: node.id, hidden: true });
+    });
+
+    this.links.forEach((link: any) => {
+      if (!this.selectedNodes.has(link.from) || !this.selectedNodes.has(link.to)) {
+        this.links.update({ id: link.id, hidden: true });
+      } else {
+        this.links.update({ id: link.id, dashes: false });
+      }
+    });
+
+    this.pathSelection = false;
+  }
 
   selectedItem(event: Event): void {
-    // this.highlightConnections(event);   
     this.db.getAsEvent(event).then((success) => {
-      if(!this.networkInitialized) {
+      if (!this.networkInitialized) {
         this.setupData(success);
         this.initNetwork();
         this.initTimeline();
@@ -121,19 +181,38 @@ export class PersonOrganizationComponent implements AfterViewInit {
       }
     });
   }
-  
+
+  private openSnackBar(message: string) {
+    this.snackBar.open(message, 'close', {
+      duration: 750,
+    });
+  }
+
   private filterEvents(value: string): Array<Event> {
     const filterValue = value.toLowerCase();
     return this.items.filter(event => event.name.toLowerCase().indexOf(filterValue) === 0);
   }
 
+  getTotalRelationshipCount(object: any) {
+    let count = 0;
+
+    if (object.events) count += object.events.length;
+    if (object.locations) count += object.locations.length;
+    if (object.historicEvents) count += object.historicEvents.length;
+    if (object.themes) count += object.themes.length;
+    if (object.sources) count += object.sources.length;
+    if (object.peopleOrganizations) count += object.peopleOrganizations.length;
+
+    return count;
+  }
+
   setupData(data: any): void {
     // ALL NODES (everything related to the ego node)
-    if(!this.checkIfNodeExists(data.objectId)) {
+    if (!this.checkIfNodeExists(data.objectId)) {
       let root = data;
       root['objectType'] = 'event';
       root['id'] = data.objectId;
-      root['label'] = data.name;
+      root['label'] = `${data.name} (${this.getTotalRelationshipCount(data)})`;
       root['color'] = this.colors.get('event');
       root['hidden'] = false;
       this.nodes.add(root);
@@ -144,202 +223,46 @@ export class PersonOrganizationComponent implements AfterViewInit {
         title: root.name,
         content: root.name,
         id: root.objectId,
-        type:  this.getTimeType(root.startDate, root.endDate),
+        type: this.getTimeType(root.startDate, root.endDate),
         className: 'event',
         style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
       });
     }
-    for(let i = 0; i < data.events.length; i++) {
+
+    for (let i = 0; i < data.events.length; i++) {
       let e = data.events[i];
-        let node = e.event;
-        node['objectType'] = 'event';
-        node['id'] = e.event.objectId;
-        node['label'] = e.event.name;
-        node['color'] = this.colors.get('event');
-        node['hidden'] = false;
-        this.nodes.add(node);
-
-        this.events.add({
-          start: node.startDate,
-          end: node.endDate ? node.endDate : node.startDate,
-          title: node.name,
-          content: node.name,
-          id: node.objectId,
-          type:  this.getTimeType(node.startDate, node.endDate),
-          className: 'event',
-          style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
-        });
-    }
-    for(let i = 0; i < data.themes.length; i++) {
-      let t = data.themes[i];
-        let node = t.theme;
-        node['objectType'] = 'theme';
-        node['id'] = t.theme.objectId;
-        node['label'] = t.theme.name;
-        node['color'] = this.colors.get('theme');
-        node['hidden'] = false;
-        this.nodes.add(node);
-    }
-    for(let i = 0; i < data.locations.length; i++) {
-      let l = data.locations[i];
-        let node = l.location;
-        node['objectType'] = 'location';
-        node['id'] = l.location.objectId;
-        node['label'] = l.location.name;
-        node['color'] = this.colors.get('location');
-        node['hidden'] = false;
-        this.nodes.add(node);
-    }
-    for(let i = 0; i < data.historicEvents.length; i++) {
-      let h = data.historicEvents[i];
-        let node = h.historicEvent;
-        node['objectType'] = 'historicevent';
-        node['id'] = h.historicEvent.objectId;
-        node['label'] = h.historicEvent.name;
-        node['color'] = this.colors.get('historicevent');
-        node['hidden'] = false;
-        this.nodes.add(node);
-          this.events.add({
-            start: node.startDate,
-            end: node.endDate ? node.endDate : node.startDate,
-            title: node.name,
-            id: node.objectId,
-            content: node.name,
-            type: 'background',
-            style: `background-color: ${this.colors.get('historicevent')}0D;`
-          });
-    }
-    for(let i = 0; i < data.peopleOrganizations.length; i++) {
-      let p = data.peopleOrganizations[i];
-      if(!this.checkIfNodeExists(p.personOrganization.objectId)) {
-        let node = p.personOrganization;
-        node['objectType'] = 'personorganization';
-        node['id'] = p.personOrganization.objectId;
-        node['label'] = p.personOrganization.name;
-        node['color'] = this.colors.get('personorganization');
-        node['hidden'] = false;
-        this.nodes.add(node);
-      }
+      this.addDataItems(data, e, 'event');
     }
 
-    for(let i = 0; i < data.sources.length; i++) {
-      let s = data.sources[i];
-        let node = s.source;
-        node['objectType'] = 'source';
-        node['id'] = s.source.objectId;
-        node['label'] = s.source.name;
-        node['color'] = this.colors.get('source');
-        node['hidden'] = false;
-        this.nodes.add(node);
+    for (let i = 0; i < data.themes.length; i++) {
+      let e = data.themes[i];
+      this.addDataItems(data, e, 'theme');
+    }
+    for (let i = 0; i < data.locations.length; i++) {
+      let e = data.locations[i];
+      this.addDataItems(data, e, 'location')
+    }
+    for (let i = 0; i < data.historicEvents.length; i++) {
+      let e = data.historicEvents[i];
+      this.addDataItems(data, e, 'historicEvent');
+    }
+    for (let i = 0; i < data.peopleOrganizations.length; i++) {
+      let e = data.peopleOrganizations[i];
+      this.addDataItems(data, e, 'personOrganization')
     }
 
-
-    // ALL LINKS
-    data.events.forEach((e: any) => {
-      if(!this.checkIfLinkExists(data.objectId, e.event.objectId)) {
-        this.links.add({
-          source: data,
-          from: data.objectId,
-          target: e.event,
-          to: e.event.objectId,
-          label: e.relationship,
-          color: this.colors.get('event'),
-          hidden: false,
-          font: {
-            align: 'middle'
-          }
-        });
-      }
-    });
-    data.themes.forEach((t: any) => {
-      if(!this.checkIfLinkExists(data.objectId, t.theme.objectId)) {
-        this.links.add({
-          source: data,
-          from: data.objectId,
-          target: t.theme,
-          to: t.theme.objectId,
-          label: t.relationship,
-          color: this.colors.get('themes'),
-          hidden: false,
-          font: {
-            align: 'middle'
-          }
-        });
-      }
-    });
-    data.locations.forEach((e: any) => {
-      if(!this.checkIfLinkExists(data.objectId, e.location.objectId)) {
-        this.links.add({
-          source: data,
-          from: data.objectId,
-          target: e.location,
-          to: e.location.objectId,
-          label: e.relationship,
-          color: this.colors.get('locations'),
-          hidden: false,
-          font: {
-            align: 'middle'
-          }
-        });
-      }
-    });
-    data.historicEvents.forEach((h: any) => {
-      if(!this.checkIfLinkExists(data.objectId, h.historicEvent.objectId)) {
-        this.links.add({
-          source: data,
-          from: data.objectId,
-          target: h.historicEvent,
-          to: h.historicEvent.objectId,
-          label: h.relationship,
-          color: this.colors.get('historicevent'),
-          hidden: false,
-          font: {
-            align: 'middle'
-          }
-        });
-      }
-    });
-    data.peopleOrganizations.forEach((p: any) => {
-      if(!this.checkIfLinkExists(data.objectId, p.personOrganization.objectId)) {
-        this.links.add({
-          source: data,
-          from: data.objectId,
-          target: p.personOrganization,
-          to: p.personOrganization.objectId,
-          label: p.relationship,
-          color: this.colors.get('personorganization'),
-          hidden: false,
-          font: {
-            align: 'middle'
-          }
-        });
-      }
-    });
-    data.sources.forEach((s: any) => {
-      if(!this.checkIfLinkExists(data.objectId, s.source.objectId)) {
-        this.links.add({
-          source: data,
-          from: data.objectId,
-          target: s.source,
-          to: s.source.objectId,
-          label: s.relationship,
-          color: this.colors.get('source'),
-          hidden: false,
-          font: {
-            align: 'middle'
-          }
-        });
-      }
-    });
+    for (let i = 0; i < data.sources.length; i++) {
+      let e = data.sources[i];
+      this.addDataItems(data, e, 'source');
+    }
   }
 
   checkIfNodeExists(objectId: string): boolean {
     // return this.nodes.get(objectId) !== null;
-
     let nodeExists = false;
 
     this.nodes.forEach((n: any) => {
-      if(n.objectId === objectId) {
+      if (n.objectId === objectId) {
         nodeExists = true;
         return nodeExists;
       }
@@ -358,13 +281,13 @@ export class PersonOrganizationComponent implements AfterViewInit {
     let linkExists = false;
 
     this.links.forEach((l: any) => {
-      if(from === l.from && to === l.to || 
+      if (from === l.from && to === l.to ||
         from === l.to && to === l.from) {
         linkExists = true;
         return linkExists;
       }
     });
-    
+
     return linkExists;
   }
 
@@ -375,14 +298,19 @@ export class PersonOrganizationComponent implements AfterViewInit {
     this.startDate = '';
     this.endDate = '';
     this.eventCtrl.setValue('');
+
+    this.pathSelection = false;
+    this.typeSelected = false;
+
+    this.selectedNodes = new Set<any>();
   }
 
   updateData(data: any): void {
-    if(!this.checkIfNodeExists(data.objectId)) {
+    if (!this.checkIfNodeExists(data.objectId)) {
       let root = data;
       root['objectType'] = 'event';
       root['id'] = root.objectId;
-      root['label'] = data.name;
+      root['label'] = `${root.name} (${this.getTotalRelationshipCount(root)})`;
       root['color'] = this.colors.get('event');
       root['shape'] = 'box';
       root['hidden'] = false;
@@ -394,299 +322,115 @@ export class PersonOrganizationComponent implements AfterViewInit {
         title: root.name,
         id: root.objectId,
         content: root.name,
-        type:  this.getTimeType(root.startDate, root.endDate),
+        type: this.getTimeType(root.startDate, root.endDate),
         className: 'event',
         style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
       });
     }
-    
-    if(data.events) {  
-      for(let i = 0; i < data.events.length; i++) {
+
+    if (data.events) {
+      for (let i = 0; i < data.events.length; i++) {
         let e = data.events[i];
-        // NODES
-        if(!this.checkIfNodeExists(e.event.objectId)) {
-          let node = e.event;
-          node['objectType'] = 'event';
-          node['id'] = e.event.objectId;
-          node['label'] = e.event.name;
-          node['color'] = this.colors.get('event');
-          node['hidden'] = false;
-          this.nodes.add(node);
-
-          this.events.add({
-            start: node.startDate,
-            end: node.endDate ? node.endDate : node.startDate,
-            title: node.name,
-            id: node.objectId,
-            content: node.name,
-            type:  this.getTimeType(node.startDate, node.endDate),
-            className: 'event',
-            style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
-          });
-          // if node doesnt exist the link doesnt as well
-          if(this.checkIfLinkExists(data.objectId, e.event.objectId)) continue;
-          this.links.add({
-            source: data,
-            from: data.objectId,
-            target: e.event,
-            to: e.event.objectId,
-            label: e.relationship,
-            color: this.colors.get('event'),
-            hidden: false,
-            font: {
-              align: 'middle'
-            }
-          });
-        } else {
-          if(this.checkIfLinkExists(data.objectId, e.event.objectId)) continue;
-          this.links.add({
-            source: data,
-            from: data.objectId,
-            target: e.event,
-            to: e.event.objectId,
-            label: e.relationship,
-            color: this.colors.get('event'),
-            hidden: false,
-            font: {
-              align: 'middle'
-            }
-          });
-        }
+        this.addDataItems(data, e, 'event');
       }
     }
-    if(data.locations) {
-      for(let i = 0; i < data.locations.length; i++) {
+    if (data.locations) {
+      for (let i = 0; i < data.locations.length; i++) {
         let e = data.locations[i];
-        // NODES
-        if(!this.checkIfNodeExists(e.location.objectId)) {
-          let node = e.location;
-          node['objectType'] = 'location';
-          node['id'] = e.location.objectId;
-          node['label'] = e.location.name;
-          node['color'] = this.colors.get('location');
-          node['hidden'] = false;
-          this.nodes.add(node);
-          if(this.checkIfLinkExists(data.objectId, e.location.objectId)) continue;
-          this.links.add({
-            source: data,
-            from: data.objectId,
-            target: e.location,
-            to: e.location.objectId,
-            label: e.relationship,
-            color: this.colors.get('location'),
-            hidden: false,
-            font: {
-              align: 'middle'
-            }
-          });
-        } else {
-          if(this.checkIfLinkExists(data.objectId, e.location.objectId)) continue;
-          this.links.add({
-            source: data,
-            from: data.objectId,
-            target: e.location,
-            to: e.location.objectId,
-            label: e.relationship,
-            color: this.colors.get('location'),
-            hidden: false,
-            font: {
-              align: 'middle'
-            }
-          });
-        } 
+        this.addDataItems(data, e, 'location');
       }
     }
 
-    if(data.peopleOrganizations) {
-      for(let i = 0; i < data.peopleOrganizations.length; i++) {
+    if (data.peopleOrganizations) {
+      for (let i = 0; i < data.peopleOrganizations.length; i++) {
         let e = data.peopleOrganizations[i];
-        // NODES
-        if(!this.checkIfNodeExists(e.personOrganization.objectId)) {
-          let node = e.personOrganization;
-          node['objectType'] = 'personorganization';
-          node['id'] = e.personOrganization.objectId;
-          node['label'] = e.personOrganization.name;
-          node['color'] = this.colors.get('personorganization');
-          node['hidden'] = false;
-          this.nodes.add(node);
-          if(this.checkIfLinkExists(data.objectId, e.personOrganization.objectId)) continue;
-          this.links.add({
-            source: data,
-            from: data.objectId,
-            target: e.personOrganization,
-            to: e.personOrganization.objectId,
-            label: e.relationship,
-            color: this.colors.get('personorganization'),
-            hidden: false,
-            font: {
-              align: 'middle'
-            }
-          });
-        } else {
-          if(this.checkIfLinkExists(data.objectId, e.personOrganization.objectId)) continue;
-          this.links.add({
-            source: data,
-            from: data.objectId,
-            target: e.personOrganization,
-            to: e.personOrganization.objectId,
-            label: e.relationship,
-            color: this.colors.get('personorganization'),
-            hidden: false,
-            font: {
-              align: 'middle'
-            }
-          });
-        }
+        this.addDataItems(data, e, 'personOrganization');
       }
     }
 
-    if(data.sources) {
-      for(let i = 0; i < data.sources.length; i++) {
+    if (data.sources) {
+      for (let i = 0; i < data.sources.length; i++) {
         let e = data.sources[i];
-        // NODES
-        if(!this.checkIfNodeExists(e.source.objectId)) {
-          let node = e.source;
-          node['objectType'] = 'source';
-          node['id'] = e.source.objectId;
-          node['label'] = e.source.name;
-          node['color'] = this.colors.get('source');
-          node['hidden'] = false;
-          this.nodes.add(node);
-          if(this.checkIfLinkExists(data.objectId, e.source.objectId)) continue;
-          this.links.add({
-            source: data,
-            from: data.objectId,
-            target: e.source,
-            to: e.source.objectId,
-            label: e.relationship,
-            color: this.colors.get('source'),
-            hidden: false,
-            font: {
-              align: 'middle'
-            }
-          });
-        } else {
-          if(this.checkIfLinkExists(data.objectId, e.source.objectId)) continue;
-          this.links.add({
-            source: data,
-            from: data.objectId,
-            target: e.source,
-            to: e.source.objectId,
-            label: e.relationship,
-            color: this.colors.get('source'),
-            hidden: false,
-            font: {
-              align: 'middle'
-            }
-          });
-        }
+        this.addDataItems(data, e, 'source');
       }
     }
 
-    if(data.themes) {
-      for(let i = 0; i < data.themes.length; i++) {
+    if (data.themes) {
+      for (let i = 0; i < data.themes.length; i++) {
         let e = data.themes[i];
-        // NODES
-        if(!this.checkIfNodeExists(e.theme.objectId)) {
-          let node = e.theme;
-          node['objectType'] = 'theme';
-          node['id'] = e.theme.objectId;
-          node['label'] = e.theme.name;
-          node['color'] = this.colors.get('theme');
-          node['hidden'] = false;
-          this.nodes.add(node);
-          if(this.checkIfLinkExists(data.objectId, e.theme.objectId)) continue;
-          this.links.add({
-            source: data,
-            from: data.objectId,
-            target: e.theme,
-            to: e.theme.objectId,
-            label: e.relationship,
-            color: this.colors.get('theme'),
-            hidden: false,
-            font: {
-              align: 'middle'
-            }
-          });
-        } else {
-          if(this.checkIfLinkExists(data.objectId, e.theme.objectId)) continue;
-          this.links.add({
-            source: data,
-            from: data.objectId,
-            target: e.theme,
-            to: e.theme.objectId,
-            label: e.relationship,
-            color: this.colors.get('theme'),
-            hidden: false,
-            font: {
-              align: 'middle'
-            }
-          });
-        }
+        this.addDataItems(data, e, 'theme');
       }
     }
 
-    if(data.historicEvents) {
-      for(let i = 0; i < data.historicEvents.length; i++) {
+    if (data.historicEvents) {
+      for (let i = 0; i < data.historicEvents.length; i++) {
         let e = data.historicEvents[i];
-        // NODES
-        if(!this.checkIfNodeExists(e.historicEvent.objectId)) {
-          let node = e.historicEvent;
-          node['objectType'] = 'historicevent';
-          node['id'] = e.historicEvent.objectId;
-          node['label'] = e.historicEvent.name;
-          node['color'] = this.colors.get('historicevent');
-          node['hidden'] = false;
-          this.nodes.add(node);
-            this.events.add({
-              start: node.startDate,
-              end: node.endDate ? node.endDate : node.startDate,
-              title: node.name,
-              id: node.objectId,
-              content: node.name,
-              type: 'background',
-              style: `background-color: ${this.colors.get('historicevent')}0D;`
-            });
-          if(this.checkIfLinkExists(data.objectId, e.historicEvent.objectId)) continue;
-          this.links.add({
-            source: data,
-            from: data.objectId,
-            target: e.historicEvent,
-            to: e.historicEvent.objectId,
-            label: e.relationship,
-            color: this.colors.get('historicevent'),
-            hidden: false,
-            font: {
-              align: 'middle'
-            }
-          });
-        } else {
-          if(this.checkIfLinkExists(data.objectId, e.historicEvent.objectId)) continue;
-          this.links.add({
-            source: data,
-            from: data.objectId,
-            target: e.historicEvent,
-            to: e.historicEvent.objectId,
-            label: e.relationship,
-            color: this.colors.get('historicevent'),
-            hidden: false,
-            font: {
-              align: 'middle'
-            }
-          });
-        }
+        this.addDataItems(data, e, 'historicEvent');
       }
     }
 
-    
+
     this.timeline.focus(this.events.map((e: any) => { return e.id; }), { animation: { duration: 250, easingFunction: 'easeInOutCubic' } });
-    let interval = this.timeline.getWindow();
-    this.startDate = moment(interval.start).year();
-    this.endDate = moment(interval.end).year();
+    this.getMinMaxDate();
+  }
+
+  addDataItems(parent: any, data: any, type: string): void {
+    if (!this.checkIfNodeExists(data[type].objectId)) {
+      // create node and add to nodes
+      let node = data[type];
+      node['objectType'] = type.toLowerCase();
+      node['id'] = data[type].objectId;
+      node['label'] = `${data[type].name} (${this.getTotalRelationshipCount(data[type])})`;
+      node['color'] = this.colors.get(type.toLowerCase());
+      node['hidden'] = false;
+      this.nodes.add(node);
+
+      // create event from node and add to events (TL)
+      if (node.objectType === 'event' || node.objectType === 'historicevent') {
+        this.events.add({
+          start: node.startDate,
+          end: node.endDate ? node.endDate : node.startDate,
+          title: node.name,
+          id: node.objectId,
+          content: node.name,
+          type: 'background',
+          style: `background-color: ${this.colors.get(type.toLowerCase())}0D;`
+        });
+      }
+
+      // create links for node and add to links
+      if (this.checkIfLinkExists(parent.objectId, data[type].objectId)) return;
+      this.links.add({
+        source: data,
+        from: parent.objectId,
+        target: data[type],
+        to: data[type].objectId,
+        label: data.relationship,
+        color: this.colors.get(type.toLowerCase()),
+        hidden: false,
+        font: {
+          align: 'middle'
+        }
+      });
+    } else {
+      if (this.checkIfLinkExists(parent.objectId, data[type].objectId)) return;
+      this.links.add({
+        source: data,
+        from: parent.objectId,
+        target: data[type],
+        to: data[type].objectId,
+        label: data.relationship,
+        color: this.colors.get(type.toLowerCase()),
+        hidden: false,
+        font: {
+          align: 'middle'
+        }
+      });
+    }
   }
 
   lookupItem(item: any): void {
-    switch(item.objectType) {
+    switch (item.objectType) {
       case 'event':
         this.db.getAsEvent(item).then((success) => {
           this.updateData(success);
@@ -754,29 +498,64 @@ export class PersonOrganizationComponent implements AfterViewInit {
 
     this.network = new Network(this.networkContainer.nativeElement, data, options);
 
-    // TODO: Semtnatic path finding implementation (should be switch to enable/disable selection)
     this.network.on('doubleClick', ($event: any) => {
-      let nodeId = $event.nodes[0];
-      let node = this.nodes.get(nodeId);
-      if(!node) return;
+      let node = this.nodes.get($event.nodes[0]);
+
+      if (!node) return;
       this.lookupItem(node);
     });
 
-    // TODO: implement click handler to popup side panel with detail info
-    // TODO: also implement side panel 
     this.network.on('click', ($event: any) => {
-      console.log('click');
-      console.log($event);
-      if($event.event.srcEvent.ctrlKey) { console.log('ctrl key pressed on click '); }
-      if($event.event.srcEvent.altKey)  { console.log('alt key pressed on click '); }
+      // path selection
+      if (this.pathSelection && $event.nodes.length > 0) {
+        this.selectedNodes.add($event.nodes[0]);
+        this.nodes.update({ id: $event.nodes[0], shapeProperties: { borderDashes: false } });
+
+        return;
+      }
+
+      // collapse node
+      if ($event.event.srcEvent.ctrlKey) {
+        let collapseNodes = new Set<any>();
+        this.links.forEach((link: any) => {
+          if (link.from === $event.nodes[0]) collapseNodes.add(link.to);
+        });
+
+        collapseNodes.forEach((c: string) => {
+          this.nodes.remove(c);
+        });
+
+        return;
+      }
+
+      // remove node
+      if ($event.event.srcEvent.altKey) {
+        this.nodes.remove($event.nodes[0]);
+
+        return;
+      }
+
+      // if we made it all the way down here that means we are selecting nodes
+      if ($event.nodes.length > 0) {
+        this.nodes.forEach((node: any) => {
+          if (node.id === $event.nodes[0]) this.selectedNode = node;
+        });
+        // only highlight in timeline if we have a temporal attribute
+        if (this.selectedNode.startDate) this.highlightInTimeline(this.selectedNode);
+      } else {
+        this.selectedNode = null;
+      }
     });
 
     this.network.on('hoverEdge', ($event: any) => {
-      if(!$event.edge) return;
+      // dont hover when ctrl or alt key pressed
+      if ($event.event.ctrlKey || $event.event.ctrlKey) return;
+      // dont hover if no edge, path selection or type selection are active
+      if (!$event.edge || this.pathSelection || this.typeSelected || this.pathSelected) return;
       let connectedIds = new Set<string>();
-      
-      this.links.forEach((link: any) => { 
-        if(link.id !== $event.edge) {
+
+      this.links.forEach((link: any) => {
+        if (link.id !== $event.edge) {
           this.links.update({ id: link.id, hidden: true });
         } else {
           connectedIds.add(link.from);
@@ -785,23 +564,27 @@ export class PersonOrganizationComponent implements AfterViewInit {
       });
 
       this.nodes.forEach((node: any) => {
-        if(!connectedIds.has(node.id)) {
-          this.nodes.update({id: node.id, hidden: true});
+        if (!connectedIds.has(node.id)) {
+          this.nodes.update({ id: node.id, hidden: true });
         }
       })
 
     });
 
     this.network.on('blurEdge', ($event: any) => {
-      this.nodes.forEach((node: any) => { this.nodes.update({id: node.id, hidden: false }); });
-      this.links.forEach((link: any) => { this.links.update({id: link.id, hidden: false }); });
+      if (!$event.edge || this.pathSelection || this.typeSelected || this.pathSelected) return;
+      this.nodes.forEach((node: any) => { this.nodes.update({ id: node.id, hidden: false }); });
+      this.links.forEach((link: any) => { this.links.update({ id: link.id, hidden: false }); });
     });
 
     this.network.on('hoverNode', ($event: any) => {
-      if(!$event.node) return;
+      // dont hover when ctrl or alt key pressed
+      if ($event.event.ctrlKey || $event.event.altKey) return;
+      // dont hover if no node, path selection or type selection are active
+      if (!$event.node || this.pathSelection || this.typeSelected || this.pathSelected) return;
       let connectedIds = new Set<string>();
       this.links.forEach((link: any) => {
-        if(link.from !== $event.node && link.to !== $event.node) {
+        if (link.from !== $event.node && link.to !== $event.node) {
           // we should only be looking at links ending in or starting from $event.node (object id)
           this.links.update({ id: link.id, hidden: true });
         } else {
@@ -811,31 +594,39 @@ export class PersonOrganizationComponent implements AfterViewInit {
       });
 
       this.nodes.forEach((node: any) => {
-        if(!connectedIds.has(node.id)) {
-          this.nodes.update({id: node.id, hidden: true });
+        if (!connectedIds.has(node.id)) {
+          this.nodes.update({ id: node.id, hidden: true });
         }
       });
     });
 
     this.network.on('blurNode', ($event: any) => {
-      this.nodes.forEach((node: any) => { this.nodes.update({id: node.id, hidden: false}); });
-      this.links.forEach((link: any) => { this.links.update({id: link.id, hidden: false}); });
+      if (!$event.node || this.pathSelection || this.typeSelected || this.pathSelected) return;
+      this.nodes.forEach((node: any) => { this.nodes.update({ id: node.id, hidden: false }); });
+      this.links.forEach((link: any) => { this.links.update({ id: link.id, hidden: false }); });
     });
 
     this.networkInitialized = true;
+  }
+
+  getMinMaxDate(): void {
+    this.startDate = moment(this.events.min('start').start).year();
+    this.endDate = moment(this.events.max('end').end).year();
   }
 
   initTimeline(): void {
     let options = {
       minHeight: '100%'
     };
+
     this.timeline = new Timeline(this.timelineContainer.nativeElement, this.events, options);
-    this.timeline.on('click', ($event: any) => { 
-      if(!$event.item) return;
+
+    this.timeline.on('click', ($event: any) => {
+      if (!$event.item) return;
 
       let event: Event;
       this.events.forEach((e: any) => {
-        if(e.id === $event.item) {
+        if (e.id === $event.item) {
           event = e;
           return;
         }
@@ -845,28 +636,21 @@ export class PersonOrganizationComponent implements AfterViewInit {
     });
 
     this.timelineInitialized = true;
+    this.getMinMaxDate();
 
-    let interval = this.timeline.getWindow();
-    this.startDate = moment(interval.start).year();
-    this.endDate = moment(interval.end).year();
-    
     this.timeline.fit();
   }
 
   highlightInTimeline(node: any): void {
     // if(!node || node.objectType !== 'event' || node.objectId !== 'historicevent') return;
-    if(!node) return;
-    
+    if (!node) return;
+
     this.timeline.focus(node.objectId);
-    console.log('[TL] highlighting node');
-    console.log(node);
   }
 
   highlightInNetwork(node: any): void {
-    if(!node) return;
+    if (!node) return;
 
-    this.network.focus(node.id, { animation: { duration: 250, easingFunction: 'easeInOutCubic' }});
-    console.log('[N] highlighting node');
-    console.log(node);
+    this.network.focus(node.id, { animation: { duration: 250, easingFunction: 'easeInOutCubic' } });
   }
 }
