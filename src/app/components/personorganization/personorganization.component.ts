@@ -170,6 +170,13 @@ export class PersonOrganizationComponent implements AfterViewInit {
     this.pathSelection = false;
   }
 
+  resetPathSelection(): void {
+    this.selectedNodes = new Set<string>();
+    this.pathSelected = false;
+    this.disablePathSelection();
+    this.clearHighlightedNodesLinks();
+  }
+
   selectedItem(event: Event): void {
     this.db.getAsEvent(event).then((success) => {
       if (!this.networkInitialized) {

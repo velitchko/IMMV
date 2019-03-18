@@ -2,6 +2,7 @@
     <button mat-raised-button [color]="pathSelection ? 'primary' : ''" (click)="enablePathSelection()"><mat-icon>timeline</mat-icon></button>
     <button mat-raised-button (click)="displayPathSelection()"><mat-icon>check</mat-icon></button>
     <button mat-raised-button (click)="disablePathSelection()"><mat-icon>clear</mat-icon></button>
+    <button mat-raised-button color="warn" (click)="resetPathSelection()"><mat-icon>refresh</mat-icon></button>
 </div>
 <div class="detail-panel" *ngIf="selectedNode">
     <h2>{{ selectedNode.name }}</h2>
