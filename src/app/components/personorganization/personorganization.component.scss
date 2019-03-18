@@ -15,6 +15,7 @@
     top: 2em;
     width: 100%;
     height: calc(100% - 2em);
+    z-index: 999;
 }
 
 #network {
@@ -72,6 +73,30 @@ stroke: #999;
     & p {
         color: white;
     }
+}
+
+.network-controls {
+    position: absolute;
+    top: 8em;
+    left: 1em;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 35px;
+    height: 112px; // 32.5px per item
+    z-index: 1000;
+}
+
+.detail-panel {
+    position: absolute;
+    top: 2em;
+    right: 1em;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 400px;
+    height: auto;
+    z-index: 1000;
 }
 
 ::ng-deep .tooltip {	
