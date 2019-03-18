@@ -49,16 +49,15 @@ export class DatabaseService {
         }
     }
 
-    private populateRelationships(id: string, relationship: string, endPoint: string): Promise<any> {
+    private populateRelationships(id: string, relationship: string, endPoint: string, role?: string): Promise<any> {
         let promise = new Promise<any>((resolve, reject) => {
             this.http.get(`${environment.API_URL}${endPoint}/${id}`)
                 .subscribe((response: any) => {
                     if (response.data) {
-                        // need to check what endpoint we are calling
-                        // and get object as that type TODO
                         resolve({
                             entry: this.getAsObjectType(endPoint, response),
                             relationship: relationship,
+                            role: role ? role : '',
                             type: endPoint
                         });
                     } else {
@@ -158,28 +157,53 @@ export class DatabaseService {
         let promiseArr = new Array<Promise<any>>();
         
         for (let e of json.events) {
+            if((typeof e.event) !== 'string' ) continue;
             promiseArr.push(this.populateRelationships(e.event, e.relationship, 'events'));
         }
         for (let pO of json.peopleOrganizations) {
-            promiseArr.push(this.populateRelationships(pO.personOrganization, pO.relationship, 'peopleorganizations'));
+            if((typeof pO.personOrganization) !== 'string' ) continue;
+            promiseArr.push(this.populateRelationships(pO.personOrganization, pO.relationship, 'peopleorganizations', pO.role));
         }
         for (let h of json.historicEvents) {
+            if((typeof h.historicEvent) !== 'string' ) continue;
             promiseArr.push(this.populateRelationships(h.historicEvent, h.relationship, 'historicevents'));
         }
         for (let t of json.themes) {
+            if((typeof t.theme) !== 'string' ) continue;
             promiseArr.push(this.populateRelationships(t.theme, t.relationship, 'themes'));
         }
         for (let s of json.sources) {
+            if((typeof s.source) !== 'string' ) continue;
             promiseArr.push(this.populateRelationships(s.source, s.relationship, 'sources'));
         }
         for (let l of json.locations) {
+            if((typeof l.location) !== 'string' ) continue;
             promiseArr.push(this.populateRelationships(l.location, l.relationship, 'locations'));
         }
         for (let c of json.contributor) {
+            if((typeof c.personOrganization) !== 'string' ) continue;
             promiseArr.push(this.populateRelationships(c.personOrganization, 'isContributor', 'peopleorganizations'));
         }
         for (let c of json.creator) {
+            if((typeof c.personOrganization) !== 'string' ) continue;
             promiseArr.push(this.populateRelationships(c.personOrganization, 'isCreator', 'peopleorganizations'));
+        }
+        // incase promise arr is empty -> we already have all the objects resolved -> return the event
+        if(promiseArr.length === 0) {
+            event.events = json.events;
+            event.historicEvents = json.historicEvents;
+            event.peopleOrganizations = json.peopleOrganizations;
+            event.contributor = json.contributor;
+            event.creator = json.creator;
+            event.locations = json.locations;
+            event.themes = json.themes;
+            event.sources = json.sources;
+
+            let promise = new Promise((resolve, reject) => {
+                resolve(event);
+            });
+
+            return promise;
         }
 
         return Promise.all(promiseArr).then((success) => {
@@ -189,7 +213,7 @@ export class DatabaseService {
                         event.themes.push({ theme: s.entry, relationship: s.relationship });
                         return;
                     case 'peopleorganizations':
-                        event.peopleOrganizations.push({ personOrganization: s.entry, relationship: s.relationship })
+                        event.peopleOrganizations.push({ personOrganization: s.entry, relationship: s.relationship, role: s.role })
                         if (s.relationship === 'isContributor') event.contributor.push({ personOrganization: s.entry, role: 'Contributor' });
                         if (s.relationship === 'isCreator') event.creator.push({ personOrganization: s.entry, role: 'Creator' });
                         return;
