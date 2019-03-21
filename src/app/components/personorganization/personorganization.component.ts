@@ -25,6 +25,7 @@ export class PersonOrganizationComponent implements AfterViewInit {
   pathSelection: boolean = false; // path selection mode
   typeSelected: boolean = false; // node type selection
   pathSelected: boolean = false; // when a path has been selected
+  mouseOver: boolean = false;
 
   eventCtrl = new FormControl();
   filteredEvents: Observable<Array<Event>>;
@@ -78,6 +79,7 @@ export class PersonOrganizationComponent implements AfterViewInit {
     this.pathSelection = false;
     this.pathSelected = false;
     this.typeSelected = false;
+    this.mouseOver = false;
 
     this.selectedNode = null;
     this.filteredEvents = this.eventCtrl.valueChanges
@@ -93,7 +95,6 @@ export class PersonOrganizationComponent implements AfterViewInit {
     });
   }
 
-  // TODO: set a boolean prohibiting the reseting on blurNode / blurEdge / hoverNode / hoverEdge?
   highlightNodeType($event: string): void {
     this.clearHighlightedNodesLinks();
     this.typeSelected = true;
@@ -116,6 +117,10 @@ export class PersonOrganizationComponent implements AfterViewInit {
         this.links.update({ id: link.id, hidden: true });
       }
     });
+  }
+
+  toggleMouseover(): void {
+    this.mouseOver = !this.mouseOver;
   }
 
   clearHighlightedNodesLinks(): void {
@@ -381,6 +386,51 @@ export class PersonOrganizationComponent implements AfterViewInit {
     this.getMinMaxDate();
   }
 
+  addEvent(event: Event, parent: any): void {
+    if (!this.checkIfNodeExists(event.objectId)) {
+      let root = event;
+      root['objectType'] = 'event';
+      root['id'] = root.objectId;
+      root['label'] = `${root.name} (${this.getTotalRelationshipCount(root)})`;
+      root['color'] = this.colors.get('event');
+      root['shape'] = 'box';
+      root['hidden'] = false;
+      this.nodes.add(root);
+
+      this.events.add({
+        start: root.startDate,
+        end: root.endDate ? root.endDate : root.startDate,
+        title: root.name,
+        id: root.objectId,
+        content: root.name,
+        type: this.getTimeType(root.startDate, root.endDate),
+        className: 'event',
+        style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
+      });
+    }
+
+    if(this.checkIfLinkExists(parent.objectId, event.objectId)) {
+      return;
+    }
+
+    let label = event.themes.find((e: any) => {
+      return e.theme === parent.objectId;
+    }).relationship;
+
+    this.links.add({
+      source: parent,
+      from: parent.objectId,
+      target: event,
+      to: event.objectId,
+      label: label,
+      color: this.colors.get('theme'),
+      hidden: false,
+      font: {
+        align: 'middle'
+      }
+    });
+  }
+
   addDataItems(parent: any, data: any, type: string): void {
     if (!this.checkIfNodeExists(data[type].objectId)) {
       // create node and add to nodes
@@ -400,8 +450,8 @@ export class PersonOrganizationComponent implements AfterViewInit {
           title: node.name,
           id: node.objectId,
           content: node.name,
-          type: 'background',
-          style: `background-color: ${this.colors.get(type.toLowerCase())}0D;`
+          type: (node.objectType === 'event') ? 'point' : 'background',
+          style: (node.objectType === 'event')  ? `background-color: ${this.colors.get(type.toLowerCase())}; border-radius: 20px;` :  `background-color: ${this.colors.get(type.toLowerCase())}0D;`
         });
       }
 
@@ -454,6 +504,11 @@ export class PersonOrganizationComponent implements AfterViewInit {
         });
         return;
       case 'theme':
+        // reverse lookup related events
+        this.db.getEventsByTheme(item).then((success) => {
+          success.forEach((s: Event) => { this.addEvent(s, item); });
+        });
+        // get themes too
         this.db.getAsTheme(item).then((success) => {
           this.updateData(success);
         });
@@ -558,7 +613,7 @@ export class PersonOrganizationComponent implements AfterViewInit {
       // dont hover when ctrl or alt key pressed
       if ($event.event.ctrlKey || $event.event.ctrlKey) return;
       // dont hover if no edge, path selection or type selection are active
-      if (!$event.edge || this.pathSelection || this.typeSelected || this.pathSelected) return;
+      if (!this.mouseOver || !$event.edge || this.pathSelection || this.typeSelected || this.pathSelected) return;
       let connectedIds = new Set<string>();
 
       this.links.forEach((link: any) => {
@@ -588,7 +643,7 @@ export class PersonOrganizationComponent implements AfterViewInit {
       // dont hover when ctrl or alt key pressed
       if ($event.event.ctrlKey || $event.event.altKey) return;
       // dont hover if no node, path selection or type selection are active
-      if (!$event.node || this.pathSelection || this.typeSelected || this.pathSelected) return;
+      if (!this.mouseOver || !$event.node || this.pathSelection || this.typeSelected || this.pathSelected) return;
       let connectedIds = new Set<string>();
       this.links.forEach((link: any) => {
         if (link.from !== $event.node && link.to !== $event.node) {
@@ -623,7 +678,10 @@ export class PersonOrganizationComponent implements AfterViewInit {
 
   initTimeline(): void {
     let options = {
-      minHeight: '100%'
+      minHeight: '100%',
+      maxHeight: '100%',
+      stack: true,
+      snap: true
     };
 
     this.timeline = new Timeline(this.timelineContainer.nativeElement, this.events, options);
