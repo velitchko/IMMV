@@ -9,7 +9,6 @@ import { Location } from '../models/location';
 import { Theme } from '../models/theme';
 import { Source } from '../models/source';
 
-
 @Injectable()
 export class DatabaseService {
     events: Array<Event>;
@@ -769,5 +768,28 @@ export class DatabaseService {
         }).catch((err) => {
             console.log(err);
         });
+    }
+
+    async getEventsByTheme(theme: Theme): Promise<any> {
+        let promise = new Promise((resolve, reject) => {
+            this.http.post(environment.API_URL + 'query', { query: theme.objectId }).subscribe((success: any) => {
+                if(success.message === 'OK') {
+                    let eventArr = new Array<Event>();
+                    success.results.forEach((s: any) => {
+                        eventArr.push(this.getAsSimpleEvent(s));
+                    });
+
+                    resolve(eventArr);
+                    return;
+                }
+                if(success.message === 'ERROR') { 
+                    console.error(success.error);
+                    reject(success);
+                    return;
+                }
+            });
+        });
+
+        return promise;
     }
 }
