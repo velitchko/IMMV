@@ -1,5 +1,6 @@
 import { ngExpressEngine, NgSetupOptions } from '@nguniversal/express-engine';
 import * as express from 'express';
+import * as bodyParser from 'body-parser';
 import * as mongoose from 'mongoose';
 import * as path from 'path';
 
@@ -21,7 +22,8 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
     if(err) console.log(err);
     console.log(`Connected to MongoDB/${DATABASE_COLLECTION}`);
   });
-  
+  // parse json
+  api.use(bodyParser.json())
   api.set('view engine', 'html');
   api.set('views', distPath);
 
@@ -263,6 +265,17 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
 
     Promise.all(promiseArr).then((success: any) => {
       res.status(200).json({ "message": "OK", results: success });
+    });
+  });
+
+  api.post('/api/v1/query', (req: express.Request, res: express.Response) => {
+    let query = { themes : { $elemMatch : { theme: mongoose.Types.ObjectId(req.body.query)}}};
+    EventSchema.find(query, (err, events) => {
+      if(err) {
+        console.log(err);
+        res.status(500).json({ "message": "ERROR", "error": err});
+      }
+      res.status(200).json({ "message": "OK", results: events});
     });
   });
 
