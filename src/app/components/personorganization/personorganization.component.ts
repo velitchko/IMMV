@@ -228,12 +228,12 @@ export class PersonOrganizationComponent implements AfterViewInit {
       let root = data;
       root['objectType'] = 'event';
       root['id'] = data.objectId;
-      root['label'] = `${data.name} (${this.getTotalRelationshipCount(data)})`;
+      root['label'] = `${data.name} ${this.getTotalRelationshipCount(data) ? `(${this.getTotalRelationshipCount(data)})` : ''}`;
       root['color'] = this.colors.get('event');
       root['hidden'] = false;
       this.nodes.add(root);
 
-      if(!this.checkIfEventExists(root.objectId)) {
+      if(!this.checkIfEventExists(root.objectId) && root.startDate) {
         this.events.add({
           start: root.startDate,
           end: root.endDate ? root.endDate : root.startDate,
@@ -328,12 +328,12 @@ export class PersonOrganizationComponent implements AfterViewInit {
       let root = data;
       root['objectType'] = 'event';
       root['id'] = root.objectId;
-      root['label'] = `${root.name} (${this.getTotalRelationshipCount(root)})`;
+      root['label'] = `${root.name} ${this.getTotalRelationshipCount(root) ? `(${this.getTotalRelationshipCount(root)})` : ''})`;
       root['color'] = this.colors.get('event');
       root['shape'] = 'box';
       root['hidden'] = false;
       this.nodes.add(root);
-      if(!this.checkIfEventExists(root.objectId)) {
+      if(!this.checkIfEventExists(root.objectId) && root.startDate) {
         this.events.add({
           start: root.startDate,
           end: root.endDate ? root.endDate : root.startDate,
@@ -398,12 +398,12 @@ export class PersonOrganizationComponent implements AfterViewInit {
       let root = event;
       root['objectType'] = 'event';
       root['id'] = root.objectId;
-      root['label'] = `${root.name} (${this.getTotalRelationshipCount(root)})`;
+      root['label'] = `${root.name} ${this.getTotalRelationshipCount(root) ? `(${this.getTotalRelationshipCount(root)})` : ''})`;
       root['color'] = this.colors.get('event');
       root['shape'] = 'box';
       root['hidden'] = false;
       this.nodes.add(root);
-      if(!this.checkIfEventExists(root.objectId)) {
+      if(!this.checkIfEventExists(root.objectId) && root.startDate) {
         this.events.add({
           start: root.startDate,
           end: root.endDate ? root.endDate : root.startDate,
@@ -445,13 +445,13 @@ export class PersonOrganizationComponent implements AfterViewInit {
       let node = data[type];
       node['objectType'] = type.toLowerCase();
       node['id'] = data[type].objectId;
-      node['label'] = `${data[type].name} (${this.getTotalRelationshipCount(data[type])})`;
+      node['label'] = `${data[type].name} ${this.getTotalRelationshipCount(data[type]) ? `(${this.getTotalRelationshipCount(data[type])})` : ''}`;
       node['color'] = this.colors.get(type.toLowerCase());
       node['hidden'] = false;
       this.nodes.add(node);
 
       // create event from node and add to events (TL)
-      if (node.objectType === 'event' || node.objectType === 'historicevent') {
+      if ((node.objectType === 'event' || node.objectType === 'historicevent') && node.startDate) {
         this.events.add({
           start: node.startDate,
           end: node.endDate ? node.endDate : node.startDate,
