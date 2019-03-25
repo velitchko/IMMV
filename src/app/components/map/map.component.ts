@@ -446,7 +446,7 @@ export class MapComponent implements OnChanges {
       mainMarker.name = event.name;
       mainMarker.fromSearch = false;
       mainMarker.startDate = event.startDate;
-      mainMarker.endDate = event.endDate;
+      mainMarker.endDate = event.endDate ? event.endDate : event.startDate;
       mainMarker.setOpacity(0.75);
       mainMarker.themes = event.themes; // need to add this so our cluster icon can compute the donut chart
       tempMarkers.push(mainMarker);
@@ -468,7 +468,7 @@ export class MapComponent implements OnChanges {
           marker.name = event.name;
           marker.fromSearch = false;
           marker.startDate = event.startDate;
-          marker.endDate = event.endDate;
+          marker.endDate = event.endDate ? event.endDate : event.startDate;
           marker.setOpacity(0.75);
           marker.themes = event.themes; // need to add this so our cluster icon can compute the donut chart
           tempMarkers.push(marker);
@@ -691,7 +691,7 @@ export class MapComponent implements OnChanges {
         marker.name = i.name;
         marker.fromSearch = false;
         marker.startDate =i.startDate;
-        marker.endDate = i.endDate;
+        marker.endDate = i.endDate ? i.endDate : i.startDate;
         marker.setOpacity(0.75);
         marker.themes = i.themes; // need to add this so our cluster icon can compute the donut chart
         this.markers.push(marker);
