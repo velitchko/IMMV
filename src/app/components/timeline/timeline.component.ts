@@ -144,22 +144,17 @@ export class TimelineComponent implements OnChanges {
     for(let i of this.items) {
     // if its a subevent we do not want to display an entry in the timeline
       if(!i.startDate ) continue;
-      //console.log(i);
+
       let type = 'point';
       let dateDiff = this.dateDifference(i.startDate, i.endDate);
-      //console.log(`diff is : ${dateDiff}`);
-      if(!i.endDate || i.startDate.valueOf() === i.endDate.valueOf() || dateDiff <= 1) {
-        //console.log(`${i.name} ${i.startDate} ${i.endDate}`);
-        type = 'point';
-      } else {
-        type = 'range';
-      }
-      // if(isNaN(i.endDate.getTime())) type = 'point';
+
+      type = !i.endDate || i.startDate.valueOf() === i.endDate.valueOf() || dateDiff <= 1 ? 'point' : 'range';
+
       let dataitem = {
         group: 0,
         id: i.objectId,
         start: i.startDate,
-        // end: i.endDate,
+        end: i.endDate ? i.endDate : i.startDate,
         //content: i.name,
         title: this.getHTMLTooltip(i),
         type: type,
