@@ -218,6 +218,10 @@ export class PersonOrganizationComponent implements AfterViewInit {
     return count;
   }
 
+  checkIfEventExists(id: string): boolean {
+    return this.events.get(id);
+  }
+
   setupData(data: any): void {
     // ALL NODES (everything related to the ego node)
     if (!this.checkIfNodeExists(data.objectId)) {
@@ -229,16 +233,18 @@ export class PersonOrganizationComponent implements AfterViewInit {
       root['hidden'] = false;
       this.nodes.add(root);
 
-      this.events.add({
-        start: root.startDate,
-        end: root.endDate ? root.endDate : root.startDate,
-        title: root.name,
-        content: root.name,
-        id: root.objectId,
-        type: this.getTimeType(root.startDate, root.endDate),
-        className: 'event',
-        style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
-      });
+      if(!this.checkIfEventExists(root.objectId)) {
+        this.events.add({
+          start: root.startDate,
+          end: root.endDate ? root.endDate : root.startDate,
+          title: root.name,
+          content: root.name,
+          id: root.objectId,
+          type: this.getTimeType(root.startDate, root.endDate),
+          className: 'event',
+          style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
+        });
+      }
     }
 
     for (let i = 0; i < data.events.length; i++) {
@@ -327,17 +333,18 @@ export class PersonOrganizationComponent implements AfterViewInit {
       root['shape'] = 'box';
       root['hidden'] = false;
       this.nodes.add(root);
-
-      this.events.add({
-        start: root.startDate,
-        end: root.endDate ? root.endDate : root.startDate,
-        title: root.name,
-        id: root.objectId,
-        content: root.name,
-        type: this.getTimeType(root.startDate, root.endDate),
-        className: 'event',
-        style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
-      });
+      if(!this.checkIfEventExists(root.objectId)) {
+        this.events.add({
+          start: root.startDate,
+          end: root.endDate ? root.endDate : root.startDate,
+          title: root.name,
+          id: root.objectId,
+          content: root.name,
+          type: this.getTimeType(root.startDate, root.endDate),
+          className: 'event',
+          style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
+        });
+      }
     }
 
     if (data.events) {
@@ -396,17 +403,18 @@ export class PersonOrganizationComponent implements AfterViewInit {
       root['shape'] = 'box';
       root['hidden'] = false;
       this.nodes.add(root);
-
-      this.events.add({
-        start: root.startDate,
-        end: root.endDate ? root.endDate : root.startDate,
-        title: root.name,
-        id: root.objectId,
-        content: root.name,
-        type: this.getTimeType(root.startDate, root.endDate),
-        className: 'event',
-        style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
-      });
+      if(!this.checkIfEventExists(root.objectId)) {
+        this.events.add({
+          start: root.startDate,
+          end: root.endDate ? root.endDate : root.startDate,
+          title: root.name,
+          id: root.objectId,
+          content: root.name,
+          type: this.getTimeType(root.startDate, root.endDate),
+          className: 'event',
+          style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
+        });
+      }
     }
 
     if(this.checkIfLinkExists(parent.objectId, event.objectId)) {
@@ -585,6 +593,7 @@ export class PersonOrganizationComponent implements AfterViewInit {
 
         collapseNodes.forEach((c: string) => {
           this.nodes.remove(c);
+          this.events.remove(c);
         });
 
         return;
@@ -681,7 +690,7 @@ export class PersonOrganizationComponent implements AfterViewInit {
       minHeight: '100%',
       maxHeight: '100%',
       stack: true,
-      snap: true
+      // snap: true
     };
 
     this.timeline = new Timeline(this.timelineContainer.nativeElement, this.events, options);
