@@ -89,7 +89,7 @@ export class MapComponent implements AfterViewInit {
         this.createHeatMap();
         
         // Event Selected 
-        this.mms.currentlySelectedEvent.subscribe((ev: Event) => {
+        this.mms.currentlySelectedEvent.subscribe((ev: string) => {
           if (!ev) {
             this.map.removeLayer(this.mainMarkerGroup);
             this.map.removeLayer(this.musicLayerGroup);
@@ -127,7 +127,7 @@ export class MapComponent implements AfterViewInit {
         });
 
         // comes from search
-        this.mms.currentlySelectedItems.subscribe((objectIdArr: Array<any>) => {
+        this.mms.currentlySelectedEvents.subscribe((objectIdArr: Array<any>) => {
           if (objectIdArr) {
             this.currentlySelectedItems = objectIdArr;
             this.highlightMarkers(this.currentlySelectedItems, false);
@@ -393,11 +393,7 @@ export class MapComponent implements AfterViewInit {
    */
   handleClick(): (e: any) => void {
     return (e: any) => {
-      let event = this.findEvent(e.target.objectId); // event we have clicked
-      console.log(event);
-      this.db.getAsEvent(event).then((success) => {
-        this.mms.setSelectedEvent(success);
-      });
+        this.mms.setSelectedEvent(e.target.objectId);
     }
   }
 
@@ -405,8 +401,9 @@ export class MapComponent implements AfterViewInit {
    * Creates a detail view of an events locations
    * @param event - the clicked or selected event
    */
-  createDetailMarkers(event: Event): void {
-    console.log('creating paths');
+  createDetailMarkers(id: string): void {
+    let event = this.db.getEventById(id);
+
     let markerIcon = L.divIcon({
       iconSize: [25, 25], // size of the icon
       className: 'default-map-marker',
