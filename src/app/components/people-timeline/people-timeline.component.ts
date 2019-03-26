@@ -38,7 +38,7 @@ export class PeopleTimelineComponent implements AfterViewInit {
         this.historicEvents = new Array<HistoricEvent>();
         this.searchCtrl = new FormControl();
        
-        this.db.getAllPeopleOrganizationsEvents()
+        this.db.getAllPeopleOrganizations()
         .then((success) => {
             this.peopleOrganizations = Array.from(success);
             this.filteredItems = this.searchCtrl.valueChanges
