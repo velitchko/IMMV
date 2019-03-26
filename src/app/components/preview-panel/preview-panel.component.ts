@@ -41,7 +41,6 @@ export class PreviewComponent {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-
     if (changes && this.event) {
       this.eventLoaded = true;
       this.eventMedia = new Source();
