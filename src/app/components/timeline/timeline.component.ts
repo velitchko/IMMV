@@ -195,7 +195,6 @@ export class TimelineComponent implements OnChanges {
    * TODO: double check this function
    */
   highlightItem(recordId: number, fromMap: boolean): void {
-    console.log(recordId, fromMap);
     let id = this.getTimelineIds([this.highlightedItem]);
     if(!id) return;
     this.datasetItems.forEach(

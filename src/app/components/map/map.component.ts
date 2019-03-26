@@ -249,7 +249,6 @@ export class MapComponent implements AfterViewInit {
    */
   highlightMarkers(objectIdArr: Array<any>, fromMap: boolean): void {
     // TODO rethink this
-    console.log(objectIdArr, fromMap);
     if (fromMap) return;
     if (!objectIdArr[0]) {
       for (let m of this.markers) {
