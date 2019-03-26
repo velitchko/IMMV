@@ -3,6 +3,7 @@ import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import * as mongoose from 'mongoose';
 import * as path from 'path';
+import { Expression } from '@angular/compiler';
 
 let EventSchema = require('./database/schemas/event');
 let HistoricEventSchema = require('./database/schemas/historicevent');
@@ -58,7 +59,6 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   api.get('/api/v1/peopleorganizations', (req: express.Request, res: express.Response) => {
     PersonOrganizationSchema.find({}, (err, peopleOrganizations) => {
       if(err) {
-        console.log('NIG')
         console.log(err);
         res.status(404).json({ "message" : 'No documents matching ' + req.body.query + ' were found.'})
       }
@@ -278,6 +278,43 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
       res.status(200).json({ "message": "OK", results: events});
     });
   });
+
+  /**
+   * QUERY EVENTS BY RELATIONS
+   */
+  api.post('/api/v1/getEventsByThemes', (req: express.Request, res: express.Response) => {
+    let query = { themes : { $elemMatch : { theme: mongoose.Types.ObjectId(req.body.query)}}};
+    EventSchema.find(query, (err, events) => {
+      if(err) {
+        console.log(err);
+        res.status(500).json({ "message": "ERROR", "error": err});
+      }
+      res.status(200).json({ "message": "OK", results: events.map((e: any) => { return e._id; })});
+    });
+  });
+
+  api.post('/api/v1/getEventsByLocations', (req: express.Request, res: express.Response) => {
+    let query = { themes : { $elemMatch : { theme: mongoose.Types.ObjectId(req.body.query)}}};
+    EventSchema.find(query, (err, events) => {
+      if(err) {
+        console.log(err);
+        res.status(500).json({ "message": "ERROR", "error": err});
+      }
+      res.status(200).json({ "message": "OK", results: events.map((e: any) => { return e._id; })});
+    });
+  });
+
+  api.post('/api/v1/getEventsByPeople', (req: express.Request, res: express.Response) => {
+    let query = { peopleOrganizations : { $elemMatch : { personOrganization: mongoose.Types.ObjectId(req.body.query)}}};
+    EventSchema.find(query, (err, events) => {
+      if(err) {
+        console.log(err);
+        res.status(500).json({ "message": "ERROR", "error": err});
+      }
+      res.status(200).json({ "message": "OK", results: events.map((e: any) => { return e._id; })});
+    });
+  });
+  
 
   // GET uploaded files
   api.get('/api/v1/uploads/:id', (req: express.Request, res: express.Response) => {
