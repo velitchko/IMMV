@@ -2,11 +2,7 @@ import { Component, Input, ChangeDetectorRef } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { startWith, map } from 'rxjs/operators';
-import { EventService } from '../../services/event.service';
-import { LocationService } from '../../services/location.service';
-import { PersonOrganizationService } from '../../services/people.organizations.service';
-import { SourceService } from '../../services/sources.service';
-import { ThemeService } from '../../services/themes.service';
+import { DatabaseService } from '../../services/db.service';
 import { MusicMapService } from '../../services/musicmap.service';
 
 @Component({
@@ -27,11 +23,7 @@ export class SearchComponent {
   loadingEntries: boolean;
   displayClear: boolean = false;
   constructor(private change: ChangeDetectorRef,
-    private es: EventService,
-    private ps: PersonOrganizationService,
-    private ls: LocationService,
-    private ss: SourceService,
-    private ts: ThemeService,
+    private db: DatabaseService,
     private mms: MusicMapService) {
     this.searchIcon = 'event';
     this.objectIdArr = new Array<any>();
@@ -116,11 +108,11 @@ export class SearchComponent {
     // should check if returned array is empty
     // if so we need to get the data from DB
     if (type === 'locations') {
-      if (this.ls.getLocations().length) {
-        this.updateFilteredItems(this.ls.getLocations());
+      if (this.db.getLocations().length) {
+        this.updateFilteredItems(this.db.getLocations());
       } else {
         // we need to get data from server
-        this.ls.getAllLocations().then((success) => {
+        this.db.getAllLocations().then((success) => {
           // update filtered items array
           this.updateFilteredItems(success);
         }).catch((err) => {
@@ -128,11 +120,11 @@ export class SearchComponent {
         });
       }
     } else if (type === 'events') {
-      if (this.es.getEvents().length) {
-        this.updateFilteredItems(this.es.getEvents());
+      if (this.db.getEvents().length) {
+        this.updateFilteredItems(this.db.getEvents());
       } else {
         // we need to get data from server
-        this.es.getAllEvents().then((success) => {
+        this.db.getAllEvents().then((success) => {
           // update filtered items array
           this.updateFilteredItems(success);
         }).catch((err) => {
@@ -140,11 +132,11 @@ export class SearchComponent {
         });
       }
     } else if (type === 'themes') {
-      if (this.ts.getThemes().length) {
-        this.updateFilteredItems(this.ts.getThemes());
+      if (this.db.getThemes().length) {
+        this.updateFilteredItems(this.db.getThemes());
       } else {
         // we need to get data from server
-        this.ts.getAllThemes().then((success) => {
+        this.db.getAllThemes().then((success) => {
           // update filtered items array
           this.updateFilteredItems(success);
         }).catch((err) => {
@@ -152,11 +144,11 @@ export class SearchComponent {
         });
       }
     } else if (type === 'sources') {
-      if (this.ss.getSources().length) {
-        this.updateFilteredItems(this.ss.getSources());
+      if (this.db.getSources().length) {
+        this.updateFilteredItems(this.db.getSources());
       } else {
         // we need to get data from server
-        this.ss.getAllSources().then((success) => {
+        this.db.getAllSources().then((success) => {
           // update filtered items array
           this.updateFilteredItems(success);
         }).catch((err) => {
@@ -164,11 +156,11 @@ export class SearchComponent {
         });
       }
     } else if (type === 'organizations') {
-      if (this.ps.getOrganizations().length) {
-        this.updateFilteredItems(this.ps.getOrganizations());
+      if (this.db.getOrganizations().length) {
+        this.updateFilteredItems(this.db.getOrganizations());
       } else {
         // we need to get data from server
-        this.ps.getAllPeopleOrganizations().then((success) => {
+        this.db.getAllPeopleOrganizations().then((success) => {
           // update filtered items array
           success = success.filter((p: any) => { return p.objectType === 'Organization'; });
           this.updateFilteredItems(success);
@@ -177,11 +169,11 @@ export class SearchComponent {
         });
       }
     } else if (type === 'people') {
-      if (this.ps.getPeople().length) {
-        this.updateFilteredItems(this.ps.getPeople());
+      if (this.db.getPeople().length) {
+        this.updateFilteredItems(this.db.getPeople());
       } else {
         // we need to get data from server
-        this.ps.getAllPeopleOrganizations().then((success) => {
+        this.db.getAllPeopleOrganizations().then((success) => {
           // update filtered items array
           success = success.filter((p: any) => { return p.objectType === 'Person'; });
           this.updateFilteredItems(success);
@@ -190,10 +182,10 @@ export class SearchComponent {
         });
       }
     } else if (type === 'historicevents') {
-      if (this.es.getHistoricEvents().length) {
-        this.updateFilteredItems(this.es.getHistoricEvents());
+      if (this.db.getHistoricEvents().length) {
+        this.updateFilteredItems(this.db.getHistoricEvents());
       } else {
-        this.es.getAllHistoricEvents().then((success) => {
+        this.db.getAllHistoricEvents().then((success) => {
           this.updateFilteredItems(success);
         }).catch((err) => {
           console.log(err);
@@ -251,7 +243,8 @@ export class SearchComponent {
    */
   highlightEvent(item: any): void {
     let searchName = item.objectId;
-    let events = this.es.getEvents();
+    let events = this.db.getEvents();
+
     for (let i of events) {
       if (i.objectId === searchName) {
         if (!this.objectIdArr.find((r: any) => { return r === i.objectId; })) {
