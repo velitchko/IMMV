@@ -21,12 +21,10 @@
         </div>
         <div *ngIf="!loadingEntries">
           <div  *ngFor="let i of filteredItems | async">
-            <a href="javascript:void(0)" (click)="highlightEvent(i)">
-              <mat-option [value]="i.name">
+              <mat-option [value]="i.name" (onSelectionChange)="highlightEvent(i)">
                 <mat-icon class="results-icon">{{ searchIcon }}</mat-icon>
                 {{ i.name }}
               </mat-option>
-            </a>
           </div>
         </div>
       </mat-autocomplete>
