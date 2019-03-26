@@ -34,7 +34,6 @@ export class MiniMapComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    console.log('minimap init');
     // only initiate map on browser side
     if(this.isBrowser) {
       let options = {
@@ -80,21 +79,18 @@ export class MiniMapComponent implements AfterViewInit {
     `;
     return svg;
   }
+  
   /**
    * Creates map markers for every event that has a location
    */
   createMarkers(): void {
-    //console.log('creating markers');
     if(!this.location || !(this.location.lat && this.location.lng)) return; // no coordinates
     let markerIcon = L.divIcon({
          iconSize: [25, 25], // size of the icon
          className: 'default-map-marker',
          html: this.getSVGIcon(),
     });
-      // /yconsole.log(i.names[0].name + ' @' + i.geodata.coordinates.lat + ', ' + i.geodata.coordinates.lng);
-      // if i.geodata.length === 1 - location of occurence
-      // else we have a path
-        //console.log('adding marker for ' + i.geodata[0].streetName + ' #' + i.geodata[0].recordId);
+    
     let popup = L.popup().setContent(this.location.streetName);
     let marker = L.marker([+this.location.lat, +this.location.lng], { icon: markerIcon })
                   .bindPopup(popup, {className: 'minimap'})
