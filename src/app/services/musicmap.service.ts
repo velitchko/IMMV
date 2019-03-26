@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Event } from '../models/event';
-import { Location } from '../models/location';
-import { HistoricEvent } from '../models/historic.event';
 import { BehaviorSubject } from 'rxjs';
+import * as moment from 'moment';
 
 @Injectable()
 export class MusicMapService {
@@ -15,12 +14,6 @@ export class MusicMapService {
 
   private aggregationItem = new BehaviorSubject<string>("");
   currentAggregationItem = this.aggregationItem.asObservable();
-
-  private sectionSizes = new BehaviorSubject<Array<number>>(null);
-  currentSectionSizes = this.sectionSizes.asObservable();
-
-  private colorAssignment = new BehaviorSubject<Map<string, string>>(null);
-  currentColorAssignment = this.colorAssignment.asObservable();
 
   private selectedEvent = new BehaviorSubject<Event>(null);
   currentlySelectedEvent = this.selectedEvent.asObservable();
@@ -35,6 +28,15 @@ export class MusicMapService {
     this._START_DATE = new Date('1/1/1918');
     this._END_DATE = new Date(); // Today
   }
+
+  // set selected event
+
+  // set highlighted event
+  
+  // set current interval
+
+  // set selected event(s) - in case we are looking events up by some relationship
+
 
   getOriginalStartDate(): Date {
     return this._START_DATE;
@@ -52,25 +54,8 @@ export class MusicMapService {
     this.eventInterval.next(dates);
   }
 
-  highlightMapMarker(id: number) {
-
-  }
-
   setSelectedEvent(event: Event): void {
-    // console.log('setting event');
-    // console.log(event);
     this.selectedEvent.next(event);
-  }
-
-  /**
-   * Sets the color assignment from the musicmap component
-   * We use this function to notify child and other components of our
-   * selected color coding
-   * @param colorMap - map<k,v> - key is the selected attribute, value is the color in hex
-   */
-  setColorAssignment(colorMap: Map<string,string>): void {
-    // console.log(colorMap);
-    this.colorAssignment.next(colorMap);
   }
 
   getColorAssignmentForCategory(category: string): string {
@@ -103,14 +88,6 @@ export class MusicMapService {
    */
   setAggregationType(type: string): void {
     this.aggregationItem.next(type);
-  }
-
-  /**
-   * Sets the currently selected section sizes
-   * @param sizes - the array of sizes in % (vh)
-   */
-  setSectionSizes(sizes: Array<number>): void {
-    this.sectionSizes.next(sizes);
   }
 
   /**
