@@ -19,69 +19,60 @@ import { DatabaseService } from 'src/app/services/db.service';
 })
 
 export class MusicMapComponent implements AfterViewInit {
-  events: Event[];
-  historicEvents: HistoricEvent[];
+  @ViewChild('themedrawer') themedrawer: any;
+  @ViewChild('previewdrawer') previewdrawer: any;
+
+  events: Array<Event>;
+  historicEvents: Array<HistoricEvent>;
+
   loading = true;
+  
   selectedStartDate: Date;
   selectedEndDate: Date;
   currentEventInterval: Array<Date>;
+  
   direction: string;
   showTLOptions: boolean = false;
+  
   resultMap: Map<string, number>;
+  
   currentDrawerType: string;
   drawerTypes: any;
   aggregationOptions = [
     'Yearly',
     'Monthly',
   ];
-  @ViewChild('themedrawer') themedrawer: any;
-  @ViewChild('previewdrawer') previewdrawer: any;
   // colors: Array<string>;
   selectedEntries: Array<any>;
   eventToBeDisplayed: Event;
 
-  constructor(private db: DatabaseService,
-              private mms: MusicMapService,
-              // private cs: ColorService,
-              // private ts: ThemeService
-            ) {
-    this.currentDrawerType = 'themes';
-    // this.colors = new Array<string>();
-    this.drawerTypes = [
-      {
-        value: 'themes',
-        displayValue: 'Themes',
-        icon: 'donut_large',
-        selected: true // default
-      },
-      {
-        value: 'peopleOrganizations',
-        displayValue: 'People',
-        icon: 'account_circle',
-        selected: false
-      },
-      {
-        value: 'locations',
-        displayValue: 'Places',
-        icon: 'place',
-        selected: false
-      }
-    ];
-    this.currentEventInterval = new Array<Date>();
+  constructor(private db: DatabaseService, private mms: MusicMapService) {
     this.events = new Array<Event>();
     this.historicEvents = new Array<HistoricEvent>();
+
+    this.currentDrawerType = 'themes';
+    // this.colors = new Array<string>();
+    this.drawerTypes = new Array<any>();
+    this.drawerTypes.push({ value: 'themes', displayValue: 'Themes', icon: 'donut_large', selected: true });
+    this.drawerTypes.push({ value: 'peopleOrganizations', displayValue: 'People', icon: 'account_circle', selected: false});
+    this.drawerTypes.push({ value: 'locations', displayValue: 'Places', icon: 'place', selected: false});
+
+    this.currentEventInterval = new Array<Date>();
+
     this.resultMap = new Map<string, number>();
+
     this.selectedEntries = new Array<any>();
+
     this.eventToBeDisplayed = null;
   }
 
   ngAfterViewInit(): void {
     this.mms.currentlySelectedEvent.subscribe((event: string) => {
       if(!event || !this.previewdrawer) return;
-      this.eventToBeDisplayed = this.db.getEventById(event);
-      console.log(event);
-      console.log(this.eventToBeDisplayed);
-      this.previewdrawer.toggle();
+      this.db.getAsEvent(this.db.getEventById(event)).then((success: Event) => {
+        this.eventToBeDisplayed = success;
+        this.previewdrawer.toggle();
+      });
     });
     
     this.mms.currentEventInterval.subscribe((dates: Array<Date>) => {
@@ -95,34 +86,10 @@ export class MusicMapComponent implements AfterViewInit {
     });
     
     if(this.db.getEvents().length === 0) {
-      this.db.getAllEvents().then(
-        (success) => {
-          // get and clean data
-          // so we are guarenteed to have start and end dates (locations later)
-          this.events = success;
-          // get historic events as well
-          if(this.db.getHistoricEvents().length === 0) {
-            this.db.getAllHistoricEvents().then(
-              (success) => {
-                // get and clean data
-                // so we are guarenteed to have start and end dates (locations later)
-                this.historicEvents = success
-                this.loading = false;
-              },
-              (error) => {
-                console.log(error);
-              }
-            );
-          } else {
-            // else we gucci
-            this.historicEvents = this.db.getHistoricEvents();
-            this.loading = false;
-          }
-        },
-        (error) => {
-          console.log(error);
-        }
-      );
+      this.db.getAllEvents().then((success: Array<Event>) => { 
+        this.events = success; 
+        this.loading = false;
+      }, (error) => { console.log(error); });
     } else {
       // else we gucci
       this.events = this.db.getEvents();
