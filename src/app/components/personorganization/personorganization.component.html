@@ -14,10 +14,11 @@
             <mat-form-field>
                 <input matInput placeholder="Look for events..." [matAutocomplete]="auto" [formControl]="eventCtrl">
                 <mat-autocomplete #auto="matAutocomplete">
-                    <mat-option *ngFor="let e of filteredEvents | async" [value]="e.name" (click)="selectedItem(e)">
+                    <!-- Using onSelectionChange handles both selection, click, and using enter key-->
+                    <mat-option *ngFor="let e of filteredEvents | async" [value]="e.name" (onSelectionChange)="selectedItem(e)">
                         {{e.name}}
                     </mat-option>
-                </mat-autocomplete>
+                </mat-autocomplete> 
             </mat-form-field>
             <button mat-mini-fab (click)="resetVis()"><mat-icon>refresh</mat-icon></button>
             <mat-slide-toggle (change)="toggleMouseover()">Toggle mouseover</mat-slide-toggle>
