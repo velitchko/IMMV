@@ -133,7 +133,8 @@ export class SearchComponent {
     this.displayClear = false;
     this.searchCtrl.setValue('');
     this.results = new Array<string>();
-    //this.mms.setobjectIds(this.objectIdArr);
+    // should clear selection in map and tl
+    this.mms.setObjectIds(this.results);
   }
 
   /**
