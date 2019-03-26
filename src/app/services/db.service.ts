@@ -76,14 +76,14 @@ export class DatabaseService {
         return this.events.find((e: Event) => { return e.objectId === objectId; });
     }
     /**
-   * Performs HTTP GET to recieve all events from the DB
-   * @return promise - either resolve and return all events or reject with error
-   */
+    * Performs HTTP GET to recieve all events from the DB
+    * @return promise - either resolve and return all events or reject with error
+    */
     async getAllEvents(populate = false): Promise<any> {
         let promise = new Promise((resolve, reject) => {
             this.http.get(environment.API_URL + 'events/').subscribe(
                 (response: any) => {
-                    if(populate) {
+                    if (populate) {
                         let promiseArr = new Array<Promise<any>>();
                         if (response.data) {
                             for (let e of response.data) {
@@ -101,7 +101,7 @@ export class DatabaseService {
                             reject('Could not parse as events');
                         }
                     } else {
-                        for(let e of response.data) {
+                        for (let e of response.data) {
                             this.events.push(this.getAsSimpleEvent(e));
                         }
                         resolve(this.events);
@@ -154,41 +154,41 @@ export class DatabaseService {
         // RELATIONSHIPS
         // look them up and add them to the event model
         let promiseArr = new Array<Promise<any>>();
-        
+
         for (let e of json.events) {
-            if((typeof e.event) !== 'string' ) continue;
+            if ((typeof e.event) !== 'string') continue;
             promiseArr.push(this.populateRelationships(e.event, e.relationship, 'events'));
         }
         for (let pO of json.peopleOrganizations) {
-            if((typeof pO.personOrganization) !== 'string' ) continue;
+            if ((typeof pO.personOrganization) !== 'string') continue;
             promiseArr.push(this.populateRelationships(pO.personOrganization, pO.relationship, 'peopleorganizations', pO.role));
         }
         for (let h of json.historicEvents) {
-            if((typeof h.historicEvent) !== 'string' ) continue;
+            if ((typeof h.historicEvent) !== 'string') continue;
             promiseArr.push(this.populateRelationships(h.historicEvent, h.relationship, 'historicevents'));
         }
         for (let t of json.themes) {
-            if((typeof t.theme) !== 'string' ) continue;
+            if ((typeof t.theme) !== 'string') continue;
             promiseArr.push(this.populateRelationships(t.theme, t.relationship, 'themes'));
         }
         for (let s of json.sources) {
-            if((typeof s.source) !== 'string' ) continue;
+            if ((typeof s.source) !== 'string') continue;
             promiseArr.push(this.populateRelationships(s.source, s.relationship, 'sources'));
         }
         for (let l of json.locations) {
-            if((typeof l.location) !== 'string' ) continue;
+            if ((typeof l.location) !== 'string') continue;
             promiseArr.push(this.populateRelationships(l.location, l.relationship, 'locations'));
         }
         for (let c of json.contributor) {
-            if((typeof c.personOrganization) !== 'string' ) continue;
+            if ((typeof c.personOrganization) !== 'string') continue;
             promiseArr.push(this.populateRelationships(c.personOrganization, 'isContributor', 'peopleorganizations'));
         }
         for (let c of json.creator) {
-            if((typeof c.personOrganization) !== 'string' ) continue;
+            if ((typeof c.personOrganization) !== 'string') continue;
             promiseArr.push(this.populateRelationships(c.personOrganization, 'isCreator', 'peopleorganizations'));
         }
         // incase promise arr is empty -> we already have all the objects resolved -> return the event
-        if(promiseArr.length === 0) {
+        if (promiseArr.length === 0) {
             event.events = json.events;
             event.historicEvents = json.historicEvents;
             event.peopleOrganizations = json.peopleOrganizations;
@@ -246,14 +246,14 @@ export class DatabaseService {
     }
 
     /**
-  * Performs HTTP GET to recieve all events from the DB
-  * @return promise - either resolve and return all events or reject with error
-  */
+    * Performs HTTP GET to recieve all events from the DB
+    * @return promise - either resolve and return all events or reject with error
+    */
     async getAllHistoricEvents(populate = false): Promise<any> {
         let promise = new Promise((resolve, reject) => {
             this.http.get(environment.API_URL + 'historicevents/').subscribe(
                 (response: any) => {
-                    if(populate) {
+                    if (populate) {
                         let promiseArr = new Array<Promise<any>>();
                         if (response.data) {
                             for (let e of response.data) {
@@ -271,7 +271,7 @@ export class DatabaseService {
                             reject('Could not parse as historic events');
                         }
                     } else {
-                        for(let e of response.data) {
+                        for (let e of response.data) {
                             this.historicEvents.push(this.getAsSimpleHistoricEvent(e));
                         }
                         resolve(this.historicEvents);
@@ -302,10 +302,10 @@ export class DatabaseService {
     }
 
     /**
-  * Returns a historic event object constructred from json
-  * @param json - json with all historic event properties
-  * @return historicEvent - historic event object
-  */
+    * Returns a historic event object constructred from json
+    * @param json - json with all historic event properties
+    * @return historicEvent - historic event object
+    */
     async getAsHistoricEvent(json: any): Promise<any> {
         let historicEvent = new HistoricEvent();
 
@@ -356,15 +356,19 @@ export class DatabaseService {
         return this.organizations.find((e: PersonOrganization) => { return e.objectId === objectId; });
     }
 
+    getPeopleOrganizations(): Array<PersonOrganization> {
+        return this.people.concat(this.organizations);
+    }
+
     /**
-* Performs HTTP GET to recieve all events from the DB
-* @return promise - either resolve and return all events or reject with error
-*/
-    async getAllPeopleOrganizationsEvents(populate = false): Promise<any> {
+    * Performs HTTP GET to recieve all events from the DB
+    * @return promise - either resolve and return all events or reject with error
+    */
+    async getAllPeopleOrganizations(populate = false): Promise<any> {
         let promise = new Promise((resolve, reject) => {
             this.http.get(environment.API_URL + 'peopleorganizations/').subscribe(
                 (response: any) => {
-                    if(populate) {
+                    if (populate) {
                         let promiseArr = new Array<Promise<any>>();
                         if (response.data) {
                             for (let e of response.data) {
@@ -419,10 +423,10 @@ export class DatabaseService {
 
 
     /**
-  * Returns an organization object constructred from json
-  * @param json - json with all organization properties
-  * @return organization - organization object
-  */
+    * Returns an organization object constructred from json
+    * @param json - json with all organization properties
+    * @return organization - organization object
+    */
     async getAsPersonOrganization(json: any): Promise<any> {
         let personOrganization = new PersonOrganization();
         personOrganization.name = json.name;
@@ -468,14 +472,14 @@ export class DatabaseService {
     }
 
     /**
-* Performs HTTP GET to recieve all events from the DB
-* @return promise - either resolve and return all events or reject with error
-*/
+    * Performs HTTP GET to recieve all events from the DB
+    * @return promise - either resolve and return all events or reject with error
+    */
     async getAllThemes(populate = false): Promise<any> {
         let promise = new Promise((resolve, reject) => {
             this.http.get(environment.API_URL + 'themes/').subscribe(
                 (response: any) => {
-                    if(populate) {
+                    if (populate) {
                         let promiseArr = new Array<Promise<any>>();
                         if (response.data) {
                             for (let e of response.data) {
@@ -493,7 +497,7 @@ export class DatabaseService {
                             reject('Could not parse as historic events');
                         }
                     } else {
-                        for(let e of response.data) {
+                        for (let e of response.data) {
                             this.themes.push(this.getAsSimpleTheme(e));
                         }
                         resolve(this.themes);
@@ -573,7 +577,7 @@ export class DatabaseService {
         let promise = new Promise((resolve, reject) => {
             this.http.get(environment.API_URL + 'locations/').subscribe(
                 (response: any) => {
-                    if(populate) {
+                    if (populate) {
                         let promiseArr = new Array<Promise<any>>();
                         if (response.data) {
                             for (let e of response.data) {
@@ -591,7 +595,7 @@ export class DatabaseService {
                             reject('Could not parse as historic events');
                         }
                     } else {
-                        for(let e of response.data) {
+                        for (let e of response.data) {
                             this.locations.push(this.getAsSimpleLocation(e));
                         }
                         resolve(this.locations);
@@ -658,14 +662,14 @@ export class DatabaseService {
     }
 
     /**
-* Performs HTTP GET to recieve all events from the DB
-* @return promise - either resolve and return all events or reject with error
-*/
+    * Performs HTTP GET to recieve all events from the DB
+    * @return promise - either resolve and return all events or reject with error
+    */
     async getAllSources(populate = false): Promise<any> {
         let promise = new Promise((resolve, reject) => {
             this.http.get(environment.API_URL + 'sources/').subscribe(
                 (response: any) => {
-                    if(populate) {
+                    if (populate) {
                         let promiseArr = new Array<Promise<any>>();
                         if (response.data) {
                             for (let e of response.data) {
@@ -683,7 +687,7 @@ export class DatabaseService {
                             reject('Could not parse as historic events');
                         }
                     } else {
-                        for( let e of response.data) {
+                        for (let e of response.data) {
                             this.sources.push(this.getAsSimpleSource(e));
                         }
                         resolve(this.sources);
@@ -773,7 +777,7 @@ export class DatabaseService {
     async getEventsByTheme(theme: Theme): Promise<any> {
         let promise = new Promise((resolve, reject) => {
             this.http.post(environment.API_URL + 'query', { query: theme.objectId }).subscribe((success: any) => {
-                if(success.message === 'OK') {
+                if (success.message === 'OK') {
                     let eventArr = new Array<Event>();
                     success.results.forEach((s: any) => {
                         eventArr.push(this.getAsSimpleEvent(s));
@@ -782,7 +786,7 @@ export class DatabaseService {
                     resolve(eventArr);
                     return;
                 }
-                if(success.message === 'ERROR') { 
+                if (success.message === 'ERROR') {
                     console.error(success.error);
                     reject(success);
                     return;
