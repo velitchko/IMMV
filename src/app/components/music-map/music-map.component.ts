@@ -76,9 +76,11 @@ export class MusicMapComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.mms.currentlySelectedEvent.subscribe((event: Event) => {
+    this.mms.currentlySelectedEvent.subscribe((event: string) => {
       if(!event || !this.previewdrawer) return;
-      this.eventToBeDisplayed = event;
+      this.eventToBeDisplayed = this.db.getEventById(event);
+      console.log(event);
+      console.log(this.eventToBeDisplayed);
       this.previewdrawer.toggle();
     });
     
@@ -98,11 +100,6 @@ export class MusicMapComponent implements AfterViewInit {
           // get and clean data
           // so we are guarenteed to have start and end dates (locations later)
           this.events = success;
-       
-          // let idxArr = this.es.cleanData();
-          // this.es.removeIDs(idxArr);
-          // this.es.checkForHierarchicalEvents();
-          // this.computeDist();
           // get historic events as well
           if(this.db.getHistoricEvents().length === 0) {
             this.db.getAllHistoricEvents().then(
@@ -134,54 +131,6 @@ export class MusicMapComponent implements AfterViewInit {
   }
 
   /**
-   * Compute the distribution of a given property over all events
-   * @param stype - string - the property type - defaults to 'themes'
-   */
-  computeDist(stype: string = 'themes'): void {
-    console.log(stype);
-    this.resultMap = new Map<string, number>();
-    for(let e of this.events) {
-      e[stype].forEach((l: any) => {
-        switch(stype) {
-          case 'themes': 
-            this.resultMap.set(l.theme.name, this.resultMap.get(l.theme.name) ? this.resultMap.get(l.theme.name) + 1 : 1);
-            return;
-          case 'peopleOrganizations' :
-            this.resultMap.set(l.personOrganization.name, this.resultMap.get(l.personOrganization.name) ? this.resultMap.get(l.personOrganization.name) + 1 : 1);
-            return;
-          case 'locations' :
-            this.resultMap.set(l.location.name, this.resultMap.get(l.location.name) ? this.resultMap.get(l.location.name) + 1 : 1);
-            return;
-        }
-      })
-    }
-    console.log(this.resultMap);
-    // assign colors
-    // this.colors = this.cs.getColors(this.resultMap.size);
-    // here we want to update the color assignment in the MusicMapService
-    // so we can share the color assignment to our markers in the map / tl
-    this.updateColorAssignment();
-  }
-
-  /**
-   * Shares the color assignment computed from this component with the MusicMapService
-   */
-  updateColorAssignment(): void {
-    // let colorAssignmentMap = new Map<string, string>();
-    // //sort and construct map
-    // // console.log(this.resultMap);
-    // Array.from(this.resultMap.entries())
-    //   .sort((a, b) => b[1] - a[1])
-    //   .map((m) => { return m[0]; })
-    //   .forEach(
-    //     (k, idx) => {
-    //       colorAssignmentMap.set(k, this.colors[idx]);
-    //     }
-    // );
-    // this.mms.setColorAssignment(colorAssignmentMap);
-  }
-
-  /**
    * Update the aggregation type for the overview tl
    * @param type - the type of aggregation
    */
@@ -197,38 +146,10 @@ export class MusicMapComponent implements AfterViewInit {
   }
 
   /**
-   * Function triggered when the map / tl splits are resized
-   * @param event - the split event (from ng-split)
-   */
-  sectionsResized(event: any): void {
-    this.mms.setSectionSizes(event.sizes);
-  }
-
-  /**
    * Toggles the state of the drawer open - close
    */
   themedrawerToggle(): void {
     this.themedrawer.toggle();
-  }
-
-  /**
-   * Returns the color associted with an id
-   * @param idx - the id of the drawer entry
-   * @return string - hex color representation
-   */
-  getColor(idx: number): string {
-  //   let color;
-  //   if(this.cs.checkIfUsed(this.colors[idx])) {
-  //    // console.log(`[${idx}]: ${this.colors[idx]} used: ${this.cs.checkIfUsed(this.colors[idx])}`);
-  //    color = this.cs.getAvailableColor();
-  //  } else {
-  //    //console.log(`[${idx}]: ${this.colors[idx]} not used`);
-  //    this.cs.setUsed(this.colors[idx]);
-  //    color = this.colors[idx];
-  //  }
-   //console.log(color);
-  //  return this.colors[idx];
-  return '#fff';
   }
 
   /**
@@ -267,7 +188,6 @@ export class MusicMapComponent implements AfterViewInit {
       dT.selected = (dT.value === stype) ? true : false;
     }
     this.currentDrawerType = stype;
-    this.computeDist(stype);
   }
 
   /**
@@ -277,10 +197,11 @@ export class MusicMapComponent implements AfterViewInit {
    * @param mouseOver - boolean (optional) if we clicked or mouseovered
    */
   highlightEntry($event: any, id: number, mouseOver?: boolean): void {
+    console.log($event, id, mouseOver);
     if(!mouseOver && this.selectedEntries.map( s => { return s.id }).indexOf(id) < 0) {
         this.selectedEntries.push({ id: id });
     }
-    $event.target.parentElement.parentElement.parentElement.style.backgroundColor = this.getColor(id) + '40'; // 40 is hex for 25% opacity
+    $event.target.parentElement.parentElement.parentElement.style.backgroundColor = '#b5b5b540'; // 40 is hex for 25% opacity
   }
 
   /**
@@ -315,17 +236,17 @@ export class MusicMapComponent implements AfterViewInit {
    * @param name - the value of the attribute we are looking for (category, people, location)
    */
   findEvents(name: string, id: number, $event: any): void {
-    let idxArr = new Array<string>();
+    let results = new Array<string>();
     let eArr = new Array<Event>();
     for(let e of this.events) {
       for(let t of e[this.currentDrawerType]) {
         if(t.name === name) {
-          idxArr.push(e.objectId);
+          results.push(e.objectId);
           eArr.push(e);
         }
       }
     }
-    this.mms.setObjectIds(idxArr);
+    this.mms.setSelectedEvents(results);
   }
 
   /**
@@ -350,7 +271,7 @@ export class MusicMapComponent implements AfterViewInit {
    * Updates the EventService's currentEventInterval
    */
   updateSelectedInterval(): void {
-    this.mms.updateEventServiceInterval([this.selectedStartDate, this.selectedEndDate]);
+    this.mms.updateEventInterval([this.selectedStartDate, this.selectedEndDate]);
   }
 
   /**
@@ -358,8 +279,8 @@ export class MusicMapComponent implements AfterViewInit {
    * Calls the event service to update the selected interval
    */
   clearEndDate(): void {
-    this.selectedEndDate = this.mms.getOriginalEndDate();
-    this.mms.updateEventServiceInterval([this.selectedStartDate, this.selectedEndDate]);
+    this.selectedEndDate = this.mms.endDate;
+    this.mms.updateEventInterval([this.selectedStartDate, this.selectedEndDate]);
   }
 
   /**
@@ -367,7 +288,7 @@ export class MusicMapComponent implements AfterViewInit {
    * Calls the event service to update the selected interval
    */
   clearStartDate(): void {
-    this.selectedStartDate = this.mms.getOriginalStartDate();
-    this.mms.updateEventServiceInterval([this.selectedStartDate, this.selectedEndDate]);
+    this.selectedStartDate = this.mms.startDate;
+    this.mms.updateEventInterval([this.selectedStartDate, this.selectedEndDate]);
   }
 }

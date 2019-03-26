@@ -15,18 +15,14 @@ export class MapClusterTooltipComponent {
   @Input() events: Array<Event>;
   isBrowser: boolean;
   eventsOut: Array<any>; //event, svg (as string)
-  currentColorAssignment: Map<string, string>;
+  // currentColorAssignment: Map<string, string>;
   dataProcessed:boolean = false;
   constructor(@Inject(PLATFORM_ID) private _platformId: Object,
               private mms: MusicMapService,
               private cd: ChangeDetectorRef) {
     this.isBrowser = isPlatformBrowser(this._platformId);
-    this.currentColorAssignment = new Map<string, string>();
+    // this.currentColorAssignment = new Map<string, string>();
     if(this.isBrowser) {
-      this.mms.currentColorAssignment.subscribe( (colorMap: Map<string,string>) => {
-        if(!colorMap) return;
-        this.currentColorAssignment = colorMap;
-      });
     }
     // preprocessing
     this.eventsOut = new Array<any>();
@@ -109,7 +105,8 @@ export class MapClusterTooltipComponent {
       .append('path')
       .attr('d', <any>arc)
       .attr('fill', (d, i) => {
-        return this.currentColorAssignment.get(data[i][0]);
+        return 'black';
+        // return this.currentColorAssignment.get(data[i][0]);
       })
       .transition()
       .delay((d, i) => { return i * 500; })
@@ -130,6 +127,6 @@ export class MapClusterTooltipComponent {
    * @param e - the event and its attributes
    */
   openPreviewPanel(e: Event): void {
-    this.mms.setSelectedEvent(e);
+    this.mms.setSelectedEvent(e.objectId);
   }
 }

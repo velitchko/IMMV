@@ -1,91 +1,101 @@
 <div class="loader" *ngIf="loading">
-    <div class="spinner">
-      <mat-spinner></mat-spinner>
-      <p class="spinner-text">Getting musical events for you...</p>
-    </div>
+  <div class="spinner">
+    <mat-spinner></mat-spinner>
+    <p class="spinner-text">Getting musical events for you...</p>
   </div>
-  
-  <div *ngIf="!loading" class="music-map-wrapper">
-    <!-- very special drawer - need to set zindex correctly depending on opened or closed -->
-    <!-- otherwise drawer overlaps map and tl and cannot select or interact -->
-    <app-search [items]="events"></app-search>
-  
-    <mat-drawer-container class="preview-drawer-container" autosize>
-      <mat-drawer #previewdrawer mode="side" class="preview-drawer-content">
-        <div class="preview-drawer-button">
-          <button class="menu-icon" mat-icon-button (click)="closePreviewDrawer()">
+</div>
+
+<div *ngIf="!loading" class="music-map-wrapper">
+  <!-- very special drawer - need to set zindex correctly depending on opened or closed -->
+  <!-- otherwise drawer overlaps map and tl and cannot select or interact -->
+  <app-search></app-search>
+
+  <mat-drawer-container class="preview-drawer-container" autosize>
+    <mat-drawer #previewdrawer mode="side" class="preview-drawer-content">
+      <div class="preview-drawer-button">
+        <button class="menu-icon" mat-icon-button (click)="closePreviewDrawer()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <app-previewpanel *ngIf="eventToBeDisplayed" [event]="eventToBeDisplayed"></app-previewpanel>
+    </mat-drawer>
+    <!-- MAIN MUSIC MAP DRAWER CONTENT -->
+    <mat-drawer-content>
+      <!-- THEME SIDE DRAWER -->
+      <mat-drawer-container *ngIf="!loading" class="drawer-container" autosize>
+        <mat-drawer #themedrawer class="drawer-sidenav" mode="side" position="end">
+          <mat-list class="drawertypes-container">
+            <mat-list-item class="drawertypes-entry" *ngFor="let dT of drawerTypes">
+              <a [ngClass]="{'selected': dT.selected}" href="javascript:void(0)" (click)="setDrawerType(dT.value)">
+                <mat-icon>{{ dT.icon }}</mat-icon> {{ dT.displayValue }}
+              </a>
+              <mat-divider [vertical]="true"></mat-divider>
+            </mat-list-item>
+          </mat-list>
+          <mat-list class="drawer-list">
+            <div *ngFor="let t of resultMap | mapValues; let i = index; let last = last">
+              <mat-list-item matRipple class="drawer-option" [matRippleColor]="getColor(i) + '40'"
+                class="drawer-option">
+                <span class="drawer-category-circle" [style.backgroundColor]="getColor(i)"></span>
+                <a class="drawer-entry" matLine href="javascript:void(0)" (mouseover)="mouseOver($event, i)"
+                  (mouseout)="mouseOut($event, i)" (click)="highlightEntry($event, i); findEvents(t.key);">
+                  {{ t.key }}: {{ t.value }}
+                </a>
+                <a href="javascript:void(0)" (click)="unhighlightEntry($event, i)" *ngIf="isSelected(i)"
+                  [style.color]="getColor(i)">
+                  <mat-icon>close</mat-icon>
+                </a>
+                <mat-divider *ngIf="!last"></mat-divider>
+              </mat-list-item>
+            </div>
+          </mat-list>
+        </mat-drawer>
+        <mat-drawer-content>
+          <app-map [items]="events" class="music-map"></app-map>
+          <app-timeline [items]="events" class="music-timeline"></app-timeline>
+        </mat-drawer-content>
+      </mat-drawer-container>
+      <div class="drawer-button">
+        <button class="menu-icon" mat-icon-button (click)="themedrawerToggle()">
+          <mat-icon>{{ isThemeDrawerOpen() ? 'close' : 'settings' }}</mat-icon>
+        </button>
+      </div>
+
+      <button class="tl-options-button" [ngClass]="{ 'open' : showTLOptions }" (click)="toggleTLOptions()">
+        <mat-icon>keyboard_arrow_right</mat-icon>
+      </button>
+      <!-- TODO create whole settings module -->
+      <!-- settings for map / timeline / themes -->
+      <!--- TIMELINE OPTIONS -->
+      <div [ngClass]="{ 'open' : showTLOptions }" class="timeline-controls">
+        <mat-form-field>
+          <input matInput [(ngModel)]="selectedStartDate" (dateChange)="updateSelectedInterval()"
+            [matDatepicker]="startDate" placeholder="Start date">
+          <button mat-button *ngIf="selectedStartDate" matSuffix mat-icon-button aria-label="Clear"
+            (click)="clearStartDate()">
             <mat-icon>close</mat-icon>
           </button>
-        </div>
-        <app-previewpanel *ngIf="eventToBeDisplayed" [event]="eventToBeDisplayed"></app-previewpanel>
-      </mat-drawer>
-      <!-- MAIN MUSIC MAP DRAWER CONTENT -->
-      <mat-drawer-content>
-        <!-- THEME SIDE DRAWER -->
-        <mat-drawer-container *ngIf="!loading" class="drawer-container" autosize>
-          <mat-drawer #themedrawer class="drawer-sidenav" mode="side" position="end">
-            <mat-list class="drawertypes-container">
-              <mat-list-item class="drawertypes-entry" *ngFor="let dT of drawerTypes">
-                <a [ngClass]="{'selected': dT.selected}" href="javascript:void(0)" (click)="setDrawerType(dT.value)"><mat-icon>{{ dT.icon }}</mat-icon>  {{ dT.displayValue }}</a>
-                <mat-divider [vertical]="true"></mat-divider>
-              </mat-list-item>
-            </mat-list>
-            <mat-list class="drawer-list">
-              <div *ngFor="let t of resultMap | mapValues; let i = index; let last = last">
-                <mat-list-item matRipple class="drawer-option" [matRippleColor]="getColor(i) + '40'" class="drawer-option"> 
-                  <span class="drawer-category-circle" [style.backgroundColor]="getColor(i)"></span>
-                  <a class="drawer-entry" matLine href="javascript:void(0)" (mouseover)="mouseOver($event, i)" (mouseout)="mouseOut($event, i)" (click)="highlightEntry($event, i); findEvents(t.key);">
-                    {{ t.key }}: {{ t.value }}
-                  </a>
-                  <a href="javascript:void(0)" (click)="unhighlightEntry($event, i)" *ngIf="isSelected(i)" [style.color]="getColor(i)"><mat-icon>close</mat-icon></a>
-                  <mat-divider *ngIf="!last"></mat-divider>
-                </mat-list-item>
-              </div>
-            </mat-list>
-          </mat-drawer>
-          <mat-drawer-content>
-            <app-map [items]="events" class="music-map"></app-map>
-            <app-timeline [items]="events" class="music-timeline"></app-timeline>
-          </mat-drawer-content>
-        </mat-drawer-container>
-        <div class="drawer-button">
-          <button class="menu-icon" mat-icon-button (click)="themedrawerToggle()">
-            <mat-icon>{{ isThemeDrawerOpen() ? 'close' : 'settings' }}</mat-icon>
+          <mat-datepicker-toggle matSuffix [for]="startDate"></mat-datepicker-toggle>
+          <mat-datepicker #startDate></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field>
+          <input matInput [(ngModel)]="selectedEndDate" (dateChange)="updateSelectedInterval()"
+            [matDatepicker]="endDate" placeholder="End date">
+          <button mat-button *ngIf="selectedEndDate" matSuffix mat-icon-button aria-label="Clear"
+            (click)="clearEndDate()">
+            <mat-icon>close</mat-icon>
           </button>
-        </div>
-  
-        <button class="tl-options-button" [ngClass]="{ 'open' : showTLOptions }" (click)="toggleTLOptions()">
-          <mat-icon>keyboard_arrow_right</mat-icon>
-        </button>
-        <!-- TODO create whole settings module -->
-        <!-- settings for map / timeline / themes -->
-        <!--- TIMELINE OPTIONS -->
-        <div [ngClass]="{ 'open' : showTLOptions }" class="timeline-controls">
-          <mat-form-field>
-            <input matInput [(ngModel)]="selectedStartDate" (dateChange)="updateSelectedInterval()" [matDatepicker]="startDate" placeholder="Start date">
-            <button mat-button *ngIf="selectedStartDate" matSuffix mat-icon-button aria-label="Clear" (click)="clearStartDate()">
-              <mat-icon>close</mat-icon>
-            </button>
-            <mat-datepicker-toggle matSuffix [for]="startDate"></mat-datepicker-toggle>
-            <mat-datepicker #startDate></mat-datepicker>
-          </mat-form-field>
-          <mat-form-field>
-            <input matInput  [(ngModel)]="selectedEndDate" (dateChange)="updateSelectedInterval()" [matDatepicker]="endDate" placeholder="End date">
-            <button mat-button *ngIf="selectedEndDate" matSuffix mat-icon-button aria-label="Clear" (click)="clearEndDate()">
-              <mat-icon>close</mat-icon>
-            </button>
-            <mat-datepicker-toggle matSuffix [for]="endDate"></mat-datepicker-toggle>
-            <mat-datepicker #endDate></mat-datepicker>
-          </mat-form-field>
-          <mat-form-field>
-            <mat-select placeholder="Event aggregation...">
-              <mat-option *ngFor="let ao of aggregationOptions" [value]="ao" (click)="updateAggregation(ao)">
-                {{ ao }}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-      </mat-drawer-content>
-    </mat-drawer-container>
-  </div>
-  
+          <mat-datepicker-toggle matSuffix [for]="endDate"></mat-datepicker-toggle>
+          <mat-datepicker #endDate></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-select placeholder="Event aggregation...">
+            <mat-option *ngFor="let ao of aggregationOptions" [value]="ao" (click)="updateAggregation(ao)">
+              {{ ao }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </mat-drawer-content>
+  </mat-drawer-container>
+</div>

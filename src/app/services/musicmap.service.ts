@@ -6,19 +6,29 @@ import * as moment from 'moment';
 @Injectable()
 export class MusicMapService {
 
-  private selectedItems = new BehaviorSubject<Array<Date>>(null);
-  currentlySelectedItems = this.selectedItems.asObservable();
+  /**
+   * Selected events - probably from a theme, location, etc. selection
+   * Reverse lookedup event ids
+   */
+  private selectedEvents = new BehaviorSubject<Array<string>>([]);
+  currentlySelectedEvents = this.selectedEvents.asObservable();
 
-  private highlightItem = new BehaviorSubject<any>(null);
+  private highlightItem = new BehaviorSubject<string>('');
   currentlyHighlightedItem = this.highlightItem.asObservable();
 
-  private aggregationItem = new BehaviorSubject<string>("");
+  private aggregationItem = new BehaviorSubject<string>('');
   currentAggregationItem = this.aggregationItem.asObservable();
 
-  private selectedEvent = new BehaviorSubject<Event>(null);
+  /**
+   * Singular selected event - from mouseover/click interactions
+   */
+  private selectedEvent = new BehaviorSubject<string>('');
   currentlySelectedEvent = this.selectedEvent.asObservable();
 
-  private eventInterval = new BehaviorSubject<Array<Date>>(null);
+  /**
+   * Currently selected interval (time - start and end date) from timeline
+   */
+  private eventInterval = new BehaviorSubject<Array<Date>>([]);
   currentEventInterval = this.eventInterval.asObservable();
 
   private _START_DATE: Date;
@@ -37,24 +47,24 @@ export class MusicMapService {
 
   // set selected event(s) - in case we are looking events up by some relationship
 
+  get startDate(): Date { return this._START_DATE; }
 
-  getOriginalStartDate(): Date {
-    return this._START_DATE;
-  }
+  get endDate(): Date { return this._END_DATE; }
 
-  getOriginalEndDate(): Date {
-    return this._END_DATE;
-  }
   
   /**
    * Updates the time interval that the user is looking at
    @param dates - a date array index 0 is the minimum date, index 1 is the maximum date
    */
-  updateEventServiceInterval(dates: Array<Date>): void {
+  updateEventInterval(dates: Array<Date>): void {
     this.eventInterval.next(dates);
   }
 
-  setSelectedEvent(event: Event): void {
+  /**
+   * Sets the current event to selected
+   * @param event event from tl/map mouseover/click 
+   */
+  setSelectedEvent(event: string): void {
     this.selectedEvent.next(event);
   }
 
@@ -69,8 +79,8 @@ export class MusicMapService {
    * communicate selections between each other
    * @param objectIdArr - the array of record ids
    */
-  setObjectIds(objectIdArr: Array<any>): void {
-    this.selectedItems.next(objectIdArr);
+  setSelectedEvents(events: Array<string>): void {
+    this.selectedEvents.next(events);
   }
 
   /**
