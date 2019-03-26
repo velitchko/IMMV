@@ -134,7 +134,7 @@ export class SearchComponent {
     this.searchCtrl.setValue('');
     this.results = new Array<string>();
     // should clear selection in map and tl
-    this.mms.setObjectIds(this.results);
+    this.mms.setSelectedEvents(this.results);
   }
 
   /**
@@ -168,42 +168,42 @@ export class SearchComponent {
       case 'historicevent':
         this.db.getEventsByHistoricEvent(item.object).then((success: Array<HistoricEvent>) => {
           this.results = success.map((e: HistoricEvent) => { return e.objectId; });
-          this.mms.setObjectIds(this.results);
+          this.mms.setSelectedEvents(this.results);
         });
         break;
 
       case 'personorganization':
         this.db.getEventsByPersonOrganization(item.object).then((success: Array<PersonOrganization>) => {
           this.results = success.map((e: PersonOrganization) => { return e.objectId; });
-          this.mms.setObjectIds(this.results);
+          this.mms.setSelectedEvents(this.results);
         });
         break;
 
       case 'location':
         this.db.getEventsByLocation(item.object).then((success: Array<Location>) => {
           this.results = success.map((e: Location) => { return e.objectId; });
-          this.mms.setObjectIds(this.results);
+          this.mms.setSelectedEvents(this.results);
         });
         break;
 
       case 'theme':
         this.db.getEventsByTheme(item.object).then((success: Array<Theme>) => {
           this.results = success.map((e: Theme) => { return e.objectId; });
-          this.mms.setObjectIds(this.results);
+          this.mms.setSelectedEvents(this.results);
         });
         break;
 
       case 'source':
         this.db.getEventsBySource(item.object).then((success: Array<Source>) => {
           this.results = success.map((e: Source) => { return e.objectId; });
-          this.mms.setObjectIds(this.results);
+          this.mms.setSelectedEvents(this.results);
         });
         break;
 
       case 'event':
         this.db.getEventsByEvent(item.object).then((success: Array<Event>) => {
           this.results = success.map((e: Event) => { return e.objectId; });
-          this.mms.setObjectIds(this.results);
+          this.mms.setSelectedEvents(this.results);
         });
         break;
 

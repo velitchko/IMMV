@@ -18,6 +18,8 @@ import { ResizedEvent } from 'angular-resize-event/resized-event';
 })
 
 export class TimelineComponent implements OnChanges {
+  @Input() items: Array<Event>;
+  @ViewChild('detailtimeline') detailtimeline: ElementRef
   isBrowser: boolean;
 
   svg: any;
@@ -34,38 +36,23 @@ export class TimelineComponent implements OnChanges {
   overviewTimeline: any;
   MAX_Y: number = 0;
   timeline: Timeline;
-  @ViewChild('detailtimeline') detailtimeline: ElementRef
-
+  
   aggregationType: string;
 
   highlightedItem: any;
   currentEventInterval: Array<Date>;
   currentlySelectedItems: Array<any>;
-  currentSectionSize: number;
-
-  colorAssignment: Map<string, string>;
-
-  @Input() items: Array<Event>;
-  groups: any;
-  distribution: Array<any>;
-  historicItems: any;
 
   datasetItems: DataSet<any>;
   datasetGroups: DataSet<any>;
-  themeDistribution: Map<string, any>;
 
   minHeight = 20;
 
   constructor(@Inject(PLATFORM_ID) private _platformId: Object,
               @Inject('WINDOW') private window: any,
-
               private mms: MusicMapService,
-              // private cs: ColorService,
-              private element: ElementRef,
               public dialog: MatDialog
             ) {
-    this.colorAssignment = new Map<string, string>();
-    this.currentSectionSize = 45; // DEFAULT SECTION SIZE FOR TL
     this.currentEventInterval = new Array<Date>();
     this.currentlySelectedItems = new Array<any>();
     this.isBrowser = isPlatformBrowser(this._platformId);
@@ -76,24 +63,16 @@ export class TimelineComponent implements OnChanges {
       if(this.isBrowser) {
         this.setupData();
         this.createTimeline();
-        this.mms.currentColorAssignment.subscribe((colorMap: Map<string, string>) => {
-          if(!colorMap) return;
-          this.colorAssignment = colorMap;
-          this.createTimeline();
+
+        this.mms.currentlySelectedEvent.subscribe((event: string) => {
         });
+     
         this.mms.currentAggregationItem.subscribe(( type: string) => {
           if(!type) return;
           this.aggregationType = type;
           this.window.requestAnimationFrame( () => {
             this.updateOverviewTL();
           });
-        });
-        
-        this.mms.currentSectionSizes.subscribe(( sizes: Array<number>) => {
-          if(this.timeline) {
-            // this.detailtimeline.nativeElement.style.height = this.currentSectionSize + '%';
-            this.timeline.redraw();
-          }
         });
         
         // subscribe to changes of the currently highlighted item
@@ -105,7 +84,7 @@ export class TimelineComponent implements OnChanges {
           }
         });
         // subscribe to changes in currently selected items
-        this.mms.currentlySelectedItems.subscribe((recordIdArr: Array<any>) => {
+        this.mms.currentlySelectedEvents.subscribe((recordIdArr: Array<any>) => {
           if(!recordIdArr) return;
           this.currentlySelectedItems = recordIdArr;
           
@@ -134,7 +113,7 @@ export class TimelineComponent implements OnChanges {
   setupData(): void {
     this.datasetItems = new DataSet();
 
-    this.themeDistribution = new Map<string,any>();
+    // this.themeDistribution = new Map<string,any>();
 
     this.datasetGroups = new DataSet();
     this.datasetGroups.add({ id: 0, content: ''});
@@ -168,25 +147,6 @@ export class TimelineComponent implements OnChanges {
       if(i.endDate) dataitem['end'] = i.endDate;
       this.datasetItems.add(dataitem);
     }
-    /**
-     * HISTORIC EVENTS TODO: fix 
-     */
-    // for(let i of this.historicItems) {
-    // // we have A LOT of overlapping historical events
-    // // consider detecting overlaps and applying different classes ? (.sub .subsub?)
-    //   if(!i.endDate) continue; // no enddate so we cannot make a range
-    //   let type = 'range';
-    //   let dataitem = {
-    //     group: 1,
-    //     recordId: i.recordId,
-    //     start: i.startDate,
-    //     end: i.endDate,
-    //     content: i.name,
-    //     //title: i.names[0].name,
-    //     type: type,
-    //   };
-    //   //this.datasetItems.add(dataitem);
-    // }
   }
 
   /**
@@ -235,6 +195,7 @@ export class TimelineComponent implements OnChanges {
    * TODO: double check this function
    */
   highlightItem(recordId: number, fromMap: boolean): void {
+    console.log(recordId, fromMap);
     let id = this.getTimelineIds([this.highlightedItem]);
     if(!id) return;
     this.datasetItems.forEach(
@@ -272,12 +233,6 @@ export class TimelineComponent implements OnChanges {
     return ids;
   }
 
-  /**
-   * Resize Handler - resizes D3 SVG's based on window size
-   */
-  onResize($event: ResizedEvent): void {
-    // console.log($event);
-  }
 
   /**
    * Sorts the items array based on start date
@@ -303,16 +258,11 @@ export class TimelineComponent implements OnChanges {
       return d.startDate;
     }));
     // add 1 year padding to x domain left and right
-    this.x.domain(
-          d3.extent([
-            new Date(this.mms.getOriginalStartDate()),
-            new Date(this.mms.getOriginalEndDate())
-          ])
-        );
+    this.x.domain(d3.extent([ this.mms.startDate, this.mms.endDate ]));
 
     this.x2.domain(this.x.domain());
     if(!resize) {
-      this.mms.updateEventServiceInterval(this.x.domain());
+      this.mms.updateEventInterval(this.x.domain());
      // this.distribution = this.computeDistribution(this.x.domain()[0], this.x.domain()[1]); // min / max date
     }
     // FIXME: this.themeDistributions calculated after scales are made
@@ -367,30 +317,6 @@ export class TimelineComponent implements OnChanges {
         return this.y(d.count);
       });
 
-    
-
-    this.items.forEach((e: Event) => {
-      e.themes.forEach((t: any) => {
-        if(!this.themeDistribution.get(t.theme.name)) {
-          let dist = this.computeDistribution(this.x.domain()[0], this.x.domain()[1], t.theme.name, this.aggregationType);
-          this.themeDistribution.set(t.theme.name, dist);
-        }
-        // console.log('max-y: ' + this.MAX_Y);
-        // console.log(this.themeDistribution);
-        let area = this.overviewTimeline(this.themeDistribution.get(t.theme.name));
-        this.overview = this.svg.append('g')
-          .attr('class', 'overview')
-          .attr('transform', 'translate(' + overviewMargin.left + ',' + overviewMargin.top + ')');
-  
-        this.overview.append('path')
-          .datum(this.themeDistribution.get(t.theme.name))
-          .attr('class', 'area')
-          .attr('d', area)
-          .style('fill', this.colorAssignment.get(t.theme.name) + '66')
-          .style('stroke', this.colorAssignment.get(t.theme.name)); 
-      })
-    });
-
     this.overview.append('g')
       .attr('class', 'axis axis--x')
       .attr('transform', 'translate(0,' + this.height/2 + ')') //
@@ -438,8 +364,8 @@ export class TimelineComponent implements OnChanges {
         showTooltips: true,
         start: this.x.domain()[0],
         end: this.x.domain()[1],
-        min: this.mms.getOriginalStartDate(), //new Date(this.x.domain()[0].getFullYear()-1, this.x.domain()[0].getMonth(), this.x.domain()[0].getDate()),
-        max: this.mms.getOriginalEndDate(), //new Date(this.x.domain()[1].getFullYear()+1, this.x.domain()[1].getMonth(), this.x.domain()[1].getDate()),
+        min: this.mms.startDate, //new Date(this.x.domain()[0].getFullYear()-1, this.x.domain()[0].getMonth(), this.x.domain()[0].getDate()),
+        max: this.mms.endDate, //new Date(this.x.domain()[1].getFullYear()+1, this.x.domain()[1].getMonth(), this.x.domain()[1].getDate()),
         autoResize: true,
         showCurrentTime: false,
         groupOrder: 'group',
@@ -472,7 +398,7 @@ export class TimelineComponent implements OnChanges {
         .delay(100)
         .call(this.brush.move, [this.x(dates[0]), this.x(dates[1])]);
 
-      this.mms.updateEventServiceInterval(dates);
+      this.mms.updateEventInterval(dates);
       let items = this.timeline.getVisibleItems(); // TODO items that are present in the current window we can now do statistics with them
     };
   };
@@ -515,14 +441,11 @@ export class TimelineComponent implements OnChanges {
     return (properties) => {
       if(properties.what !== 'background' || properties.group !== 1) {
         //if event.what === 'item' - its an event (could also be axis, background - potentially background event??)
-        //console.log(`s`);
-        // could conditionally display info based on the type of what
-        let e = this.findEvent(properties.items[0]);
 
-        // here we might want to perform GET's for the recordId's of the related
-        // events, people, locations, themes, sources, etc.
-        //this.openDialog(e);
-        this.mms.setSelectedEvent(e);
+        // could conditionally display info based on the type of what
+        // let e = this.findEvent(properties.items[0]);
+
+        this.mms.setSelectedEvent(properties.items[0]);
       }
     };
   }
@@ -641,7 +564,7 @@ export class TimelineComponent implements OnChanges {
       }
       // this.svg.select('.zoom')
       // .call(this.zoom.transform, d3.zoomIdentity.scale(this.width / (s[1] - s[0])).translate(-s[0], 0));
-      this.mms.updateEventServiceInterval(newDomain);
+      this.mms.updateEventInterval(newDomain);
     }
   }
 
