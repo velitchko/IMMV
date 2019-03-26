@@ -763,7 +763,7 @@ export class DatabaseService {
                         source.creatorContributorPublisher.push({
                             personOrganization: s.entry,
                             position: '',
-                            role: '' // TODO: modify for role ?
+                            role: ''
                         })
                         return;
                 }
@@ -774,9 +774,155 @@ export class DatabaseService {
         });
     }
 
+
+    /**
+     * Reverse lookup events by theme association
+     * @param theme theme thats being reverse queried
+     * @returns Promise<any> - promise that resolves with an array events (of Event class type)
+     */
     async getEventsByTheme(theme: Theme): Promise<any> {
         let promise = new Promise((resolve, reject) => {
-            this.http.post(environment.API_URL + 'query', { query: theme.objectId }).subscribe((success: any) => {
+            this.http.post(environment.API_URL + 'reverseLookupEvents', { query: theme.objectId, relationship: 'themes', field: 'theme' }).subscribe((success: any) => {
+                if (success.message === 'OK') {
+                    let eventArr = new Array<Event>();
+                    success.results.forEach((s: any) => {
+                        eventArr.push(this.getAsSimpleEvent(s));
+                    });
+
+                    resolve(eventArr);
+                    return;
+                }
+                if (success.message === 'ERROR') {
+                    console.error(success.error);
+                    reject(success);
+                    return;
+                }
+            });
+        });
+
+        return promise;
+    }
+
+    /**
+    * Reverse lookup events by historic event association
+    * @param histEv historic event thats being reverse queried
+    * @returns Promise<any> - promise that resolves with an array events (of Event class type)
+    */
+    async getEventsByHistoricEvent(histEv: HistoricEvent): Promise<any> {
+        let promise = new Promise((resolve, reject) => {
+            this.http.post(environment.API_URL + 'reverseLookupEvents', { query: histEv.objectId, relationship: 'historicEvents', field: 'historicEvent' }).subscribe((success: any) => {
+                if (success.message === 'OK') {
+                    let eventArr = new Array<Event>();
+                    success.results.forEach((s: any) => {
+                        eventArr.push(this.getAsSimpleEvent(s));
+                    });
+
+                    resolve(eventArr);
+                    return;
+                }
+                if (success.message === 'ERROR') {
+                    console.error(success.error);
+                    reject(success);
+                    return;
+                }
+            });
+        });
+
+        return promise;
+    }
+
+    /**
+     * Reverse lookup events by person/organization association
+     * @param persOrg person/organization thats being reverse queried
+     * @returns Promise<any> - promise that resolves with an array events (of Event class type)
+     */
+    async getEventsByPersonOrganization(persOrg: PersonOrganization): Promise<any> {
+        let promise = new Promise((resolve, reject) => {
+            this.http.post(environment.API_URL + 'reverseLookupEvents', { query: persOrg.objectId, relationship: 'peopleOrganizations', field: 'personOrganization' }).subscribe((success: any) => {
+                if (success.message === 'OK') {
+                    let eventArr = new Array<Event>();
+                    success.results.forEach((s: any) => {
+                        eventArr.push(this.getAsSimpleEvent(s));
+                    });
+
+                    resolve(eventArr);
+                    return;
+                }
+                if (success.message === 'ERROR') {
+                    console.error(success.error);
+                    reject(success);
+                    return;
+                }
+            });
+        });
+
+        return promise;
+    }
+
+    /**
+     * Reverse lookup events by historic event association
+     * @param loc theme thats being reverse queried
+     * @returns Promise<any> - promise that resolves with an array events (of Event class type)
+     */
+    async getEventsByLocation(loc: Location): Promise<any> {
+        let promise = new Promise((resolve, reject) => {
+            this.http.post(environment.API_URL + 'reverseLookupEvents', { query: loc.objectId, relationship: 'locations', field: 'location' }).subscribe((success: any) => {
+                if (success.message === 'OK') {
+                    let eventArr = new Array<Event>();
+                    success.results.forEach((s: any) => {
+                        eventArr.push(this.getAsSimpleEvent(s));
+                    });
+
+                    resolve(eventArr);
+                    return;
+                }
+                if (success.message === 'ERROR') {
+                    console.error(success.error);
+                    reject(success);
+                    return;
+                }
+            });
+        });
+
+        return promise;
+    }
+
+    /**
+     * Reverse lookup events by source association
+     * @param source source thats being reverse queried
+     * @returns Promise<any> - promise that resolves with an array events (of Event class type)
+     */
+    async getEventsBySource(source: Source): Promise<any> {
+        let promise = new Promise((resolve, reject) => {
+            this.http.post(environment.API_URL + 'reverseLookupEvents', { query: source.objectId, relationship: 'sources', field: 'source' }).subscribe((success: any) => {
+                if (success.message === 'OK') {
+                    let eventArr = new Array<Event>();
+                    success.results.forEach((s: any) => {
+                        eventArr.push(this.getAsSimpleEvent(s));
+                    });
+
+                    resolve(eventArr);
+                    return;
+                }
+                if (success.message === 'ERROR') {
+                    console.error(success.error);
+                    reject(success);
+                    return;
+                }
+            });
+        });
+
+        return promise;
+    }
+
+    /**
+     * Reverse lookup events by event association
+     * @param event event thats being reverse queried
+     * @returns Promise<any> - promise that resolves with an array events (of Event class type)
+     */
+    async getEventsByEvent(event: Event): Promise<any> {
+        let promise = new Promise((resolve, reject) => {
+            this.http.post(environment.API_URL + 'reverseLookupEvents', { query: event.objectId, relationship: 'events', field: 'event' }).subscribe((success: any) => {
                 if (success.message === 'OK') {
                     let eventArr = new Array<Event>();
                     success.results.forEach((s: any) => {
