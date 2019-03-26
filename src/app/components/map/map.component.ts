@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Inject, OnChanges, SimpleChanges, ComponentFactoryResolver, Injector, ApplicationRef, ComponentRef, AfterViewChecked, AfterViewInit } from '@angular/core';
+import { Component, OnInit, Input, Inject, SimpleChanges, ComponentFactoryResolver, Injector, ApplicationRef, ComponentRef, AfterViewChecked, AfterViewInit } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { environment } from '../../../environments/environment';
@@ -21,7 +21,7 @@ declare var d3: any;
   styleUrls: ['./map.component.scss']
 })
 
-export class MapComponent implements OnChanges {
+export class MapComponent implements AfterViewInit {
 
   @Input() items: Event[];
 
@@ -33,7 +33,6 @@ export class MapComponent implements OnChanges {
   isMarkerSelected: boolean;
   mapLegendReady: boolean = false;
   routerPath: any;
-  MAX_TRIES: number = 6; // max number of iterations for generating the tag cloud
 
   // layer groups
   markerLayerGroup: any;
@@ -80,61 +79,57 @@ export class MapComponent implements OnChanges {
     this.currentColorAssignment = new Map<string, string>();
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes) {
+  ngAfterViewInit(): void {
       // only initiate map on browser side
       this.isMarkerSelected = false;
       if (this.isBrowser) {
+
+        this.createMap();
+        this.createMarkers();
+        this.createHeatMap();
+        
+        // Event Selected 
         this.mms.currentlySelectedEvent.subscribe((ev: Event) => {
-          if (!ev && this.map) {
-            // null means we have no selected event so we can swap groups
-            this.map.eachLayer((layer: any) => {
-              if (!layer._url) { // _url means that this layer has tiles
-                this.map.removeLayer(layer);
-              }
-            });
+          if (!ev) {
+            this.map.removeLayer(this.mainMarkerGroup);
+            this.map.removeLayer(this.musicLayerGroup);
+            this.map.removeLayer(this.heatmapLayerGroup);
+            this.map.removeLayer(this.tagCloudLayerGroup);
+            this.map.removeLayer(this.temporaryMarkerGroup);
+            
+            this.temporaryMarkerGroup = L.featureGroup();
+
             this.map.addLayer(this.mainMarkerGroup);
-            this.markerLayerGroup.addTo(this.map); // show it shows up as checked in the layer control
             // we are good to set the isMarkerSelected to false now
             this.isMarkerSelected = false;
           }
           // should run once if a marker is clicked
-          if (ev && this.map && !this.isMarkerSelected) {
+          if (ev && !this.isMarkerSelected) {
             // if event is passed and we have a map
             // this means a marker was clicked to see details
             this.isMarkerSelected = true;
+            
             this.map.removeLayer(this.mainMarkerGroup);
+            this.map.removeLayer(this.musicLayerGroup);
+            this.map.removeLayer(this.heatmapLayerGroup);
+            this.map.removeLayer(this.tagCloudLayerGroup);
+
             this.createDetailMarkers(ev);
           }
         });
 
-        this.mms.currentColorAssignment.subscribe((colorMap: Map<string, string>) => {
-          if (!colorMap) return;
-          this.currentColorAssignment = colorMap;
-          if (this.currentColorAssignment.size > 0) {
-            this.mapLegendReady = true;
-          }
-        });
-
-        this.mms.currentSectionSizes.subscribe((sizes: Array<number>) => {
-          // resize map to 100% w/h of parent container (defined in css)
-          if (this.map) {
-            this.map.invalidateSize();
-          }
-        });
-
-        // from timeline (mouseover on events)
+        // Event Highlighted
         this.mms.currentlyHighlightedItem.subscribe((highlight: any) => {
-          this.currentlyHighlightedItem = highlight;
-          if (this.map) {
+          if (highlight) {
+            this.currentlyHighlightedItem = highlight;
             this.highlightMarkers([this.currentlyHighlightedItem.idx], this.currentlyHighlightedItem.fromMap);
           }
         });
 
         // comes from search
         this.mms.currentlySelectedItems.subscribe((objectIdArr: Array<any>) => {
-          this.currentlySelectedItems = objectIdArr;
-          if (this.map) {
+          if (objectIdArr) {
+            this.currentlySelectedItems = objectIdArr;
             this.highlightMarkers(this.currentlySelectedItems, false);
           }
         });
@@ -150,10 +145,7 @@ export class MapComponent implements OnChanges {
           }
           this.updateMarkers();
         });
-
-        this.createMap();
       }
-    }
   }
 
 
@@ -166,6 +158,7 @@ export class MapComponent implements OnChanges {
       zoomControl: false,
       animate: true
     };
+
     this.map = L.map('map', options).setView([48.213939, 16.377285], 13);
     this.map.invalidateSize();
     this.mainMarkerGroup = L.markerClusterGroup({ //https://github.com/Leaflet/Leaflet.markercluster#options
@@ -177,12 +170,10 @@ export class MapComponent implements OnChanges {
       //spiderfyDistanceMultiplier: 1.5,
       removeOutsideVisibleBounds: true,
       iconCreateFunction: (cluster: any) => {
-        let themes = this.calculateDistributionPerCluster(cluster);
         return L.divIcon({
           iconSize: [35, 35], // size of the icon
           className: 'cluster-map-marker',
-          themes: themes,
-          html: this.getSVGClusterIcon(themes, cluster.getAllChildMarkers().length)
+          html: this.getSVGClusterIcon(cluster.getAllChildMarkers().length)
         });
       }
       //disableClusteringAtZoom: 17,
@@ -190,14 +181,17 @@ export class MapComponent implements OnChanges {
 
     // setup groups
     this.temporaryMarkerGroup = L.layerGroup();
+    
     this.mainMarkerGroup.on('clusterclick', this.handleClusterClick());
     this.mainMarkerGroup.on('clustermouseover', this.handleClusterMouseOver());
     this.mainMarkerGroup.on('clustermouseout', this.handleClusterMouseOut());
+    
     // layer groups that contain marker/heatmap/tagcloud layers
     this.markerLayerGroup = L.layerGroup([this.mainMarkerGroup]);
-    this.musicLayerGroup = L.layerGroup([]);;
-    this.heatmapLayerGroup = L.layerGroup([]);;
-    this.tagCloudLayerGroup = L.layerGroup([]);;
+    this.musicLayerGroup = L.layerGroup([]);
+    this.heatmapLayerGroup = L.layerGroup([]);
+    this.tagCloudLayerGroup = L.layerGroup([]);
+
     // control layers for map
     let baseLayers = {
       '<span class=\"layer-control-item\">Event markers</span>': this.markerLayerGroup,
@@ -217,17 +211,13 @@ export class MapComponent implements OnChanges {
 
     // add control for layers to the map
     L.control.layers(null, baseLayers, { position: 'bottomright' }).addTo(this.map);
-    this.map.on('popupopen', this.handlePopUpOpen());
-    this.map.on('click', this.handleMapClick());
-    this.map.on('popupclose', this.handlePopUpClose());
-    this.map.on('zoomend', () => {
-      this.mainMarkerGroup.refreshClusters();
-    })
+
+    this.map.on('popupopen', this.handlePopUpOpen.bind(this));
+    this.map.on('click', this.handleMapClick.bind(this));
+    this.map.on('popupclose', this.handlePopUpClose.bind(this));
+    this.map.on('zoomend', () => { this.mainMarkerGroup.refreshClusters(); });
+    
     this.initialized = true;
-    // this.items = this.es.getEvents();
-    this.createMarkers();
-    this.createHeatMap();
-    this.createTagCloudMap();
   }
 
   /**
@@ -236,13 +226,7 @@ export class MapComponent implements OnChanges {
    * @return the event we found with that record id
    */
   findEvent(objectId: string): Event {
-    // console.log(`looking for ${objectId}`)
-    let foundEvent = this.items.filter((e: Event) => {
-      if (objectId === e.objectId) {
-        return e;
-      }
-    });
-    return foundEvent[0];
+    return this.items.find((e: Event) => { return objectId === e.objectId; });
   }
 
   /**
@@ -255,9 +239,7 @@ export class MapComponent implements OnChanges {
       width: '50%',
       data: e
     });
-    dialogRef.afterClosed().subscribe((result) => {
-      //console.log(result);
-    });
+    dialogRef.afterClosed().subscribe((result: any) => {});
   }
 
   /**
@@ -267,6 +249,7 @@ export class MapComponent implements OnChanges {
    */
   highlightMarkers(objectIdArr: Array<any>, fromMap: boolean): void {
     // TODO rethink this
+    console.log(objectIdArr, fromMap);
     if (fromMap) return;
     if (!objectIdArr[0]) {
       for (let m of this.markers) {
@@ -331,7 +314,6 @@ export class MapComponent implements OnChanges {
       e.layer.spiderfy();
       //e.target.getLayers()); <- gives us all markers?
       // TODO need to find which are not in current cluster and lower their opacity or gray them out
-      // console.log(e.layer.getAllChildMarkers());
     }
   }
 
@@ -342,7 +324,6 @@ export class MapComponent implements OnChanges {
   handleClusterMouseOut(): (e: any) => void {
     return (e: any) => {
       e.originalEvent.preventDefault();
-      //e.layer.closePopup();
     }
   }
 
@@ -413,8 +394,8 @@ export class MapComponent implements OnChanges {
   handleClick(): (e: any) => void {
     return (e: any) => {
       let event = this.findEvent(e.target.objectId); // event we have clicked
+      console.log(event);
       this.db.getAsEvent(event).then((success) => {
-        console.log(success);
         this.mms.setSelectedEvent(success);
       });
     }
@@ -563,31 +544,15 @@ export class MapComponent implements OnChanges {
   }
 
   /**
-   * Computes the distribution of themes for a given cluster in the map
-   * @param cluster             - cluster that we get from leaflet-marker-cluster
-   * @return map<string,number> - a map of themes with their associated count
-   */
-  calculateDistributionPerCluster(cluster: any): Map<string, number> {
-    let childMarkers = cluster.getAllChildMarkers();
-    let themeMap = new Map<string, number>();
-    for (let c of childMarkers) {
-      for (let t of c.themes) {
-        themeMap.set(t.name, themeMap.get(t.name) ? themeMap.get(t.name) + 1 : 1);
-      }
-    }
-    return themeMap;
-  }
-
-  /**
    * Generates an SVG donut chart showing the distribution of themes
    * @param themeMap          - our map of themes <string,number>
    * @param childClusterCount - number of children in the cluster (default = 0)
    * @param cssClass          - css class to be added to the SVG
    * @return string           - the SVG as string
    */
-  getSVGClusterIcon(themeMap: Map<string, number>, childClusterCount: number = 0, cssClass: string = ''): string {
+  getSVGClusterIcon(childClusterCount: number = 0, cssClass: string = ''): string {
     // add tooltip
-    let data = Array.from(themeMap);
+    let data = new Array<any>();
     let width = 35; // in pixels
     let height = 35; // in pixels
     let thickness = 7; // in pixels
@@ -699,169 +664,6 @@ export class MapComponent implements OnChanges {
       }
     }
     this.mainMarkerGroup.addTo(this.map);
-  }
-
-  /**
-   * Computes the distribution of themes for a given cluster in the map
-   * @param cluster             - cluster that we get from leaflet-marker-cluster
-   * @return map<string,number> - a map of themes with their associated count
-   */
-  getThemeMap(events: Array<Event>): Map<string, number> {
-    let themeMap = new Map<string, number>();
-    for (let e of events) {
-      for (let t of e.themes) {
-        themeMap.set(t.theme.name, themeMap.get(t.theme.name) ? themeMap.get(t.theme.name) + 1 : 1);
-      }
-    }
-    return themeMap;
-  }
-
-  //   /**
-  //    *
-  //    */
-  //   checkIfKeyExists(map: Map<Geodata, Array<Event>>, objectKey: string): boolean {
-  //     let found = false;
-  //     map.forEach( (value: Array<Event>, key: Geodata) => {
-  //       if(key.streetName === objectKey) {
-  //         found = true;
-  //       }
-  //     });
-  //     return found;
-  //   }
-
-  //   /**
-  //    *
-  //    */
-  //   getValueByKey(map: Map<Geodata, Array<Event>>, objectKey: string): Array<Event> {
-  //     let result: Array<Event>;
-  //     map.forEach( (value: Array<Event>, key: Geodata) => {
-  //       if(key.streetName === objectKey) {
-  //         result = value;
-  //       }
-  //     });
-  //     return result;
-  //   }
-
-  /**
-   * Creats a georeferenced wordcloud on the map
-   * @param markers (optional)  - array of markers with lat, lng properties
-   */
-  createTagCloudMap(markers?: Array<any>): void {
-    // let mArr = markers? markers : this.markers;
-    // let locationMap = new Map<Geodata, Array<Event>>();
-    // mArr.forEach( (m: any) => {
-    //     let e = this.findEvent(+m.objectId);
-    //     for(let g of e.geodata) {
-    //       if(!this.checkIfKeyExists(locationMap, g.streetName)) {
-    //         // location doesnt exist in the map
-    //         // create array of events push event to it
-    //         // add it to the map
-    //         let tempArr = new Array<Event>();
-    //         tempArr.push(e);
-    //         locationMap.set(g, tempArr);
-    //       } else {
-    //         //console.log('exists appending entry');
-    //         // location exists in map append event to the list
-    //         let foundVal = this.getValueByKey(locationMap, g.streetName);
-    //         foundVal.push(e);
-    //       }
-    //     }
-    // });
-
-    // let locationThemeMap = new Map<Geodata, Map<string,number>>();
-    // locationMap.forEach( (value: Array<Event>, key: Geodata) => {
-    //   let themeMap = this.getThemeMap(value);
-    //   locationThemeMap.set(key, themeMap);
-    // });
-
-    // let locationSVGMap = new Map<Geodata, string>();
-
-    // locationThemeMap.forEach( (value: Map<string,number>, key: Geodata) => {
-    //   locationSVGMap.set(key, this.createTagCloud(value));
-    // });
-  }
-
-  /**
-   *
-   */
-  createTagCloud(themeMap: Map<string, number>): string {
-    let width = '200';
-    let height = '200';
-
-    let div = document.createElement('div');
-    let hostEl = D3.select(div);
-
-    let svg = hostEl.append('svg')
-      .remove()
-      .attr('width', width)
-      .attr('height', height)
-
-    let viewBox = [0, 0, width, height].join(" ");
-    svg.attr("viewBox", viewBox);
-    let themesToDraw = new Array<any>();
-    themeMap.forEach((value: number, key: string) => {
-      themesToDraw.push({ text: key, size: value * 4 });
-    })
-    this.generateTagCloud(themesToDraw, svg, { width: width, height: height });
-
-    return hostEl.html();
-  }
-
-  /**
-   *
-   */
-  generateTagCloud(themesToDraw: Array<any>, svg: any, dimensions: any, retryCycle?: number): void {
-    d3.layout.cloud()
-      .size([dimensions.width, dimensions.height])
-      .words(themesToDraw)
-      .rotate((d: any) => {
-        return (~~(Math.random() * 2) - 1) * 90; // 6 -3 60
-      })
-      .font('Roboto')
-      .fontSize((d: any) => {
-        return d.size;
-      })
-      .spiral("rectangular")
-      .on('end', (themeArr: any) => {
-        // check if all words fit and are included
-        if (themeArr.length == themesToDraw.length) {
-          this.drawTagCloud(themeArr, svg, dimensions); // finished
-        }
-        else if (!retryCycle || retryCycle < this.MAX_TRIES) {
-          // words are missing due to the random placement and limited room space
-          // try again and start counting retries
-          this.generateTagCloud(themesToDraw, svg, (retryCycle || 1) + 1);
-        } else {
-          // retries maxed and failed to fit all the words
-          this.drawTagCloud(themeArr, svg, dimensions);
-        }
-      })
-      .start();
-  }
-
-  /**
-   *
-   */
-  drawTagCloud(words: Array<any>, svg: any, dimensions: any): void {
-    let g = svg.append('g')
-      .attr('transform', 'translate(0,0)');
-
-    let wordcloud = g.append("g")
-      .attr('class', 'wordcloud')
-      .attr("transform", "translate(" + dimensions.width / 2 + "," + dimensions.height / 2 + ")");
-
-    wordcloud.selectAll('text')
-      .data(words)
-      .enter().append('text')
-      .attr('class', 'word')
-      .style('fill', (d: any, i: any) => {
-        return this.mms.getColorAssignmentForCategory(d.text);
-        //return this.fill(i);
-      })
-      .style('font-size', (d: any) => { return d.size + 'px'; })
-      .attr("text-anchor", "middle")
-      .attr("transform", (d: any) => { return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")"; })
-      .text((d: any) => { return d.text; });
   }
 
   /**
