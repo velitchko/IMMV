@@ -142,6 +142,7 @@ export class SearchComponent {
    * @return results - array of results matching the name
    */
   filterItems(name: string): Array<any> {
+    this.displayClear = true;
     let results = this.items.filter((item: any) => {
       return item.object.name.toLowerCase().includes(name.toLowerCase());
     });
