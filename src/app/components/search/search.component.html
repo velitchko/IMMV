@@ -1,33 +1,27 @@
 <button class="search-button" [ngClass]="{ 'open' : showSearch }" (click)="toggleSearchBar()">
-    <mat-icon>keyboard_arrow_down</mat-icon>
-  </button>
-  <form class="search-bar" [ngClass]="{ 'open' : showSearch }">
-    <!-- default search would be for events -->
-    <!-- unless specificed otherwise by the searchType -->
-    <div class="search-icons-wrapper">
+  <mat-icon>keyboard_arrow_down</mat-icon>
+</button>
+<form class="search-bar" [ngClass]="{ 'open' : showSearch }">
+  <!-- default search would be for events -->
+  <!-- unless specificed otherwise by the searchType -->
+  <!-- <div class="search-icons-wrapper">
       <span class="search-icon-wrapper" *ngFor="let st of searchTypes" (click)="setSearchType(st)">
         <mat-icon class="search-icon" [ngClass]="{'selected': st.selected}">{{ st.icon }}</mat-icon>
       </span>
-    </div>
-    <mat-form-field class="search-wrapper">
-      <input class="search-input" matInput placeholder="Search..." [matAutocomplete]="auto" [formControl]="searchCtrl" #search>
-      <button mat-button *ngIf="displayClear" matSuffix mat-icon-button aria-label="Clear" (click)="clearSearch()">
-        <mat-icon>close</mat-icon>
-      </button>
-      <mat-autocomplete #auto="matAutocomplete">
-        <!-- should have items already loaded from parent component -->
-        <div *ngIf="loadingEntries">
-          <mat-progress-bar color="primary" mode="query"></mat-progress-bar>
-        </div>
-        <div *ngIf="!loadingEntries">
-          <div  *ngFor="let i of filteredItems | async">
-              <mat-option [value]="i.name" (onSelectionChange)="highlightEvent(i)">
-                <mat-icon class="results-icon">{{ searchIcon }}</mat-icon>
-                {{ i.name }}
-              </mat-option>
-          </div>
-        </div>
-      </mat-autocomplete>
-    </mat-form-field>
-  </form>
-  
+    </div> -->
+  <mat-form-field class="search-wrapper">
+    <input class="search-input" matInput placeholder="Search..." [matAutocomplete]="auto" [formControl]="searchCtrl"
+      #search>
+    <button mat-button *ngIf="displayClear" matSuffix mat-icon-button aria-label="Clear" (click)="clearSearch()">
+      <mat-icon>close</mat-icon>
+    </button>
+    <mat-autocomplete #auto="matAutocomplete">
+      <div *ngFor="let i of filteredItems | async">
+        <mat-option [value]="i.object.name" (onSelectionChange)="highlightEvent(i)">
+          <mat-icon class="results-icon">{{ objectTypes.get(i.type) }}</mat-icon>
+          {{ i.object.name }}
+        </mat-option>
+      </div>
+    </mat-autocomplete>
+  </mat-form-field>
+</form>

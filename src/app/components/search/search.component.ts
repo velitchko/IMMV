@@ -1,9 +1,15 @@
-import { Component, Input, ChangeDetectorRef } from '@angular/core';
+import { Component } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { startWith, map } from 'rxjs/operators';
 import { DatabaseService } from '../../services/db.service';
 import { MusicMapService } from '../../services/musicmap.service';
+import { Event } from '../../models/event';
+import { HistoricEvent } from '../../models/historic.event';
+import { PersonOrganization } from '../../models/person.organization';
+import { Location } from '../../models/location';
+import { Source } from '../../models/source';
+import { Theme } from '../../models/theme';
 
 @Component({
   selector: 'app-search',
@@ -14,51 +20,30 @@ import { MusicMapService } from '../../services/musicmap.service';
 export class SearchComponent {
   searchCtrl: FormControl;
   filteredItems: Observable<Array<any>>;
-  showSearch = false;
-  @Input() items: Array<any>;
-  searchType: string;
-  searchIcon: string;
-  searchTypes: any;
-  objectIdArr: Array<any>;
-  loadingEntries: boolean;
+
+  items: Array<any>;
+
+  objectTypes: Map<string, string>;
+  results: Array<string>;
+
+  showSearch: boolean = false;
   displayClear: boolean = false;
-  constructor(private change: ChangeDetectorRef,
-    private db: DatabaseService,
-    private mms: MusicMapService) {
-    this.searchIcon = 'event';
-    this.objectIdArr = new Array<any>();
-    this.searchTypes = [
-      {
-        icon: 'account_circle',
-        value: 'people',
-        selected: false,
-      }, {
-        icon: 'event',
-        value: 'events',
-        selected: true,
-      }, {
-        icon: 'history',
-        value: 'historicevents',
-        selected: false,
-      }, {
-        icon: 'place',
-        value: 'locations',
-        selected: false,
-      }, {
-        icon: 'collections',
-        value: 'sources',
-        selected: false,
-      }, {
-        icon: 'donut_large',
-        value: 'themes',
-        selected: false,
-      }, {
-        icon: 'domain',
-        value: 'organizations',
-        selected: false,
-      }];
-    // TODO add historic events
-    this.loadingEntries = false;
+
+  constructor(private db: DatabaseService, private mms: MusicMapService) {
+    this.items = new Array<any>();
+    this.results = new Array<string>();
+    this.objectTypes = new Map<string, string>();
+
+    this.getData();
+
+    this.objectTypes.set('event', 'event');
+    this.objectTypes.set('historicevent', 'history');
+    this.objectTypes.set('location', 'place');
+    this.objectTypes.set('source', 'collections');
+    this.objectTypes.set('theme', 'donut_large');
+    this.objectTypes.set('person', 'account_circle');
+    this.objectTypes.set('organization', 'domain');
+
     this.searchCtrl = new FormControl();
     this.filteredItems = this.searchCtrl.valueChanges
       .pipe(
@@ -68,27 +53,78 @@ export class SearchComponent {
         })
       );
   }
-  //TODO not working for people / organizations 'name of undefined??'
-  // should probably check the organizations / people arrays and make sure we have only those objects
-  // or add name attribute on organization (set in constructor) with the first valid or 'official' name
+
   /**
-   * Updates the this.items array and the filteredItems Observable
-   * @param newItems - array of new items coming from getItemsBasedOnType
+   * Adds the data object along with its type to the items array which is filterable 
+   * @param data the data object (Event, HistoricEvent, Person/Organization, etc.)
+   * @param type string description of the object for setting icon in search results
    */
-  updateFilteredItems(newItems: Array<any>): void {
-    this.displayClear = true;
-    this.items = newItems;
-    this.filteredItems = this.searchCtrl.valueChanges
-      .pipe(
-        startWith(''),
-        map((item: any) => {
-          return item ? this.filterItems(item) : this.items.slice();
-        })
-      );
-    this.loadingEntries = false;
-    // force change detection
-    this.change.markForCheck();
+  addData(data: Array<any>, type: string): void {
+    data.forEach((s: any) => {
+      this.items.push({ object: s, type: type });
+    });
   }
+
+  /**
+   * Gets data from the db service 
+   * if db service has no data look up 
+   */
+  getData(): void {
+    // no events
+    if (this.db.getEvents().length === 0) {
+      this.db.getAllEvents(true).then((success: Array<Event>) => {
+        this.addData(success, 'event');
+      });
+    } else {
+      this.addData(this.db.getEvents(), 'event');
+    }
+
+    // no historic events
+    if (this.db.getHistoricEvents().length === 0) {
+      this.db.getAllHistoricEvents(true).then((success: Array<HistoricEvent>) => {
+        this.addData(success, 'historicevent');
+      });
+    } else {
+      this.addData(this.db.getHistoricEvents(), 'historicevent');
+    }
+
+    // no people / organizations
+    if (this.db.getPeopleOrganizations().length === 0) {
+      this.db.getAllPeopleOrganizations().then((success: Array<PersonOrganization>) => {
+        this.addData(success, 'personorganization');
+      });
+    } else {
+      this.addData(this.db.getPeopleOrganizations(), 'personorganization');
+    }
+
+    // no locations
+    if (this.db.getLocations().length === 0) {
+      this.db.getAllLocations().then((success: Array<Location>) => {
+        this.addData(success, 'location');
+      });
+    } else {
+      this.addData(this.db.getLocations(), 'personorganization');
+    }
+
+    // no themes
+    if (this.db.getThemes().length === 0) {
+      this.db.getAllThemes().then((success: Array<Theme>) => {
+        this.addData(success, 'theme');
+      });
+    } else {
+      this.addData(this.db.getThemes(), 'location');
+    }
+
+    // no sources
+    if (this.db.getSources().length === 0) {
+      this.db.getAllSources().then((success: Array<Source>) => {
+        this.addData(success, 'source');
+      });
+    } else {
+      this.addData(this.db.getSources(), 'theme');
+    }
+  }
+
   /**
    * Clears the search input and resets the objectIdArr
    * Broadcasts changes to the MusicMapService
@@ -96,125 +132,8 @@ export class SearchComponent {
   clearSearch() {
     this.displayClear = false;
     this.searchCtrl.setValue('');
-    this.objectIdArr = new Array<any>();
+    this.results = new Array<string>();
     //this.mms.setobjectIds(this.objectIdArr);
-  }
-
-  /**
-   * Returns an array of items based on the selected searchType
-   @return array - an array of corresponding items based on the searchType
-   */
-  getItemsBasedOnType(type: string): void {
-    // should check if returned array is empty
-    // if so we need to get the data from DB
-    if (type === 'locations') {
-      if (this.db.getLocations().length) {
-        this.updateFilteredItems(this.db.getLocations());
-      } else {
-        // we need to get data from server
-        this.db.getAllLocations().then((success) => {
-          // update filtered items array
-          this.updateFilteredItems(success);
-        }).catch((err) => {
-          console.log(err);
-        });
-      }
-    } else if (type === 'events') {
-      if (this.db.getEvents().length) {
-        this.updateFilteredItems(this.db.getEvents());
-      } else {
-        // we need to get data from server
-        this.db.getAllEvents().then((success) => {
-          // update filtered items array
-          this.updateFilteredItems(success);
-        }).catch((err) => {
-          console.log(err);
-        });
-      }
-    } else if (type === 'themes') {
-      if (this.db.getThemes().length) {
-        this.updateFilteredItems(this.db.getThemes());
-      } else {
-        // we need to get data from server
-        this.db.getAllThemes().then((success) => {
-          // update filtered items array
-          this.updateFilteredItems(success);
-        }).catch((err) => {
-          console.log(err);
-        });
-      }
-    } else if (type === 'sources') {
-      if (this.db.getSources().length) {
-        this.updateFilteredItems(this.db.getSources());
-      } else {
-        // we need to get data from server
-        this.db.getAllSources().then((success) => {
-          // update filtered items array
-          this.updateFilteredItems(success);
-        }).catch((err) => {
-          console.log(err);
-        });
-      }
-    } else if (type === 'organizations') {
-      if (this.db.getOrganizations().length) {
-        this.updateFilteredItems(this.db.getOrganizations());
-      } else {
-        // we need to get data from server
-        this.db.getAllPeopleOrganizations().then((success) => {
-          // update filtered items array
-          success = success.filter((p: any) => { return p.objectType === 'Organization'; });
-          this.updateFilteredItems(success);
-        }).catch((err) => {
-          console.log(err);
-        });
-      }
-    } else if (type === 'people') {
-      if (this.db.getPeople().length) {
-        this.updateFilteredItems(this.db.getPeople());
-      } else {
-        // we need to get data from server
-        this.db.getAllPeopleOrganizations().then((success) => {
-          // update filtered items array
-          success = success.filter((p: any) => { return p.objectType === 'Person'; });
-          this.updateFilteredItems(success);
-        }).catch((err) => {
-          console.log(err);
-        });
-      }
-    } else if (type === 'historicevents') {
-      if (this.db.getHistoricEvents().length) {
-        this.updateFilteredItems(this.db.getHistoricEvents());
-      } else {
-        this.db.getAllHistoricEvents().then((success) => {
-          this.updateFilteredItems(success);
-        }).catch((err) => {
-          console.log(err);
-        });
-      }
-    }
-    else {
-      this.updateFilteredItems(this.items);
-    }
-  }
-
-  /**
-   * Sets the searchType variable to the selected option
-   @param type - the type coming from the select element
-   */
-  setSearchType(type: any): void {
-    this.loadingEntries = true;
-    this.searchType = type.value;
-    this.searchTypes.forEach((st: any) => {
-      if (st.value === type.value) {
-        st.selected = true;
-        this.searchIcon = st.icon;
-      } else {
-        st.selected = false;
-      }
-    });
-    // update our items array
-    // TODO find out why is not working for sources, themes, people/organizations
-    this.getItemsBasedOnType(this.searchType);
   }
 
   /**
@@ -224,7 +143,7 @@ export class SearchComponent {
    */
   filterItems(name: string): Array<any> {
     let results = this.items.filter((item: any) => {
-      return item.name.toLowerCase().indexOf(name.toLowerCase()) === 0;
+      return item.object.name.toLowerCase().includes(name.toLowerCase());
     });
     return results;
   }
@@ -242,97 +161,51 @@ export class SearchComponent {
    * @param item - the item from the search field
    */
   highlightEvent(item: any): void {
-    let searchName = item.objectId;
-    let events = this.db.getEvents();
+    // item.type -> search type if anything but event -> find events related to it
+    switch (item.type) {
+      case 'historicevent':
+        this.db.getEventsByHistoricEvent(item.object).then((success: Array<HistoricEvent>) => {
+          this.results = success.map((e: HistoricEvent) => { return e.objectId; });
+          this.mms.setObjectIds(this.results);
+        });
+        break;
 
-    for (let i of events) {
-      if (i.objectId === searchName) {
-        if (!this.objectIdArr.find((r: any) => { return r === i.objectId; })) {
-          this.objectIdArr.push(i.objectId);
-        }
-      }
-      if (this.searchType === 'events') {
-        for (let ii of i.events) {
-          if (ii.event === searchName) {
-            if (!this.objectIdArr.find((r: any) => { return r === i.objectId; })) {
-              this.objectIdArr.push(i.objectId); // outer events record id (e.g. main event)
-              continue;
-            }
-          }
-        }
-      } // look in events.events
-      if (this.searchType === 'people') {
-        for (let p of i.peopleOrganizations) {
-          if (p.personOrganization === searchName) {
-            if (!this.objectIdArr.find((r: any) => { return r === i.objectId; })) {
-              this.objectIdArr.push(i.objectId);
-              break;
-            }
-          }
-        }
-      }
-      // look in events.people
-      if (this.searchType === 'organizations') {
-        for (let o of i.peopleOrganizations) {
-          if (o.personOrganization === searchName) {
-            if (!this.objectIdArr.find((r: any) => { return r === i.objectId; })) {
-              this.objectIdArr.push(i.objectId);
-              break;
-            }
-          }
-        }
-      } // look in events.organizations
-      if (this.searchType === 'themes') {
-        for (let t of i.themes) {
-          if (t.theme.objectId === searchName) {
-            if (!this.objectIdArr.find((r: any) => { return r === i.objectId; })) {
-              this.objectIdArr.push(i.objectId);
-              break;
-            }
-          }
-        }
-      } // look in events.themes
-      if (this.searchType === 'sources') {
-        for (let s of i.sources) {
-          if (s.source === searchName) {
-            if (!this.objectIdArr.find((r: any) => { return r === i.objectId; })) {
-              this.objectIdArr.push(i.objectId);
-              break;
-            }
-          }
-        }
-      } // look in events.sources
-      if (this.searchType === 'historicevents') {
-        for (let h of i.historicEvents) {
-          if (h.historicEvent === searchName) {
-            if (!this.objectIdArr.find((r: any) => { return r === i.objectId; })) {
-              this.objectIdArr.push(i.objectId);
-              break;
-            }
-          }
-        }
-      } // look in events.historicEvents
-      if (this.searchType === 'locations') {
-        for (let l of i.locations) {
-          if (l.location === searchName) {
-            if (!this.objectIdArr.find((r: any) => { return r === i.objectId; })) {
-              this.objectIdArr.push(i.objectId);
-              break;
-            }
-          }
-        }
-      } // look in events.location
+      case 'personorganization':
+        this.db.getEventsByPersonOrganization(item.object).then((success: Array<PersonOrganization>) => {
+          this.results = success.map((e: PersonOrganization) => { return e.objectId; });
+          this.mms.setObjectIds(this.results);
+        });
+        break;
+
+      case 'location':
+        this.db.getEventsByLocation(item.object).then((success: Array<Location>) => {
+          this.results = success.map((e: Location) => { return e.objectId; });
+          this.mms.setObjectIds(this.results);
+        });
+        break;
+
+      case 'theme':
+        this.db.getEventsByTheme(item.object).then((success: Array<Theme>) => {
+          this.results = success.map((e: Theme) => { return e.objectId; });
+          this.mms.setObjectIds(this.results);
+        });
+        break;
+
+      case 'source':
+        this.db.getEventsBySource(item.object).then((success: Array<Source>) => {
+          this.results = success.map((e: Source) => { return e.objectId; });
+          this.mms.setObjectIds(this.results);
+        });
+        break;
+
+      case 'event':
+        this.db.getEventsByEvent(item.object).then((success: Array<Event>) => {
+          this.results = success.map((e: Event) => { return e.objectId; });
+          this.mms.setObjectIds(this.results);
+        });
+        break;
+
+      default: break;
     }
-    // this.mms.setobjectIds(this.objectIdArr);
-    this.objectIdArr.forEach((id) => {
-      let ev = events.find((e: any) => {
-        return e.objectId === id;
-      });
-      if (ev) {
-        console.log(ev.name + ' found');
-      }
-    });
-    // TODO: highlight shit via mms (remember how?)
-    console.log('---------------');
   }
 }
