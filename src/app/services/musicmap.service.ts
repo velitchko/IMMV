@@ -88,7 +88,7 @@ export class MusicMapService {
    * @param highlight - highlight.idx - the index of the event (objectId)
    *                  - highlight.frommap - boolean true if updated from the map
    */
-  setHighlight(highlight: any): void {
+  setHighlight(highlight: string): void {
     this.highlightItem.next(highlight);
   }
 

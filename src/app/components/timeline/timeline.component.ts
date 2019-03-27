@@ -1,7 +1,6 @@
 import { Component, Input, Inject, OnChanges, SimpleChanges, ElementRef, ViewChild } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
-import { environment } from '../../../environments/environment';
 import { MusicMapService } from '../../services/musicmap.service';
 // import { ColorService } from '../../services/color.service';
 import { Event } from '../../models/event';
@@ -9,7 +8,6 @@ import * as d3 from 'd3';
 import { DataSet, Timeline } from 'vis';
 import { ModalDialogComponent } from '../modal/modal.component';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
-import { ResizedEvent } from 'angular-resize-event/resized-event';
 
 @Component({
   selector: 'app-timeline',
@@ -43,8 +41,8 @@ export class TimelineComponent implements OnChanges {
   currentEventInterval: Array<Date>;
   currentlySelectedItems: Array<any>;
 
-  datasetItems: DataSet<any>;
-  datasetGroups: DataSet<any>;
+  eventsDataSet: DataSet<any>;
+  groupsDataSet: DataSet<any>;
 
   minHeight = 20;
 
@@ -77,10 +75,9 @@ export class TimelineComponent implements OnChanges {
         
         // subscribe to changes of the currently highlighted item
         this.mms.currentlyHighlightedItem.subscribe((highlight: any) => {
-          if(!highlight) return;
-          this.highlightedItem = highlight.idx;
+          this.highlightedItem = highlight;
           if(this.timeline) {
-            this.highlightItem(highlight.idx, highlight.fromMap);
+            this.highlightItem();
           }
         });
         // subscribe to changes in currently selected items
@@ -111,13 +108,13 @@ export class TimelineComponent implements OnChanges {
   }
 
   setupData(): void {
-    this.datasetItems = new DataSet();
+    this.eventsDataSet = new DataSet();
 
     // this.themeDistribution = new Map<string,any>();
 
-    this.datasetGroups = new DataSet();
-    this.datasetGroups.add({ id: 0, content: ''});
-    this.datasetGroups.add({ id: 1, content: ''})
+    this.groupsDataSet = new DataSet();
+    this.groupsDataSet.add({ id: 0, content: ''});
+    this.groupsDataSet.add({ id: 1, content: ''})
 
    // range meaning interval default unless we detect otherwise
     for(let i of this.items) {
@@ -145,7 +142,7 @@ export class TimelineComponent implements OnChanges {
         // className: i.geodata.length !== 0 ? 'has-location' : 'no-location'
       };
       if(i.endDate) dataitem['end'] = i.endDate;
-      this.datasetItems.add(dataitem);
+      this.eventsDataSet.add(dataitem);
     }
   }
 
@@ -192,26 +189,10 @@ export class TimelineComponent implements OnChanges {
   }
 
   /**
-   * TODO: double check this function
+   * Highlights the mouseovered items (if null resets selection)
    */
-  highlightItem(recordId: number, fromMap: boolean): void {
-    let id = this.getTimelineIds([this.highlightedItem]);
-    if(!id) return;
-    this.datasetItems.forEach(
-      (d: any) => {
-        for(let i of id) {
-          if(d.recordId === i.recordId) {
-            d.className = 'fromSearch';
-          } else {
-            d.className = '';
-          }
-        }
-      }
-    )
-    this.timeline.setSelection(id);
-    if(fromMap) {
-      this.timeline.focus(id);
-    }
+  highlightItem(): void {
+    this.timeline.setSelection(this.highlightedItem);
   }
 
   /**
@@ -223,7 +204,7 @@ export class TimelineComponent implements OnChanges {
   getTimelineIds(recordIdArr: Array<any>): Array<any> {
     let ids = new Array<any>();
     for(let r of recordIdArr) {
-      this.datasetItems.forEach( (d: any) => {
+      this.eventsDataSet.forEach( (d: any) => {
         if(+r === +d.id && d.type !== 'background') {
           ids.push(+d.id);
         }
@@ -373,11 +354,14 @@ export class TimelineComponent implements OnChanges {
         minHeight:  '100%',
         zoomMax: 	3153600000000, // 100 years in ms
         zoomMin: 604800000, // 7 days in ms
+        // stack: false, // default = true
         //verticalScroll: true,
       };
-      this.timeline = new Timeline(this.detailtimeline.nativeElement, this.datasetItems, options); // this.datasetGroups
+      this.timeline = new Timeline(this.detailtimeline.nativeElement, this.eventsDataSet, options); // this.datasetGroups
       this.timeline.on('rangechanged', this.rangeChanged());
       this.timeline.on('select', this.eventSelected());
+      this.timeline.on('itemover', this.eventMouseOver());
+      this.timeline.on('itemout', this.eventMouseOut());
       // x.domain returns array with 2 elements - start and end date
     }
   }
@@ -416,20 +400,20 @@ export class TimelineComponent implements OnChanges {
     return foundEvent[0];
   }
 
+  eventMouseOut(): (properties?: any) => void { 
+    return (properties: any) => {
+      this.timeline.setSelection(null);
+      this.mms.setHighlight(null);
+    };
+  }
+
   /**
    * EventHandler(Callback) for the mouseover of events
    */
   eventMouseOver(): (properties?: any) => void {
-    return (properties) => {
-      // if item and belongs to events group
-      if(properties.what === 'item' && properties.group !== 1) {
-        let e = this.findEvent(properties.item);
-        // call highlight item
-        // set MMS value based on fromMap there
-        this.mms.setHighlight({idx: +e.objectId, fromMap: false});
-      } else {
-        this.mms.setHighlight({idx: null, fromMap: false});
-      }
+    return (properties: any) => {
+      properties.item ? this.mms.setHighlight(properties.item) : this.mms.setHighlight(null);
+      // this.timeline.setSelection(properties.item);
     };
   }
 
@@ -437,15 +421,8 @@ export class TimelineComponent implements OnChanges {
    * EventHandler(Callback) for the selection of events
    */
   eventSelected(): (properties?: any) => void {
-    return (properties) => {
-      if(properties.what !== 'background' || properties.group !== 1) {
-        //if event.what === 'item' - its an event (could also be axis, background - potentially background event??)
-
-        // could conditionally display info based on the type of what
-        // let e = this.findEvent(properties.items[0]);
-
-        this.mms.setSelectedEvent(properties.items[0]);
-      }
+    return (properties: any) => {
+      properties.items[0] ? this.mms.setSelectedEvent(properties.items[0]) : this.mms.setSelectedEvent(null);
     };
   }
 
@@ -577,3 +554,4 @@ export class TimelineComponent implements OnChanges {
     return d;
   }
 }
+
