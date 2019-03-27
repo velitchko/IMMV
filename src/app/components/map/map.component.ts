@@ -45,9 +45,11 @@ export class MapComponent implements AfterViewInit {
   temporaryMarkerGroup: any; // backbuffer with markers - we swap between mainMarkerGroup and temporaryMarkerGroup
   heatmapMarkerGroup: any; // holds our heatmap
   // observables
+  
   currentEventInterval: Array<Date>;
-  currentlySelectedItems: Array<any>;
-  currentlyHighlightedItem: any;
+  currentlySelectedEvents: Array<string>;
+  currentlyHighlightedEvent: any;
+
   currentColorAssignment: Map<string, string>;
   selectedCluster: any;
 
@@ -75,7 +77,7 @@ export class MapComponent implements AfterViewInit {
     this.markers = new Array<any>();
 
     this.currentEventInterval = new Array<Date>();
-    this.currentlySelectedItems = new Array<any>();
+    this.currentlySelectedEvents = new Array<any>();
     this.currentColorAssignment = new Map<string, string>();
   }
 
@@ -120,18 +122,18 @@ export class MapComponent implements AfterViewInit {
 
         // Event Highlighted
         this.mms.currentlyHighlightedItem.subscribe((highlight: any) => {
-          if (highlight) {
-            this.currentlyHighlightedItem = highlight;
-            this.highlightMarkers([this.currentlyHighlightedItem.idx], this.currentlyHighlightedItem.fromMap);
-          }
+          this.currentlyHighlightedEvent = highlight;
+          this.currentlyHighlightedEvent ? this.highlightMarkers() : this.unhighlightMarkers();
+            // if its a singular item i.e. from timeline or something
+            // just use the this.currentlyHighlightedEvent within the function
         });
 
         // comes from search
-        this.mms.currentlySelectedEvents.subscribe((objectIdArr: Array<any>) => {
-          if (objectIdArr) {
-            this.currentlySelectedItems = objectIdArr;
-            this.highlightMarkers(this.currentlySelectedItems, false);
-          }
+        this.mms.currentlySelectedEvents.subscribe((events: Array<any>) => {
+            this.currentlySelectedEvents = events;
+            this.currentlySelectedEvents ? this.highlightMarkers(this.currentlySelectedEvents) : this.unhighlightMarkers();
+            // if there are multiple events pass the array to the 
+            // following function for highlighting
         });
 
         // comes from timeline
@@ -242,35 +244,53 @@ export class MapComponent implements AfterViewInit {
     dialogRef.afterClosed().subscribe((result: any) => {});
   }
 
+  unhighlightMarkers(): void {
+    this.mainMarkerGroup.eachLayer((layer: any) => {
+      if(layer._icon) L.DomUtil.removeClass(layer._icon, 'selected');
+    });
+  }
+
   /**
    * Highlights mapmarkers that were found from the objectIdArr
-   * @param objectIdArr - array of objectId's (number)
+   * @param events - array of objectId's (number) (OPTIONAL)
    * @param fromMap     - boolean if called from map
    */
-  highlightMarkers(objectIdArr: Array<any>, fromMap: boolean): void {
-    // TODO rethink this
-    if (fromMap) return;
-    if (!objectIdArr[0]) {
-      for (let m of this.markers) {
-        m.closePopup();
-      }
-      // TODO unspiderfy like the code below
-    } else {
-      for (let id of objectIdArr) {
-        this.mainMarkerGroup.eachLayer((layer: any) => {
-          if (layer.objectId === id) {
-            //this.map.flyTo(layer.getLatLng()); -> causes closing and opening of tooltip need better solution
-            this.selectedCluster = this.mainMarkerGroup.getVisibleParent(layer);
-            if (this.selectedCluster && this.selectedCluster._markers) {
-              this.selectedCluster.spiderfy();
-            }
-            if (!fromMap) {
-              layer.openPopup();
-              //this.mainMarkerGroup.zoomToShowLayer(layer);
+  highlightMarkers(events?: Array<string>): void {
+    // TODO:
+    // cannot keep multiple clusters opened
+    // hide mainMarkerGroup
+    // populate temporaryMarkerGroup
+    // display temporaryMarkerGroup
+    if(!events) {
+      // if no events array provided we are looking for only one item
+      this.mainMarkerGroup.eachLayer((layer: any) => {
+        if(layer._icon) L.DomUtil.removeClass(layer._icon, 'selected');
+        if(layer.objectId === this.currentlyHighlightedEvent) {
+          if(layer._icon) {
+            // single marker
+             L.DomUtil.addClass(layer._icon, 'selected'); 
+             return;
+          } else {
+            // cluster
+            let cluster = this.mainMarkerGroup.getVisibleParent(layer);
+            if(cluster) { 
+              cluster.spiderfy();
+              cluster.getAllChildMarkers().forEach((child: any) => {
+                if(child._icon) L.DomUtil.removeClass(child._icon, 'selected');
+                if(child.objectId === this.currentlyHighlightedEvent) {
+                  if(child._icon) {
+                    L.DomUtil.addClass(child._icon, 'selected');
+                    return;
+                  }
+                }
+              });              
             }
           }
-        });
-      }
+         }
+      });
+    } else {
+      // events array exists - probably from search or some selection
+      // replace all map markers with temp group
     }
   }
 
@@ -299,7 +319,7 @@ export class MapComponent implements AfterViewInit {
    */
   handleMapClick(): (e: any) => void {
     return (e: any) => {
-      this.mms.setHighlight({ idx: null, fromMap: true });
+      this.mms.setHighlight(null);
     }
   }
 
@@ -372,17 +392,15 @@ export class MapComponent implements AfterViewInit {
    */
   handleMouseOver(): (e: any) => void {
     return (e: any) => {
-      for (let m of this.markers) {
-        if (m.objectId === e.target.objectId) {
-          m.openPopup();
-          this.mms.setHighlight({ idx: m.objectId, fromMap: true });
-        }
-      }
+      e.target.openPopup();
+      this.mms.setHighlight(e.target.objectId);
     }
   }
 
   handleMouseOut(): (e: any) => void {
     return (e: any) => {
+      e.target.closePopup();
+      this.mms.setHighlight(null);
     }
   }
 
@@ -637,24 +655,28 @@ export class MapComponent implements AfterViewInit {
       className: 'default-map-marker',
       html: this.getSVGIcon(),
     });
+
     let eventCollection = events ? events : this.items;
     for (let i of eventCollection) {
       let g = i.geodata;
       if (g && (g.lat && g.lng)) {
-        let popup = L.popup({ autoPan: false, className: 'single-marker-tooltip' }) // could be better solution for this -> issue is when mo a marker that is @ boundary map moves which closes marker which moves map which opens marker etc.
-          .setContent(this.getHTMLTooltip(i));
+
+        let popup = L.popup({ autoPan: false, className: 'default-map-marker' }) // could be better solution for this -> issue is when mo a marker that is @ boundary map moves which closes marker which moves map which opens marker etc.
+                     .setContent(this.getHTMLTooltip(i));
+
         let marker = L.marker([g.lat, g.lng], { icon: markerIcon })
-          .on('click', this.handleClick())
-          .on('mouseover', this.handleMouseOver())
-          .bindPopup(popup)
+                      .on('click', this.handleClick())
+                      .on('mouseover', this.handleMouseOver())
+                      .on('mouseout', this.handleMouseOut())
+                      .bindPopup(popup);
+
         marker.objectId = i.objectId;
-        //marker._icon = markerIcon;
         marker.name = i.name;
         marker.fromSearch = false;
-        marker.startDate =i.startDate;
+        marker.startDate = i.startDate;
         marker.endDate = i.endDate ? i.endDate : i.startDate;
-        marker.setOpacity(0.75);
-        marker.themes = i.themes; // need to add this so our cluster icon can compute the donut chart
+        // marker.setOpacity(0.75);
+        // marker.themes = i.themes; // need to add this so our cluster icon can compute the donut chart
         this.markers.push(marker);
         this.mainMarkerGroup.addLayer(marker);
       }
@@ -669,6 +691,7 @@ export class MapComponent implements AfterViewInit {
   createHeatMap(markers?: Array<any>): void {
     let latLngs = new Array<any>();
     let mArr = markers ? markers : this.markers;
+
     for (let m of mArr) {
       latLngs.push([m.getLatLng().lat, m.getLatLng().lng]);
     }
