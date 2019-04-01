@@ -243,11 +243,17 @@ export class MapComponent implements AfterViewInit {
     });
     dialogRef.afterClosed().subscribe((result: any) => {});
   }
-
+  
   unhighlightMarkers(): void {
     this.mainMarkerGroup.eachLayer((layer: any) => {
       if(layer._icon) L.DomUtil.removeClass(layer._icon, 'selected');
     });
+
+  }
+  
+  resetMapMarkers(): void {
+    this.map.removeLayer(this.temporaryMarkerGroup);
+    this.map.addLayer(this.mainMarkerGroup);
   }
 
   /**
@@ -256,11 +262,6 @@ export class MapComponent implements AfterViewInit {
    * @param fromMap     - boolean if called from map
    */
   highlightMarkers(events?: Array<string>): void {
-    // TODO:
-    // cannot keep multiple clusters opened
-    // hide mainMarkerGroup
-    // populate temporaryMarkerGroup
-    // display temporaryMarkerGroup
     if(!events) {
       // if no events array provided we are looking for only one item
       this.mainMarkerGroup.eachLayer((layer: any) => {
@@ -289,8 +290,16 @@ export class MapComponent implements AfterViewInit {
          }
       });
     } else {
-      // events array exists - probably from search or some selection
-      // replace all map markers with temp group
+      if(events.length === 0) return;
+      events.forEach((event: string) => {
+        this.mainMarkerGroup.eachLayer((layer: any) => {
+          if(layer.objectId === event) {
+            this.temporaryMarkerGroup.addLayer(layer);
+          }
+        });
+      });
+      this.map.removeLayer(this.mainMarkerGroup);
+      this.map.addLayer(this.temporaryMarkerGroup);
     }
   }
 
