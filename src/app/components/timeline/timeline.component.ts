@@ -42,6 +42,7 @@ export class TimelineComponent implements OnChanges {
   currentlySelectedItems: Array<any>;
 
   eventsDataSet: DataSet<any>;
+  removedEventsDataSet: DataSet<any>;
   groupsDataSet: DataSet<any>;
 
   minHeight = 20;
@@ -81,13 +82,11 @@ export class TimelineComponent implements OnChanges {
           }
         });
         // subscribe to changes in currently selected items
-        this.mms.currentlySelectedEvents.subscribe((recordIdArr: Array<any>) => {
-          if(!recordIdArr) return;
-          this.currentlySelectedItems = recordIdArr;
+        this.mms.currentlySelectedEvents.subscribe((events: Array<any>) => {
+          this.currentlySelectedItems = events;
           
           if(this.timeline) {
-            let eventsFound = this.getTimelineIds(this.currentlySelectedItems);
-            this.timeline.setSelection(eventsFound);
+            this.updateEvents();
           }
         });
         // subscribe to changes of the time interval
@@ -107,7 +106,33 @@ export class TimelineComponent implements OnChanges {
     }
   }
 
+  updateEvents(): void {
+    if(this.currentlySelectedItems.length === 0) return; 
+
+    let removed = new Array<string>();
+    this.eventsDataSet.forEach((event: any) => {
+      if(!this.currentlySelectedItems.includes(event.id)) {
+        removed.push(event.id);
+      }
+    });
+
+    removed.forEach((r: string) => {
+      let removedEvent = this.eventsDataSet.get(r);
+      this.removedEventsDataSet.add(removedEvent);
+      this.eventsDataSet.remove(r);
+    });
+  }
+
+  resetEvents(): void {
+    this.removedEventsDataSet.forEach((event: any) => {
+      this.eventsDataSet.add(event);
+    });
+
+    this.removedEventsDataSet = new DataSet();
+  }
+
   setupData(): void {
+    this.removedEventsDataSet = new DataSet();
     this.eventsDataSet = new DataSet();
 
     // this.themeDistribution = new Map<string,any>();
