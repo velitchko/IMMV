@@ -23,7 +23,7 @@
     <mat-drawer-content>
       <!-- THEME SIDE DRAWER -->
       <mat-drawer-container *ngIf="!loading" class="drawer-container" autosize>
-        <mat-drawer #themedrawer class="drawer-sidenav" mode="side" position="end">
+        <mat-drawer #themedrawer class="drawer-sidenav" mode="over" position="end">
           <mat-list class="drawertypes-container">
             <mat-list-item class="drawertypes-entry" *ngFor="let dT of drawerTypes">
               <a [ngClass]="{'selected': dT.selected}" href="javascript:void(0)" (click)="setDrawerType(dT.value)">
