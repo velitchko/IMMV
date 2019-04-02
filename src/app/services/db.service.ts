@@ -289,8 +289,8 @@ export class DatabaseService {
         historicEvent.status = json.status;
         historicEvent.author = json.author;
         historicEvent.name = json.name;
-        historicEvent.startDate = json.startDate ? new Date(json.startDate) : null;
-        historicEvent.endDate = json.endDate ? new Date(json.endDate) : null;
+        historicEvent.startDate = json.startDate ? new Date(json.startDate) : new Date();
+        historicEvent.endDate = json.endDate ? new Date(json.endDate) : new Date();
         historicEvent.eventStructuralType = json.eventStructuralType;
         historicEvent.eventDescriptiveType = json.eventDescriptiveType;
         historicEvent.abstract = json.abstract;
@@ -313,8 +313,8 @@ export class DatabaseService {
         historicEvent.status = json.status;
         historicEvent.author = json.author;
         historicEvent.name = json.name;
-        historicEvent.startDate = json.startDate ? new Date(json.startDate) : null;
-        historicEvent.endDate = json.endDate ? new Date(json.endDate) : null;
+        historicEvent.startDate = json.startDate ? new Date(json.startDate) : new Date();
+        historicEvent.endDate = json.endDate ? new Date(json.endDate) : new Date();
         historicEvent.eventStructuralType = json.eventStructuralType;
         historicEvent.eventDescriptiveType = json.eventDescriptiveType;
         historicEvent.abstract = json.abstract;
