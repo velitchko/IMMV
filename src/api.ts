@@ -11,7 +11,7 @@ let LocationSchema = require('./database/schemas/location');
 let ThemeSchema = require('./database/schemas/theme');
 let PersonOrganizationSchema = require('./database/schemas/personorganization');
 let SourceSchema = require('./database/schemas/source');
-const DATABASE_COLLECTION = 'immv_db';
+const DATABASE_COLLECTION = 'immv2';
 
 
 export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
@@ -20,7 +20,10 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   mongoose.set('useNewUrlParser', true);
   mongoose.set('useCreateIndex', true);
   mongoose.connect(`mongodb://localhost/${DATABASE_COLLECTION}`, (err) => {
-    if (err) console.log(err);
+    if (err) { 
+      console.log(err);
+      return;
+    }
     console.log(`Connected to MongoDB/${DATABASE_COLLECTION}`);
   });
   // parse json
