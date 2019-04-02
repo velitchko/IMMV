@@ -17,38 +17,48 @@ import { MusicMapService } from '../../services/musicmap.service';
 })
 
 export class PeopleTimelineComponent implements AfterViewInit {
+    @ViewChild('peopletimeline') timelineContainer: ElementRef;
+
     timeline: Timeline;
+    
     peopleOrganizations: Array<PersonOrganization>;
     historicEvents: Array<HistoricEvent>;
+    filteredItems: Observable<PersonOrganization[]>;
+    
     timelineItems: DataSet;
     timelineGroups: DataSet;
 
     showClear: boolean = false;
-    searchCtrl: FormControl;
-    filteredItems: Observable<PersonOrganization[]>;
-
     isBrowser: boolean = false;
-    @ViewChild('peopletimeline') timelineContainer: ElementRef;
+
+    countByTypeAndYear: Array<any>;
+    
+    searchCtrl: FormControl;
 
     constructor(private db: DatabaseService, @Inject(PLATFORM_ID) private _platformId: Object, private mms: MusicMapService) {
         this.isBrowser = isPlatformBrowser(this._platformId);
         this.timelineItems = new DataSet();
         this.timelineGroups = new DataSet();
+
         this.peopleOrganizations = new Array<PersonOrganization>();
         this.historicEvents = new Array<HistoricEvent>();
+        this.countByTypeAndYear = new Array<any>();
+
         this.searchCtrl = new FormControl();
        
         this.db.getAllPeopleOrganizations()
         .then((success) => {
-            this.peopleOrganizations = Array.from(success);
+            this.peopleOrganizations = success;
+
             this.filteredItems = this.searchCtrl.valueChanges
             .pipe(
                 startWith(''),
                 map((person) => person ? this.filterItems(person) : this.peopleOrganizations.slice())
             )
-            if(this.isBrowser) this.createTimeline(success);
+            if(this.isBrowser) this.createTimeline();
+
             this.db.getAllHistoricEvents().then((histevents) => {
-                this.historicEvents = Array.from(histevents);
+                this.historicEvents = histevents;
                 this.addBackgroundEvents(histevents);
             });
         }).catch((err) => {
@@ -283,24 +293,13 @@ export class PeopleTimelineComponent implements AfterViewInit {
     }
     
     createTimeline(peopleOrganizations?: Array<PersonOrganization>): void {
-        
-        // this.parseData(peopleOrganizations);
-
         let options = {
             showTooltips: true,
             start: new Date('1900'),
             end: Date.now(),
-            // min: this.mms.getOriginalStartDate(), //new Date(this.x.domain()[0].getFullYear()-1, this.x.domain()[0].getMonth(), this.x.domain()[0].getDate()),
-            // max: this.mms.getOriginalEndDate(), //new Date(this.x.domain()[1].getFullYear()+1, this.x.domain()[1].getMonth(), this.x.domain()[1].getDate()),
             autoResize: true,
             showCurrentTime: false,
-            //groupOrder: 'content', // order group by group property
-          //  showMinorLabels: false,
             height: '600px', // map ~ 55vh
-            // minHeight:  '100%',
-            // zoomMax: 	3153600000000, // 100 years in ms
-            // zoomMin: 604800000, // 7 days in ms
-            //verticalScroll: true,
           };
 
           this.timeline = new Timeline(this.timelineContainer.nativeElement);
@@ -309,7 +308,6 @@ export class PeopleTimelineComponent implements AfterViewInit {
           this.timeline.setItems(this.timelineItems);
         //   this.timeline.on('rangechanged', this.rangeChanged());
         //   this.timeline.on('select', this.eventSelected());
-
     }
 
 }
