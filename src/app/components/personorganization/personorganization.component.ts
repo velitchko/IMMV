@@ -10,6 +10,7 @@ import { Observable } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 import { DataSet, Network, Timeline } from 'vis';
 import * as moment from 'moment';
+import { stringify } from '@angular/compiler/src/util';
 
 @Component({
   selector: 'app-personorganization',
@@ -20,7 +21,8 @@ export class PersonOrganizationComponent implements AfterViewInit {
   @ViewChild('network') networkContainer: ElementRef;
   @ViewChild('timeline') timelineContainer: ElementRef;
 
-  items: Array<Event>;
+  items: Array<Event>; // array to hold results from autocomplete
+
   isBrowser: boolean;
   pathSelection: boolean = false; // path selection mode
   typeSelected: boolean = false; // node type selection
@@ -44,13 +46,17 @@ export class PersonOrganizationComponent implements AfterViewInit {
   network: Network;
   timeline: Timeline;
 
+  countByTypeAndYear: Map<string, Map<string, number>>;
+
   networkInitialized: boolean;
   timelineInitialized: boolean;
 
   constructor(private db: DatabaseService,
     private snackBar: MatSnackBar,
     @Inject(PLATFORM_ID) private _platformId: Object) {
+
     this.isBrowser = isPlatformBrowser(this._platformId);
+    
     this.colors = new Map<string, string>();
     this.colors.set('location', '#01aef2');
     this.colors.set('personorganization', '#8ff161');
@@ -70,6 +76,8 @@ export class PersonOrganizationComponent implements AfterViewInit {
     this.nodes = new DataSet();
     this.links = new DataSet();
     this.events = new DataSet();
+
+    this.countByTypeAndYear = new Map<string, Map<string, number>>();
 
     this.items = new Array<Event>();
     this.selectedNodes = new Set<any>();
@@ -92,7 +100,45 @@ export class PersonOrganizationComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     this.db.getAllEvents().then((success) => {
       this.items = success;
+
     });
+  }
+
+  getCountPerYear(startDate: Date, endDate: Date): Map<string, number> {
+    let countPerYear = new Map<string, number>();
+
+    for(let i = moment(startDate); i.diff(moment(endDate), 'years') <= 0; i.add(1, 'years')) {
+      countPerYear.set(i.year().toString(), 1);
+    }
+
+    return countPerYear;
+  }
+
+  populateCountByTypeAndYear(): void {
+    this.countByTypeAndYear = new Map<string, Map<string, number>>();
+
+    this.nodes.forEach((node: any) => {
+      if(node.objectType.includes('event')) {
+        let map = this.getCountPerYear(node.startDate, node.endDate);
+        let dateCount = this.countByTypeAndYear.get(node.objectType);
+        if(dateCount) {
+          map.forEach((value: number, key: string, mmap: Map<string, number>) => {
+            if(dateCount.has(key)) {
+              let valA = dateCount.get(key);
+              let valB = value;
+              dateCount.set(key, valA+valB);
+            } else {
+              dateCount.set(key, 1);
+            }
+          });
+          this.countByTypeAndYear.set(node.objectType, dateCount);
+        } else {
+          this.countByTypeAndYear.set(node.objectType, map);
+        }
+      }
+    });
+
+    console.log(Array.from(this.countByTypeAndYear));
   }
 
   highlightNodeType($event: string): void {
@@ -188,8 +234,10 @@ export class PersonOrganizationComponent implements AfterViewInit {
         this.setupData(success);
         this.initNetwork();
         this.initTimeline();
+        this.populateCountByTypeAndYear();
       } else {
         this.updateData(success);
+        this.populateCountByTypeAndYear();
       }
     });
   }
