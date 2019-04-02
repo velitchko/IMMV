@@ -10,7 +10,7 @@ import { Observable } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 import { DataSet, Network, Timeline } from 'vis';
 import * as moment from 'moment';
-import { stringify } from '@angular/compiler/src/util';
+import * as momentIterator from 'moment-iterator';
 
 @Component({
   selector: 'app-personorganization',
@@ -107,38 +107,42 @@ export class PersonOrganizationComponent implements AfterViewInit {
   getCountPerYear(startDate: Date, endDate: Date): Map<string, number> {
     let countPerYear = new Map<string, number>();
 
-    for(let i = moment(startDate); i.diff(moment(endDate), 'years') <= 0; i.add(1, 'years')) {
-      countPerYear.set(i.year().toString(), 1);
-    }
+    // initiates map with each year and a count of 1
+    momentIterator(moment(startDate), moment(endDate)).each('year', (d: any) => {
+        countPerYear.set(d.year().toString(), 0);
+    });
 
     return countPerYear;
   }
 
   populateCountByTypeAndYear(): void {
     this.countByTypeAndYear = new Map<string, Map<string, number>>();
+    let minDate = moment(this.nodes.min('startDate').startDate);
+    let maxDate = moment(this.nodes.max('startDate').startDate);
+    
+    let map = this.getCountPerYear(minDate.toDate(), maxDate.toDate());
 
     this.nodes.forEach((node: any) => {
       if(node.objectType.includes('event')) {
-        let map = this.getCountPerYear(node.startDate, node.endDate);
-        let dateCount = this.countByTypeAndYear.get(node.objectType);
-        if(dateCount) {
-          map.forEach((value: number, key: string, mmap: Map<string, number>) => {
-            if(dateCount.has(key)) {
-              let valA = dateCount.get(key);
-              let valB = value;
-              dateCount.set(key, valA+valB);
-            } else {
-              dateCount.set(key, 1);
-            }
-          });
-          this.countByTypeAndYear.set(node.objectType, dateCount);
+        let nodeDate = moment(node.startDate).year().toString();
+        if(this.countByTypeAndYear.has(node.objectType)) {
+          let exists = this.countByTypeAndYear.get(node.objectType);
+          if(exists.has(nodeDate)) {
+            let val = exists.get(nodeDate);
+            exists.set(nodeDate, val + 1);
+          } else {
+            exists.set(nodeDate, 1);
+          }
         } else {
-          this.countByTypeAndYear.set(node.objectType, map);
+          // for ever new node type we should create a copy of the map
+          let newMap = new Map<string, number>(map);
+          newMap.set(nodeDate, 1);
+          this.countByTypeAndYear.set(node.objectType, newMap);
         }
       }
     });
 
-    console.log(Array.from(this.countByTypeAndYear));
+    console.log(this.countByTypeAndYear);
   }
 
   highlightNodeType($event: string): void {
@@ -547,16 +551,19 @@ export class PersonOrganizationComponent implements AfterViewInit {
       case 'event':
         this.db.getAsEvent(item).then((success) => {
           this.updateData(success);
+          this.populateCountByTypeAndYear();
         });
         return;
       case 'historicevent':
         this.db.getAsHistoricEvent(item).then((success) => {
           this.updateData(success);
+          this.populateCountByTypeAndYear();
         });
         return;
       case 'location':
         this.db.getAsLocation(item).then((success) => {
           this.updateData(success);
+          this.populateCountByTypeAndYear();
         });
         return;
       case 'theme':
@@ -567,16 +574,19 @@ export class PersonOrganizationComponent implements AfterViewInit {
         // get themes too
         this.db.getAsTheme(item).then((success) => {
           this.updateData(success);
+          this.populateCountByTypeAndYear();
         });
         return;
       case 'source':
         this.db.getAsSource(item).then((success) => {
           this.updateData(success);
+          this.populateCountByTypeAndYear();
         });
         return;
       case 'personorganization':
         this.db.getAsPersonOrganization(item).then((success) => {
           this.updateData(success);
+          this.populateCountByTypeAndYear();
         });
         return;
       default: return;
