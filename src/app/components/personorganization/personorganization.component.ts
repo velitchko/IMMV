@@ -118,25 +118,28 @@ export class PersonOrganizationComponent implements AfterViewInit {
   populateCountByTypeAndYear(): void {
     this.countByTypeAndYear = new Map<string, Map<string, number>>();
     let minDate = moment(this.nodes.min('startDate').startDate);
-    let maxDate = moment(this.nodes.max('startDate').startDate);
-    
+    let maxDate = moment(this.nodes.max('endDate') ? this.nodes.max('endDate').endDate : this.nodes.max('startDate').startDate);
+
     let map = this.getCountPerYear(minDate.toDate(), maxDate.toDate());
-    //TODO: adapt for range temporal data 
     this.nodes.forEach((node: any) => {
       if(node.objectType.includes('event')) {
-        let nodeDate = moment(node.startDate).year().toString();
         if(this.countByTypeAndYear.has(node.objectType)) {
           let exists = this.countByTypeAndYear.get(node.objectType);
-          if(exists.has(nodeDate)) {
-            let val = exists.get(nodeDate);
-            exists.set(nodeDate, val + 1);
-          } else {
-            exists.set(nodeDate, 1);
-          }
+          exists.forEach((value: number, key: string) => {
+            if(moment.utc(key).isBetween(moment(node.startDate), moment(node.endDate), 'years', '()')) {
+              // inc value  
+              exists.set(key, exists.get(key) + 1);
+            }
+          });
         } else {
           // for ever new node type we should create a copy of the map
           let newMap = new Map<string, number>(map);
-          newMap.set(nodeDate, 1);
+          newMap.forEach((value: number, key: string) => {
+            if(moment.utc(key).isBetween(moment(node.startDate), moment(node.endDate), 'years', '[]')) {
+              // inc value  
+              newMap.set(key, newMap.get(key) + 1);
+            }
+          });
           this.countByTypeAndYear.set(node.objectType, newMap);
         }
       }
