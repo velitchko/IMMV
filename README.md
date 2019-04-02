@@ -8,7 +8,7 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 This project uses [MongoDB](https://www.mongodb.com/) for the database.
 
 ## Demo
-Currently not live
+Demo can be found online at [immv-app](http://immv-app.cvast.tuwien.ac.at)
 
 ## Getting started
 
