@@ -121,7 +121,7 @@ export class PersonOrganizationComponent implements AfterViewInit {
     let maxDate = moment(this.nodes.max('startDate').startDate);
     
     let map = this.getCountPerYear(minDate.toDate(), maxDate.toDate());
-
+    //TODO: adapt for range temporal data 
     this.nodes.forEach((node: any) => {
       if(node.objectType.includes('event')) {
         let nodeDate = moment(node.startDate).year().toString();
@@ -142,7 +142,17 @@ export class PersonOrganizationComponent implements AfterViewInit {
       }
     });
 
-    console.log(this.countByTypeAndYear);
+    // convert to array so d3 can understand the data
+    let outputArr = new Array<any>();
+    this.countByTypeAndYear.forEach((oValue: Map<string, number>, oKey: string) => {
+      let tmpArr = new Array<any>();
+      oValue.forEach((iValue: number, iKey: string) => {
+        tmpArr.push({ date: iKey, number: iValue });
+      });
+      outputArr.push({ name: oKey, values: tmpArr });
+    });
+
+    console.log(outputArr);
   }
 
   highlightNodeType($event: string): void {
