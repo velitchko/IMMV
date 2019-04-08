@@ -1,7 +1,11 @@
 <div id="wrapper">
-    <div id="timeline" #timeline></div>
-    <div id="brush" #brush></div>
-    <div id="map" #map></div>
+    <div id="timeline-holder" #timelineHolder></div>
+    <div id="brush-holder" #brushHolder></div>
+    <div id="map-holder" #mapHolder></div>
 </div>
-
+<div id="date-extent">
+    <h3>{{ displayDate(currentlySelectedMinDate) }}</h3>
+    <h3>&nbsp; - &nbsp;</h3>
+    <h3>{{ displayDate(currentlySelectedMaxDate) }}</h3>
+</div>
 <div id="tooltip" #tooltip></div>

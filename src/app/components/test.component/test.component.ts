@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, Inject, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, Inject, ElementRef, EventEmitter } from '@angular/core';
 import { DatabaseService } from '../../services/db.service';
 import { PersonOrganization } from '../../models/person.organization';
 import { PLATFORM_ID } from '@angular/core';
@@ -6,8 +6,9 @@ import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { Event } from '../../models/event';
 import { environment } from '../../../environments/environment';
 import * as d3 from 'd3';
-import * as L from 'leaflet';
 import * as moment from 'moment';
+// black voodoo workaround for leaflet (ReferenceError: window is not defined)
+declare var L: any;
 
 @Component({
   selector: 'app-test',
@@ -17,66 +18,126 @@ import * as moment from 'moment';
 
 export class TestComponent implements OnInit {
   // HTML 
-  @ViewChild('timeline') timelineContainer: ElementRef;
-  @ViewChild('brush') brushContainer: ElementRef;
-  @ViewChild('map') mapContainer: ElementRef;
+  @ViewChild('timelineHolder') timelineContainer: ElementRef;
+  @ViewChild('brushHolder') brushContainer: ElementRef;
+  @ViewChild('mapHolder') mapContainer: ElementRef;
   @ViewChild('tooltip') tooltip: ElementRef;
 
+  // display range
+  currentlySelectedMinDate: Date;           // currently displayed min date (selection)
+  currentlySelectedMaxDate: Date;           // currently displayed max date (selection)
+
   // Dimensions
-  WIDTH: number;
-  HEIGHT: number;
-  MIN_DATE: moment.Moment;
-  MAX_DATE: moment.Moment;
+  WIDTH: number;                            // width of the browsers viewport
+  HEIGHT: number;                           // height of the browsers viewport
+  MIN_DATE: moment.Moment;                  // min date
+  MAX_DATE: moment.Moment;                  // max date
   
   // D3 things
-  timelineSVG: any;
-  brushSVG: any;
-  xScale: d3.ScaleTime<number, number>;
-  yScale: d3.ScaleLinear<number, number>
-  brush: d3.BrushBehavior<{}>;
-  colors: d3.ScaleOrdinal<string, string>;
+  timelineSVG: any;                         // timeline svg holder
+  brushSVG: any;                            // brush svg holder
+  g: any;                                   // timeline group wrapper
+  xScale: d3.ScaleTime<number, number>;     // timeline extent
+  yScale: d3.ScaleLinear<number, number>    // horizontal extent
+  colors: d3.ScaleOrdinal<string, string>;  // d3 color coding
+  brush: d3.BrushBehavior<{}>;              // d3 brush
+  zoom: d3.ZoomBehavior<Element, {}>;       // d3 zoom
   
   // Leaflet things
-  map: L.Map;
-  mapMarkers: L.LayerGroup;
-  mapLines: L.LayerGroup;
+  map: any;
+  mapMarkers: any;
+  mapLines: any;
 
   // Data
-  people: Array<PersonOrganization>;
-  data: Array<any>;
+  people: Array<PersonOrganization>;         // people/organizations array
+  data: Array<any>;                          // data in d3-ish format
 
   //internal things
-  personHeightMap: Map<string, number>;
+  zoomEmitter: EventEmitter<any>;            // event emitter for zoom and brush events 
+  personHeightMap: Map<string, number>;      // map associating people with their vertical positioning in the timeling (y-coords)
+  rolePersonMap: Map<string, Array<string>>; // map associating roles to people (as objectID's)
+  verticalPadding: number = 10;              // vertical padding (space-between) timelines
+  margin = {                                 // margin config for the svg's
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0
+  };
+
   // Config
   isBrowser: boolean;
 
-  constructor(private db: DatabaseService, @Inject(PLATFORM_ID) private _platformId: Object) {
+  /**
+   * @param db DatabaseService - the service we use to perform database queries and get requests
+   * @param window (JS) Window object - Leaflet needs this and we provide it (check app.module.ts)
+   * @param _platformId Object determining if we are on the server or browser side
+   */
+  constructor(private db: DatabaseService, @Inject('WINDOW') private window: any, @Inject(PLATFORM_ID) private _platformId: Object) {
     this.people = new Array<PersonOrganization>();
     this.data = new Array<any>();
+
+    this.zoomEmitter = new EventEmitter<any>();
+
     this.personHeightMap = new Map<string, number>();
 
     this.colors = d3.scaleOrdinal(d3.schemePaired);
 
     this.isBrowser = isPlatformBrowser(this._platformId);
+
+    if(this.isBrowser)  L = require('leaflet');
   }
 
+  /**
+   * OnInit lifecycle hook 
+   * Called when the component is initialized
+   * NOTE: Only works on client side (window needs to be defined for leaflet to work)
+   * - Subscribe to zoom / brush changes
+   * - Performs a GET request to get all people / organizations from the database
+   * - Initializes rest of component when request resolves
+   */
   ngOnInit(): void { 
       this.db.getAllPeopleOrganizations().then((success: Array<PersonOrganization>) => {
         this.people = success;
         if(this.isBrowser) {
-          
+          // zoom behavior
+          this.zoomEmitter.subscribe(($event: any) => {
+            this.currentlySelectedMinDate = $event.extent[0];
+            this.currentlySelectedMaxDate = $event.extent[1];
+            // update main timeline
+            if($event.from === 'brush') {
+              this.updateTimelineExtent($event.extent);
+              return;
+            }
+
+            // update brush 
+            if($event.from === 'zoom') {
+              this.updateBrushExtent($event.extent);
+              return;
+            }
+          });
+          // parse data in d3-ish format
           this.prepareData();
+          // calculate extent and scales
           this.calculateScales();
-          this.createBrush();
+          // create timeline
           this.createTimeline();
-          // this.createMap();
+          // populate timeline(s)
+          this.createEvents();
+          // create map
+          this.createMap();
         }
       });
   }
 
+  /**
+   * Called once the DatabaseService resolves with people/organizations
+   * - Populates the @property people array 
+   * - Parses the functions and dates array for each person
+   * - Formats data so we can use it easily with d3
+   */
   prepareData(): void {
     this.people.forEach((person: PersonOrganization, i: number) => {
-      // if(i > 100) return;
+
       if(person.objectType !== 'Person') return; // organizations later
 
       if(person.functions) {
@@ -104,7 +165,7 @@ export class TestComponent implements OnInit {
         });
       }
     });
-    console.log(this.data);
+    // console.log(this.data);
   }
 
   calculateScales(): void {
@@ -120,35 +181,91 @@ export class TestComponent implements OnInit {
   }
 
 
+  /**
+   * Creates the timeline SVG 
+   * Creates d3 zoom behavior 
+   * Creates d3 brush behavior
+   */
   createTimeline(): void {
     // get the x,y scales so we can draw things
-    let margin = {
-      top: 0,
-      bottom: 0,
-      left: 0,
-      right: 0
-    };
-    this.WIDTH = this.WIDTH - (margin.left + margin.right);
-    this.HEIGHT = this.HEIGHT - (margin.top + margin.bottom);
+    this.WIDTH = this.WIDTH - (this.margin.left + this.margin.right);
+    this.HEIGHT = this.HEIGHT - (this.margin.top + this.margin.bottom);
 
     this.timelineSVG = d3.select(this.timelineContainer.nativeElement)
                     .append('svg')
                     .attr('width', this.WIDTH)
                     .attr('height', this.HEIGHT);
-    // populate timeline
-    this.createEvents();
+
+
+    this.zoom = d3.zoom()
+                  .scaleExtent([1, 10])
+                  // .translateExtent([[0, 0], [this.WIDTH, this.HEIGHT]])
+                  // .extent([[0, 0],[this.WIDTH, this.HEIGHT]])
+                  .on('zoom', this.zoomEnd.bind(this));
+      
+    // zoom thing
+    this.timelineSVG.append('rect')
+                    .attr('class', 'zoom')
+                    .attr('width', this.WIDTH)
+                    .attr('height', this.HEIGHT)
+                    .attr('transform', ``)
+                    .call(this.zoom);
+    // brush
+    let brushHeight = 25;
+    let brushWidth = this.WIDTH;
+    this.brushSVG = d3.select(this.brushContainer.nativeElement)
+                      .append('svg')
+                      .attr('width', brushWidth)
+                      .attr('height', brushHeight);
+    this.brushSVG.append('g')
+    .attr('class', 'axis')
+    .attr('transform', `translate(${this.margin.top}, ${this.margin.left})`)
+    .call(
+      d3.axisBottom(this.xScale)
+        .ticks(d3.timeYear.every(10))
+        .tickSize(10)
+        .tickFormat((d: Date) => {
+          return d3.timeFormat('%Y')(d);
+        })
+    )
+    .selectAll('.tick');
+
+    this.brush = d3.brushX()
+                    .extent([[0, 0], [brushWidth, brushHeight]])
+                    .on('brush', this.brushEnd.bind(this));
+    // brush
+    this.brushSVG.append('g')
+                    .attr('class', 'brush')
+                    .attr('transform', `translate(0, 0)`)
+                    .call(this.brush);
+    // set display range
+    this.currentlySelectedMinDate = this.MIN_DATE.toDate();
+    this.currentlySelectedMaxDate = this.MAX_DATE.toDate();
+    
+    this.updateBrushExtent([this.MIN_DATE.toDate(), this.MAX_DATE.toDate()]);
+    
   }
 
+  /**
+   * Creates the 'timelines' and plots them on the timeline
+   * Timelines consist of three parts:
+   * - Life span - defined as line with the class '.before-death'
+   * - Post life span - defined as a dashed line with the class '.after-death'
+   * - Events - lines / circles plotted on the timelines with the class '.event'
+   */
   createEvents(): void {
     // TODO:  use the enter, update/merge, exit, remove pattern
-    let verticalPadding = 10;
     let dataByPerson = d3.nest()
                          .key((d: any) => { return d.person; })
                          .entries(this.data);
-    let g = this.timelineSVG.append('g')
+    // group for data
+    this.g = this.timelineSVG.append('g')
                     .attr('class', 'group')
-                    .attr('transform', `translate(20, 20)`);
-    let lineBeforeDeath = g.selectAll('.before-death').data(dataByPerson);
+                    .attr('width', this.WIDTH)
+                    .attr('height', this.HEIGHT)
+                    .attr('transform', `translate(${this.margin.top}, ${this.margin.left})`);
+    // items
+    let lineBeforeDeath = this.g.selectAll('.before-death').data(dataByPerson);
     lineBeforeDeath.enter()
         .append('line')
         .attr('class', 'before-death')
@@ -163,15 +280,16 @@ export class TestComponent implements OnInit {
           return this.xScale(moment(date));
         })
         .attr('y1', (d: any, i: number) => {
-          this.personHeightMap.set(d.key, i*(2 + verticalPadding));
-          return i*(2 + verticalPadding);
+          this.personHeightMap.set(d.key, i*(2 + this.verticalPadding));
+          return i*(2 + this.verticalPadding);
         })
         .attr('y2', (d: any, i: number) => {
-          return i*(2 + verticalPadding);
+          return i*(2 + this.verticalPadding);
         })
         .on('mouseover', (d: any) => {
           let birthDate = d.values.find((dd: any) => { return dd.dateName === 'Birth'; }).startDate;
           let deathDate = d.values.find((dd: any) => { return dd.dateName === 'Death'; }).startDate;
+          if(!deathDate) deathDate = moment();
           this.tooltip.nativeElement.style.opacity = '1';
           this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
           this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
@@ -184,7 +302,7 @@ export class TestComponent implements OnInit {
           this.tooltip.nativeElement.style.opacity = '0';
         });;
     
-    let lineAfterDeath = g.selectAll('.after-death').data(dataByPerson);
+    let lineAfterDeath = this.g.selectAll('.after-death').data(dataByPerson);
     lineAfterDeath.enter()
         .append('line')
         .attr('class', 'after-death')
@@ -196,17 +314,16 @@ export class TestComponent implements OnInit {
           return this.xScale(moment(date));
         })
         .attr('x2', (d: any) => { 
-      
           return this.xScale(moment());
         })
         .attr('y1', (d: any, i: number) => {
-          return i*(2 + verticalPadding);
+          return i*(2 + this.verticalPadding);
         })
         .attr('y2', (d: any, i: number) => {
-          return i*(2 + verticalPadding);
+          return i*(2 + this.verticalPadding);
         });
 
-    let events = g.selectAll('event').data(this.data);
+    let events = this.g.selectAll('event').data(this.data);
     
     events.enter()
           .append('line')
@@ -222,7 +339,7 @@ export class TestComponent implements OnInit {
           .attr('y1', (d: any) => { return this.personHeightMap.get(d.person); })
           .attr('y2', (d: any) => { return this.personHeightMap.get(d.person); })
           .on('mouseover', (d: any) => {
-            console.log(d);
+            // console.log(d);
             this.tooltip.nativeElement.style.opacity = '1';
             this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
             this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
@@ -237,60 +354,170 @@ export class TestComponent implements OnInit {
           });
   }
 
-  createBrush(): void {
-    let brushHeight = 40;
-    let brushWidth = this.WIDTH;
-    this.brushSVG = d3.select(this.brushContainer.nativeElement)
-                      .append('svg')
-                      .attr('width', brushWidth)
-                      .attr('height', brushHeight);
-    this.brushSVG.append('g')
-    .attr('class', 'axis')
-    .attr('transform', `translate(0, 40)`)
-    .call(
-      d3.axisBottom(this.xScale)
-        .ticks(d3.timeYear.every(5))
-        .tickSize(20)
-        .tickFormat((d: Date) => {
-          return d3.timeFormat('%Y')(d);
-        })
-    )
-    .selectAll('.tick');
-
-    this.brush = d3.brushX()
-                    .extent([[0, 0], [brushWidth, brushHeight]])
-                    .on('end', this.brushEnd.bind(this));
-    // brush
-    this.brushSVG.append('g')
-                    .attr('class', 'brush')
-                    .attr('transform', `translate(0, 0)`)
-                    .call(this.brush);
-  }
-
+  /**
+   * Filters the current dataset {@property data} 
+   * based on start and end date selection
+   * @param start Start date for filtering data
+   * @param end End date for filtering data
+   */
   filterData(start: Date, end: Date): void {
-    console.log(start, end);
   }
 
+  /**
+   * EventHandler for selecting markers/paths (GeoJSON elements) in the map 
+   * TODO: implement this function
+   */
   highlightInMap(): void {
 
   }
 
+  /**
+   * EventHandler for D3's brushend event
+   * - updates brush selection 
+   * - emits selection as date array [start, end]
+   * - calls to filter data
+   */
   brushEnd(): void {
     if (!d3.event.sourceEvent || !d3.event.selection) return; // no selection or event
-
     let start = d3.event.selection.map(this.xScale.invert);
     let end = start.map(d3.timeYear.round);
     let brushDOM = d3.select('.brush');
-
-    brushDOM.transition().call(d3.event.target.move, end.map(this.xScale));
+    brushDOM.transition().duration(250).call(d3.event.target.move, end.map(this.xScale));
     let range = d3.brushSelection((brushDOM as any).node());
 
     let startD = this.xScale.invert(+range[0]);
     let endD = this.xScale.invert(+range[1]);
 
+    this.zoomEmitter.emit({
+      event: d3.event.sourceEvent,
+      extent: [startD, endD],
+      from: 'brush'
+    });
+
     this.filterData(startD, endD);
   }
 
+  /**
+   * Updates the brush's extent
+   * @param extent Date array [start, end]
+   */
+  updateBrushExtent(extent: Array<Date>): void {
+    let brushDOM = this.brushSVG.select('.brush');
+    brushDOM.transition().duration(250).call(this.brush.move, extent.map(this.xScale));
+  }
+
+  /**
+   * EventHandler for D3's brushend event
+   * - updates the timelines zoom selection
+   * - emits selection as date array [start, end]
+   */
+  zoomEnd(): void {
+    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; // ignore zoom-by-brush
+    let transform = d3.event.transform;
+    let newXScale = transform.rescaleX(this.xScale);
+    // rescale following SVG items with the new 'zoomed' scale
+    this.g.selectAll('.before-death')
+          .attr('x1', (d: any) => {
+            let date = d3.min(d.values.map((v: any) => { return v.startDate; }))
+            return newXScale(moment(date));
+          })
+          .attr('x2', (d: any) => {
+            let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+            return newXScale(moment(date));
+          })
+          .attr('y1', (d: any, i: any) => {
+            return i*(2 + this.verticalPadding);
+          })
+          .attr('y2', (d: any, i: any) => {
+            return i*(2 + this.verticalPadding);
+          });
+
+    this.g.selectAll('.after-death')
+          .transition()
+          .duration(250)
+          .attr('x1', (d: any) => {
+            let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+            return newXScale(moment(date));
+          })
+          .attr('x2', (d: any) => {
+            return newXScale(moment());
+          })
+          .attr('y1', (d: any, i: number) => {
+            return i*(2 + this.verticalPadding);
+          })
+          .attr('y2', (d: any, i: number) => {
+            return i*(2 + this.verticalPadding);
+          });
+
+    this.g.selectAll('.event')
+          .transition()
+          .duration(250)
+          .attr('x1', (d: any) => { return newXScale(d.startDate.toDate()); })
+          .attr('x2', (d: any) => { return newXScale(d.endDate.toDate()); })
+          .attr('y1', (d: any) => { return this.personHeightMap.get(d.person); })
+          .attr('y2', (d: any) => { return this.personHeightMap.get(d.person); })
+
+    // brush & axis
+    this.zoomEmitter.emit({
+      event: d3.event.sourceEvent,
+      extent: newXScale.domain(),
+      from: 'zoom'
+    });
+  }
+
+  /**
+   * Updates the timelines extent
+   * @param extent Date array [start, end]
+   */
+  updateTimelineExtent(extent: Array<Date>): void {
+    let newXScale = d3.scaleTime().domain([extent[0], extent[1]]).range([0, this.WIDTH]);
+    this.g.selectAll('.before-death')
+          .transition()
+          .duration(250)
+          .attr('x1', (d: any) => {
+            let date = d3.min(d.values.map((v: any) => { return v.startDate; }))
+            return newXScale(moment(date));
+          })
+          .attr('x2', (d: any) => {
+            let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+            return newXScale(moment(date));
+          })
+          .attr('y1', (d: any, i: any) => {
+            return i*(2 + this.verticalPadding);
+          })
+          .attr('y2', (d: any, i: any) => {
+            return i*(2 + this.verticalPadding);
+          });
+
+    this.g.selectAll('.after-death')
+        .transition()
+        .duration(250)
+        .attr('x1', (d: any) => {
+          let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+          return newXScale(moment(date));
+        })
+        .attr('x2', (d: any) => {
+          return newXScale(moment());
+        })
+        .attr('y1', (d: any, i: number) => {
+          return i*(2 + this.verticalPadding);
+        })
+        .attr('y2', (d: any, i: number) => {
+          return i*(2 + this.verticalPadding);
+        });
+
+    this.g.selectAll('.event')
+        .transition()
+        .duration(50)
+        .attr('x1', (d: any) => { return newXScale(d.startDate.toDate()); })
+        .attr('x2', (d: any) => { return newXScale(d.endDate.toDate()); })
+        .attr('y1', (d: any) => { return this.personHeightMap.get(d.person); })
+        .attr('y2', (d: any) => { return this.personHeightMap.get(d.person); })
+  }
+
+  /**
+   * Creates the map using Leaflet
+   */
   createMap(): void {
     let options = {
       maxBounds: L.latLngBounds(L.latLng(48.121040, 16.183696), L.latLng(48.323600, 16.541306)),
@@ -302,7 +529,7 @@ export class TestComponent implements OnInit {
     };
 
 
-    this.map = L.map('map', options).setView([48.213939, 16.377285], 13);
+    this.map = L.map('map-holder', options).setView([48.213939, 16.377285], 13);
     // this.map.invalidateSize();
     L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
       attribution: '', //'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
@@ -312,6 +539,7 @@ export class TestComponent implements OnInit {
     }).addTo(this.map);
   }
 
-
-
+  displayDate(date: Date): string {
+    return moment(date).format('MMMM Do YYYY');
+  }
 }
