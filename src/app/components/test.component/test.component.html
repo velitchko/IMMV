@@ -1,4 +1,9 @@
 <div id="wrapper">
+    <div id="role-holder">
+        <mat-chip-list>
+            <mat-chip *ngFor="let r of getPeopleRoles()" selected="true" (click)="filterByRole(r)">{{ r }}</mat-chip>
+        </mat-chip-list>
+    </div>
     <div id="timeline-holder" #timelineHolder></div>
     <div id="brush-holder" #brushHolder></div>
     <div id="map-holder" #mapHolder></div>
