@@ -417,6 +417,8 @@ export class TestComponent implements OnInit {
     let newXScale = transform.rescaleX(this.xScale);
     // rescale following SVG items with the new 'zoomed' scale
     this.g.selectAll('.before-death')
+          .transition()
+          .duration(250)
           .attr('x1', (d: any) => {
             let date = d3.min(d.values.map((v: any) => { return v.startDate; }))
             return newXScale(moment(date));
@@ -508,7 +510,7 @@ export class TestComponent implements OnInit {
 
     this.g.selectAll('.event')
         .transition()
-        .duration(50)
+        .duration(250)
         .attr('x1', (d: any) => { return newXScale(d.startDate.toDate()); })
         .attr('x2', (d: any) => { return newXScale(d.endDate.toDate()); })
         .attr('y1', (d: any) => { return this.personHeightMap.get(d.person); })
