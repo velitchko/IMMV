@@ -125,7 +125,7 @@ export class TestComponent implements OnInit {
         // create timeline
         this.createTimeline();
         // populate timeline(s)
-        this.createEvents(this.data);
+        this.render(this.data);
         // create map
         this.createMap();
       }
@@ -293,7 +293,7 @@ export class TestComponent implements OnInit {
    * - Post life span - defined as a dashed line with the class '.after-death'
    * - Events - lines / circles plotted on the timelines with the class '.event'
    */
-  createEvents(data: Array<any>): void {
+  render(data: Array<any>): void {
     let dataByPerson = d3.nest()
       .key((d: any) => { return d.person; })
       .entries(data);
@@ -404,14 +404,14 @@ export class TestComponent implements OnInit {
    * @param filteredData - data that has been previously filtered
    */
   filterData(filteredData: Array<any>): void {
-    this.createEvents(filteredData);
+    this.render(filteredData);
   }
 
   /**
    * 
    */
   clearFilters(): void {
-    this.createEvents(this.data);
+    this.render(this.data);
   }
 
   /**
