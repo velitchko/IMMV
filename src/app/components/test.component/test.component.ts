@@ -7,13 +7,14 @@ import { Event } from '../../models/event';
 import { environment } from '../../../environments/environment';
 import * as d3 from 'd3';
 import * as moment from 'moment';
+import { filter } from 'rxjs/operators';
 // black voodoo workaround for leaflet (ReferenceError: window is not defined)
 declare var L: any;
 
 @Component({
   selector: 'app-test',
   templateUrl: './test.component.html',
-  styleUrls: [ './test.component.scss' ]
+  styleUrls: ['./test.component.scss']
 })
 
 export class TestComponent implements OnInit {
@@ -32,7 +33,7 @@ export class TestComponent implements OnInit {
   HEIGHT: number;                           // height of the browsers viewport
   MIN_DATE: moment.Moment;                  // min date
   MAX_DATE: moment.Moment;                  // max date
-  
+
   // D3 things
   timelineSVG: any;                         // timeline svg holder
   brushSVG: any;                            // brush svg holder
@@ -42,7 +43,7 @@ export class TestComponent implements OnInit {
   colors: d3.ScaleOrdinal<string, string>;  // d3 color coding
   brush: d3.BrushBehavior<{}>;              // d3 brush
   zoom: d3.ZoomBehavior<Element, {}>;       // d3 zoom
-  
+
   // Leaflet things
   map: any;
   mapMarkers: any;
@@ -51,6 +52,7 @@ export class TestComponent implements OnInit {
   // Data
   people: Array<PersonOrganization>;         // people/organizations array
   data: Array<any>;                          // data in d3-ish format
+  filteredData: Array<any>;                  // filteredData in d3-ish format
 
   //internal things
   zoomEmitter: EventEmitter<any>;            // event emitter for zoom and brush events 
@@ -79,12 +81,13 @@ export class TestComponent implements OnInit {
     this.zoomEmitter = new EventEmitter<any>();
 
     this.personHeightMap = new Map<string, number>();
+    this.rolePersonMap = new Map<string, Array<string>>();
 
     this.colors = d3.scaleOrdinal(d3.schemePaired);
 
     this.isBrowser = isPlatformBrowser(this._platformId);
 
-    if(this.isBrowser)  L = require('leaflet');
+    if (this.isBrowser) L = require('leaflet');
   }
 
   /**
@@ -95,38 +98,59 @@ export class TestComponent implements OnInit {
    * - Performs a GET request to get all people / organizations from the database
    * - Initializes rest of component when request resolves
    */
-  ngOnInit(): void { 
-      this.db.getAllPeopleOrganizations().then((success: Array<PersonOrganization>) => {
-        this.people = success;
-        if(this.isBrowser) {
-          // zoom behavior
-          this.zoomEmitter.subscribe(($event: any) => {
-            this.currentlySelectedMinDate = $event.extent[0];
-            this.currentlySelectedMaxDate = $event.extent[1];
-            // update main timeline
-            if($event.from === 'brush') {
-              this.updateTimelineExtent($event.extent);
-              return;
-            }
+  ngOnInit(): void {
+    this.db.getAllPeopleOrganizations().then((success: Array<PersonOrganization>) => {
+      this.people = success;
+      if (this.isBrowser) {
+        // zoom behavior
+        this.zoomEmitter.subscribe(($event: any) => {
+          this.currentlySelectedMinDate = $event.extent[0];
+          this.currentlySelectedMaxDate = $event.extent[1];
+          // update main timeline
+          if ($event.from === 'brush') {
+            this.updateTimelineExtent($event.extent);
+            return;
+          }
 
-            // update brush 
-            if($event.from === 'zoom') {
-              this.updateBrushExtent($event.extent);
-              return;
-            }
-          });
-          // parse data in d3-ish format
-          this.prepareData();
-          // calculate extent and scales
-          this.calculateScales();
-          // create timeline
-          this.createTimeline();
-          // populate timeline(s)
-          this.createEvents();
-          // create map
-          this.createMap();
-        }
-      });
+          // update brush 
+          if ($event.from === 'zoom') {
+            this.updateBrushExtent($event.extent);
+            return;
+          }
+        });
+        // parse data in d3-ish format
+        this.prepareData();
+        // calculate extent and scales
+        this.calculateScales();
+        // create timeline
+        this.createTimeline();
+        // populate timeline(s)
+        this.createEvents(this.data);
+        // create map
+        this.createMap();
+      }
+    });
+  }
+
+  /**
+   * Returns the roles in the dataset as an array of strings
+   */
+  getPeopleRoles(): Array<string> {
+    return Array.from(this.rolePersonMap.keys());
+  }
+
+  filterByRole(role: string): void {
+    let peopleWithRole = this.people.filter((person: PersonOrganization) => {
+      return person.roles.includes(role);
+    }).map((p: PersonOrganization) => {
+      return p.objectId;
+    });
+
+    let filteredData = this.data.filter((d: any) => {
+      return peopleWithRole.includes(d.personID);
+    });
+
+    this.filterData(filteredData);
   }
 
   /**
@@ -138,13 +162,22 @@ export class TestComponent implements OnInit {
   prepareData(): void {
     this.people.forEach((person: PersonOrganization, i: number) => {
 
-      if(person.objectType !== 'Person') return; // organizations later
+      if (person.objectType !== 'Person') return; // organizations later
 
-      if(person.functions) {
+      // populate map
+      person.roles.forEach((role: string) => {
+        if (this.rolePersonMap.has(role)) {
+          this.rolePersonMap.get(role).push(person.objectId);
+        } else {
+          this.rolePersonMap.set(role, new Array<string>(person.objectId));
+        }
+      });
+
+      if (person.functions) {
         // functions
         person.functions.forEach((func: any) => {
           let dataPoint: any = {};
-          if(!func.startDate) return;
+          if (!func.startDate) return;
           dataPoint.startDate = moment(func.startDate);
           func.endDate ? dataPoint.endDate = moment(func.endDate) : dataPoint.endDate = moment(func.startdate);
           dataPoint.person = person.name;
@@ -156,8 +189,8 @@ export class TestComponent implements OnInit {
         // other dates
         person.dates.forEach((date: any) => {
           let dataPoint: any = {};
-          dataPoint.startDate = moment(date.date); 
-          dataPoint.endDate = moment(date.date); 
+          dataPoint.startDate = moment(date.date);
+          dataPoint.endDate = moment(date.date);
           dataPoint.dateName = date.dateName;
           dataPoint.person = person.name;
           dataPoint.personID = person.objectId;
@@ -165,7 +198,6 @@ export class TestComponent implements OnInit {
         });
       }
     });
-    // console.log(this.data);
   }
 
   calculateScales(): void {
@@ -173,7 +205,7 @@ export class TestComponent implements OnInit {
     this.HEIGHT = this.timelineContainer.nativeElement.clientHeight;
 
     // our temporal range based on the data
-    this.MIN_DATE = d3.min(this.data.map((d: any) => { return moment(d.startDate, ['YYYY-MM-DD', ]); }));
+    this.MIN_DATE = d3.min(this.data.map((d: any) => { return moment(d.startDate, ['YYYY-MM-DD',]); }));
     this.MAX_DATE = moment(); // d3.max(this.data.map((d: any) => { return moment(d.endDate, ['YYYY-MM-DD']); })); 
 
     this.xScale = d3.scaleTime().domain([this.MIN_DATE, this.MAX_DATE]).range([0, this.WIDTH]);
@@ -192,58 +224,66 @@ export class TestComponent implements OnInit {
     this.HEIGHT = this.HEIGHT - (this.margin.top + this.margin.bottom);
 
     this.timelineSVG = d3.select(this.timelineContainer.nativeElement)
-                    .append('svg')
-                    .attr('width', this.WIDTH)
-                    .attr('height', this.HEIGHT);
+      .append('svg')
+      .attr('width', this.WIDTH)
+      .attr('height', this.HEIGHT);
+
 
 
     this.zoom = d3.zoom()
-                  .scaleExtent([1, 10])
-                  // .translateExtent([[0, 0], [this.WIDTH, this.HEIGHT]])
-                  // .extent([[0, 0],[this.WIDTH, this.HEIGHT]])
-                  .on('zoom', this.zoomEnd.bind(this));
-      
+      .scaleExtent([1, 10])
+      // .translateExtent([[0, 0], [this.WIDTH, this.HEIGHT]])
+      // .extent([[0, 0],[this.WIDTH, this.HEIGHT]])
+      .on('zoom', this.zoomEnd.bind(this));
+
     // zoom thing
     this.timelineSVG.append('rect')
-                    .attr('class', 'zoom')
-                    .attr('width', this.WIDTH)
-                    .attr('height', this.HEIGHT)
-                    .attr('transform', ``)
-                    .call(this.zoom);
+      .attr('class', 'zoom')
+      .attr('width', this.WIDTH)
+      .attr('height', this.HEIGHT)
+      .attr('transform', ``)
+      .call(this.zoom);
+
+    // group for data
+    this.g = this.timelineSVG.append('g')
+      .attr('class', 'group')
+      .attr('width', this.WIDTH)
+      .attr('height', this.HEIGHT)
+      .attr('transform', `translate(${this.margin.top}, ${this.margin.left})`);
+
     // brush
     let brushHeight = 25;
     let brushWidth = this.WIDTH;
     this.brushSVG = d3.select(this.brushContainer.nativeElement)
-                      .append('svg')
-                      .attr('width', brushWidth)
-                      .attr('height', brushHeight);
+      .append('svg')
+      .attr('width', brushWidth)
+      .attr('height', brushHeight);
     this.brushSVG.append('g')
-    .attr('class', 'axis')
-    .attr('transform', `translate(${this.margin.top}, ${this.margin.left})`)
-    .call(
-      d3.axisBottom(this.xScale)
-        .ticks(d3.timeYear.every(10))
-        .tickSize(10)
-        .tickFormat((d: Date) => {
-          return d3.timeFormat('%Y')(d);
-        })
-    )
-    .selectAll('.tick');
+      .attr('class', 'axis')
+      .attr('transform', `translate(${this.margin.top}, ${this.margin.left})`)
+      .call(
+        d3.axisBottom(this.xScale)
+          .ticks(d3.timeYear.every(10))
+          .tickSize(10)
+          .tickFormat((d: Date) => {
+            return d3.timeFormat('%Y')(d);
+          })
+      )
+      .selectAll('.tick');
 
     this.brush = d3.brushX()
-                    .extent([[0, 0], [brushWidth, brushHeight]])
-                    .on('brush', this.brushEnd.bind(this));
+      .extent([[0, 0], [brushWidth, brushHeight]])
+      .on('brush', this.brushEnd.bind(this));
     // brush
     this.brushSVG.append('g')
-                    .attr('class', 'brush')
-                    .attr('transform', `translate(0, 0)`)
-                    .call(this.brush);
+      .attr('class', 'brush')
+      .attr('transform', `translate(0, 0)`)
+      .call(this.brush);
     // set display range
     this.currentlySelectedMinDate = this.MIN_DATE.toDate();
     this.currentlySelectedMaxDate = this.MAX_DATE.toDate();
-    
+
     this.updateBrushExtent([this.MIN_DATE.toDate(), this.MAX_DATE.toDate()]);
-    
   }
 
   /**
@@ -253,114 +293,125 @@ export class TestComponent implements OnInit {
    * - Post life span - defined as a dashed line with the class '.after-death'
    * - Events - lines / circles plotted on the timelines with the class '.event'
    */
-  createEvents(): void {
-    // TODO:  use the enter, update/merge, exit, remove pattern
+  createEvents(data: Array<any>): void {
     let dataByPerson = d3.nest()
-                         .key((d: any) => { return d.person; })
-                         .entries(this.data);
-    // group for data
-    this.g = this.timelineSVG.append('g')
-                    .attr('class', 'group')
-                    .attr('width', this.WIDTH)
-                    .attr('height', this.HEIGHT)
-                    .attr('transform', `translate(${this.margin.top}, ${this.margin.left})`);
-    // items
-    let lineBeforeDeath = this.g.selectAll('.before-death').data(dataByPerson);
-    lineBeforeDeath.enter()
-        .append('line')
-        .attr('class', 'before-death')
-        .attr('stroke', (d: any) => { return '#b5b5b5'; })//this.colors(d.key); })
-        .attr('stroke-width', 4)
-        .attr('x1', (d: any) => { 
-          let date = d3.min(d.values.map((v: any) => { return v.startDate; }))
-          return this.xScale(moment(date));
-        })
-        .attr('x2', (d: any) => { 
-          let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
-          return this.xScale(moment(date));
-        })
-        .attr('y1', (d: any, i: number) => {
-          this.personHeightMap.set(d.key, i*(2 + this.verticalPadding));
-          return i*(2 + this.verticalPadding);
-        })
-        .attr('y2', (d: any, i: number) => {
-          return i*(2 + this.verticalPadding);
-        })
-        .on('mouseover', (d: any) => {
-          let birthDate = d.values.find((dd: any) => { return dd.dateName === 'Birth'; }).startDate;
-          let deathDate = d.values.find((dd: any) => { return dd.dateName === 'Death'; }).startDate;
-          if(!deathDate) deathDate = moment();
-          this.tooltip.nativeElement.style.opacity = '1';
-          this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
-          this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
-          this.tooltip.nativeElement.innerHTML = `
-            <h2>${d.key}</h2>
-            <p>Born: ${moment(birthDate).format('DD/MM/YYYY')} - Died: ${moment(deathDate).format('DD/MM/YYYY')}</p>
-          `;
-        })
-        .on('mouseout', () => {
-          this.tooltip.nativeElement.style.opacity = '0';
-        });;
-    
-    let lineAfterDeath = this.g.selectAll('.after-death').data(dataByPerson);
-    lineAfterDeath.enter()
-        .append('line')
-        .attr('class', 'after-death')
-        .attr('stroke', (d: any) => { return '#b5b5b5'; })//this.colors(d.key); })
-        .attr('stroke-width', 4)
-        .attr('stroke-dasharray', 4)
-        .attr('x1', (d: any) => { 
-          let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
-          return this.xScale(moment(date));
-        })
-        .attr('x2', (d: any) => { 
-          return this.xScale(moment());
-        })
-        .attr('y1', (d: any, i: number) => {
-          return i*(2 + this.verticalPadding);
-        })
-        .attr('y2', (d: any, i: number) => {
-          return i*(2 + this.verticalPadding);
-        });
+      .key((d: any) => { return d.person; })
+      .entries(data);
 
-    let events = this.g.selectAll('event').data(this.data);
-    
-    events.enter()
-          .append('line')
-          .attr('class', 'event')
-          .attr('stroke', (d: any) => { 
-            let exiled = d.dateName.toLowerCase().includes('exil');
-            return exiled ? '#ff0000' : '#b5b5b5'; 
-          })//this.colors(d.key); })
-          .attr('stroke-width', 8)
-          .attr('stroke-linecap', 'round')
-          .attr('x1', (d: any) => { return this.xScale(d.startDate.toDate()); })
-          .attr('x2', (d: any) => { return this.xScale(d.endDate.toDate()); })
-          .attr('y1', (d: any) => { return this.personHeightMap.get(d.person); })
-          .attr('y2', (d: any) => { return this.personHeightMap.get(d.person); })
-          .on('mouseover', (d: any) => {
-            // console.log(d);
-            this.tooltip.nativeElement.style.opacity = '1';
-            this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
-            this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
-            this.tooltip.nativeElement.innerHTML = `
+      /*******************
+     * D3 ENTER + MERGE STEP *
+    *******************/
+    let beforeDeathLines = this.g.selectAll('.before-death').data(dataByPerson);
+
+    beforeDeathLines
+      .enter()
+      .append('line')
+      .attr('class', 'before-death')
+      .attr('stroke', (d: any) => { return '#b5b5b5'; })//this.colors(d.key); })
+      .attr('stroke-width', 4)
+      .merge(beforeDeathLines)
+      .attr('x1', (d: any) => {
+        let date = d3.min(d.values.map((v: any) => { return v.startDate; }))
+        return this.xScale(moment(date));
+      })
+      .attr('x2', (d: any) => {
+        let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+        return this.xScale(moment(date));
+      })
+      .attr('y1', (d: any, i: number) => {
+        this.personHeightMap.set(d.key, i * (2 + this.verticalPadding));
+        return i * (2 + this.verticalPadding);
+      })
+      .attr('y2', (d: any, i: number) => {
+        return i * (2 + this.verticalPadding);
+      })
+      .on('mouseover', (d: any) => {
+        let birthDate = d.values.find((dd: any) => { return dd.dateName === 'Birth'; }).startDate;
+        let deathDate = d.values.find((dd: any) => { return dd.dateName === 'Death'; }).startDate;
+        if (!deathDate) deathDate = moment();
+        this.tooltip.nativeElement.style.opacity = '1';
+        this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
+        this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
+        this.tooltip.nativeElement.innerHTML = `
+              <h2>${d.key}</h2>
+              <p>Born: ${moment(birthDate).format('DD/MM/YYYY')} - Died: ${moment(deathDate).format('DD/MM/YYYY')}</p>
+            `;
+      })
+      .on('mouseout', () => { this.tooltip.nativeElement.style.opacity = '0'; });
+
+    let afterDeathLines = this.g.selectAll('.after-death').data(dataByPerson);
+    afterDeathLines
+      .enter()
+      .append('line')
+      .attr('class', 'after-death')
+      .attr('stroke', (d: any) => { return '#b5b5b5'; })//this.colors(d.key); })
+      .attr('stroke-width', 4)
+      .attr('stroke-dasharray', 4)
+      .merge(afterDeathLines)
+      .attr('x1', (d: any) => {
+        let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+        return this.xScale(moment(date));
+      })
+      .attr('x2', (d: any) => {
+        return this.xScale(moment());
+      })
+      .attr('y1', (d: any, i: number) => {
+        return i * (2 + this.verticalPadding);
+      })
+      .attr('y2', (d: any, i: number) => {
+        return i * (2 + this.verticalPadding);
+      });
+
+    let eventLines = this.g.selectAll('.event').data(data);
+    eventLines
+      .enter()
+      .append('line')
+      .attr('class', 'event')
+      .attr('stroke-width', 8)
+      .attr('stroke-linecap', 'round')
+      .merge(eventLines)
+      .attr('stroke', (d: any) => {
+        let exiled = d.dateName.toLowerCase().includes('exil');
+        return exiled ? '#ff0000' : '#b5b5b5';
+      })//this.colors(d.key); })
+      .attr('x1', (d: any) => { return this.xScale(d.startDate.toDate()); })
+      .attr('x2', (d: any) => { return this.xScale(d.endDate.toDate()); })
+      .attr('y1', (d: any) => { return this.personHeightMap.get(d.person); })
+      .attr('y2', (d: any) => { return this.personHeightMap.get(d.person); })
+      .on('mouseover', (d: any) => {
+        // console.log(d);
+        this.tooltip.nativeElement.style.opacity = '1';
+        this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
+        this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
+        this.tooltip.nativeElement.innerHTML = `
               <h2>${d.person}</h2>
               <h3>${d.dateName}</h3>
               <p>${moment(d.startDate).format('DD/MM/YYYY')} - ${moment(d.endDate).format('DD/MM/YYYY')}</p>
             `;
-          })
-          .on('mouseout', () => {
-            this.tooltip.nativeElement.style.opacity = '0';
-          });
+      })
+      .on('mouseout', () => { this.tooltip.nativeElement.style.opacity = '0'; });
+
+    /*******************
+      * D3 EXIT STEP *
+    *******************/
+    beforeDeathLines.exit().remove();
+    afterDeathLines.exit().remove();
+    eventLines.exit().remove();
   }
 
   /**
-   * Filters the current dataset {@property data} 
-   * based on start and end date selection
-   * @param start Start date for filtering data
-   * @param end End date for filtering data
+   * Replaces current data with the result of selected filters 
+   * @param filteredData - data that has been previously filtered
    */
-  filterData(start: Date, end: Date): void {
+  filterData(filteredData: Array<any>): void {
+    this.createEvents(filteredData);
+  }
+
+  /**
+   * 
+   */
+  clearFilters(): void {
+    this.createEvents(this.data);
   }
 
   /**
@@ -393,8 +444,6 @@ export class TestComponent implements OnInit {
       extent: [startD, endD],
       from: 'brush'
     });
-
-    this.filterData(startD, endD);
   }
 
   /**
@@ -417,47 +466,47 @@ export class TestComponent implements OnInit {
     let newXScale = transform.rescaleX(this.xScale);
     // rescale following SVG items with the new 'zoomed' scale
     this.g.selectAll('.before-death')
-          .transition()
-          .duration(250)
-          .attr('x1', (d: any) => {
-            let date = d3.min(d.values.map((v: any) => { return v.startDate; }))
-            return newXScale(moment(date));
-          })
-          .attr('x2', (d: any) => {
-            let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
-            return newXScale(moment(date));
-          })
-          .attr('y1', (d: any, i: any) => {
-            return i*(2 + this.verticalPadding);
-          })
-          .attr('y2', (d: any, i: any) => {
-            return i*(2 + this.verticalPadding);
-          });
+      .transition()
+      .duration(250)
+      .attr('x1', (d: any) => {
+        let date = d3.min(d.values.map((v: any) => { return v.startDate; }))
+        return newXScale(moment(date));
+      })
+      .attr('x2', (d: any) => {
+        let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+        return newXScale(moment(date));
+      })
+      .attr('y1', (d: any, i: any) => {
+        return i * (2 + this.verticalPadding);
+      })
+      .attr('y2', (d: any, i: any) => {
+        return i * (2 + this.verticalPadding);
+      });
 
     this.g.selectAll('.after-death')
-          .transition()
-          .duration(250)
-          .attr('x1', (d: any) => {
-            let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
-            return newXScale(moment(date));
-          })
-          .attr('x2', (d: any) => {
-            return newXScale(moment());
-          })
-          .attr('y1', (d: any, i: number) => {
-            return i*(2 + this.verticalPadding);
-          })
-          .attr('y2', (d: any, i: number) => {
-            return i*(2 + this.verticalPadding);
-          });
+      .transition()
+      .duration(250)
+      .attr('x1', (d: any) => {
+        let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+        return newXScale(moment(date));
+      })
+      .attr('x2', (d: any) => {
+        return newXScale(moment());
+      })
+      .attr('y1', (d: any, i: number) => {
+        return i * (2 + this.verticalPadding);
+      })
+      .attr('y2', (d: any, i: number) => {
+        return i * (2 + this.verticalPadding);
+      });
 
     this.g.selectAll('.event')
-          .transition()
-          .duration(250)
-          .attr('x1', (d: any) => { return newXScale(d.startDate.toDate()); })
-          .attr('x2', (d: any) => { return newXScale(d.endDate.toDate()); })
-          .attr('y1', (d: any) => { return this.personHeightMap.get(d.person); })
-          .attr('y2', (d: any) => { return this.personHeightMap.get(d.person); })
+      .transition()
+      .duration(250)
+      .attr('x1', (d: any) => { return newXScale(d.startDate.toDate()); })
+      .attr('x2', (d: any) => { return newXScale(d.endDate.toDate()); })
+      .attr('y1', (d: any) => { return this.personHeightMap.get(d.person); })
+      .attr('y2', (d: any) => { return this.personHeightMap.get(d.person); })
 
     // brush & axis
     this.zoomEmitter.emit({
@@ -474,47 +523,47 @@ export class TestComponent implements OnInit {
   updateTimelineExtent(extent: Array<Date>): void {
     let newXScale = d3.scaleTime().domain([extent[0], extent[1]]).range([0, this.WIDTH]);
     this.g.selectAll('.before-death')
-          .transition()
-          .duration(250)
-          .attr('x1', (d: any) => {
-            let date = d3.min(d.values.map((v: any) => { return v.startDate; }))
-            return newXScale(moment(date));
-          })
-          .attr('x2', (d: any) => {
-            let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
-            return newXScale(moment(date));
-          })
-          .attr('y1', (d: any, i: any) => {
-            return i*(2 + this.verticalPadding);
-          })
-          .attr('y2', (d: any, i: any) => {
-            return i*(2 + this.verticalPadding);
-          });
+      .transition()
+      .duration(250)
+      .attr('x1', (d: any) => {
+        let date = d3.min(d.values.map((v: any) => { return v.startDate; }))
+        return newXScale(moment(date));
+      })
+      .attr('x2', (d: any) => {
+        let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+        return newXScale(moment(date));
+      })
+      .attr('y1', (d: any, i: any) => {
+        return i * (2 + this.verticalPadding);
+      })
+      .attr('y2', (d: any, i: any) => {
+        return i * (2 + this.verticalPadding);
+      });
 
     this.g.selectAll('.after-death')
-        .transition()
-        .duration(250)
-        .attr('x1', (d: any) => {
-          let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
-          return newXScale(moment(date));
-        })
-        .attr('x2', (d: any) => {
-          return newXScale(moment());
-        })
-        .attr('y1', (d: any, i: number) => {
-          return i*(2 + this.verticalPadding);
-        })
-        .attr('y2', (d: any, i: number) => {
-          return i*(2 + this.verticalPadding);
-        });
+      .transition()
+      .duration(250)
+      .attr('x1', (d: any) => {
+        let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+        return newXScale(moment(date));
+      })
+      .attr('x2', (d: any) => {
+        return newXScale(moment());
+      })
+      .attr('y1', (d: any, i: number) => {
+        return i * (2 + this.verticalPadding);
+      })
+      .attr('y2', (d: any, i: number) => {
+        return i * (2 + this.verticalPadding);
+      });
 
     this.g.selectAll('.event')
-        .transition()
-        .duration(250)
-        .attr('x1', (d: any) => { return newXScale(d.startDate.toDate()); })
-        .attr('x2', (d: any) => { return newXScale(d.endDate.toDate()); })
-        .attr('y1', (d: any) => { return this.personHeightMap.get(d.person); })
-        .attr('y2', (d: any) => { return this.personHeightMap.get(d.person); })
+      .transition()
+      .duration(250)
+      .attr('x1', (d: any) => { return newXScale(d.startDate.toDate()); })
+      .attr('x2', (d: any) => { return newXScale(d.endDate.toDate()); })
+      .attr('y1', (d: any) => { return this.personHeightMap.get(d.person); })
+      .attr('y2', (d: any) => { return this.personHeightMap.get(d.person); })
   }
 
   /**
