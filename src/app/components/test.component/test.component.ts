@@ -297,7 +297,7 @@ export class TestComponent implements OnInit {
       .attr('transform', `translate(${this.margin.top}, ${this.margin.left})`)
       .call(
         d3.axisBottom(this.xScale)
-          .ticks(d3.timeYear.every(2))
+          .ticks(d3.timeYear.every(10))
           .tickSize(10)
           .tickFormat((d: Date) => {
             return d3.timeFormat('%Y')(d);
