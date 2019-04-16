@@ -8,6 +8,7 @@ import { environment } from '../../../environments/environment';
 import * as d3 from 'd3';
 import * as moment from 'moment';
 import { filter } from 'rxjs/operators';
+import { resolve } from 'q';
 // black voodoo workaround for leaflet (ReferenceError: window is not defined)
 declare var L: any;
 
@@ -153,6 +154,26 @@ export class TestComponent implements OnInit {
     this.filterData(filteredData);
   }
 
+  addEventsToPerson(person: PersonOrganization, events: Array<Event>): void {
+    let deathDate = person.dates.find((d: any) => { return d.dateName === 'Death' ? d : null });
+    if(!deathDate) return;
+
+    events.forEach((event: Event) => {
+
+      if(moment(event.startDate).isBefore(moment(deathDate.date))) return; // only interested in events after death
+      if(!event.startDate) return; // no startdate
+
+      let dataPoint: any = {};
+      dataPoint.person = person.name;
+      dataPoint.personID = person.objectId;
+      dataPoint.startDate = moment(event.startDate);
+      dataPoint.endDate = event.endDate ? moment(event.endDate) : moment(event.startDate);
+      dataPoint.dateName = event.name;
+      dataPoint.type = 'post-life';
+      this.data.push(dataPoint);
+    });
+  }
+
   /**
    * Called once the DatabaseService resolves with people/organizations
    * - Populates the @property people array 
@@ -160,10 +181,17 @@ export class TestComponent implements OnInit {
    * - Formats data so we can use it easily with d3
    */
   prepareData(): void {
+    let promiseArray = new Array<Promise<any>>();
     this.people.forEach((person: PersonOrganization, i: number) => {
-
+      // if(i > 20) return;
       if (person.objectType !== 'Person') return; // organizations later
-
+      promiseArray.push(this.db.getEventsByPersonOrganization(person).then((success: any) => {
+        return {
+          person: person,
+          events: success
+        };
+      }));
+             
       // populate map
       person.roles.forEach((role: string) => {
         if (this.rolePersonMap.has(role)) {
@@ -179,7 +207,7 @@ export class TestComponent implements OnInit {
           let dataPoint: any = {};
           if (!func.startDate) return;
           dataPoint.startDate = moment(func.startDate);
-          func.endDate ? dataPoint.endDate = moment(func.endDate) : dataPoint.endDate = moment(func.startdate);
+          dataPoint.endDate = func.endDate ? moment(func.endDate) : moment(func.startdate);
           dataPoint.person = person.name;
           dataPoint.dateName = func.dateName;
           dataPoint.personID = person.objectId;
@@ -197,6 +225,14 @@ export class TestComponent implements OnInit {
           this.data.push(dataPoint);
         });
       }
+    });
+
+    Promise.all(promiseArray).then((success: Array<any>) => {
+      success.forEach((s: any) => {
+        this.addEventsToPerson(s.person, s.events);
+      });
+      // console.log(this.data);
+      this.render(this.data);
     });
   }
 
@@ -263,7 +299,7 @@ export class TestComponent implements OnInit {
       .attr('transform', `translate(${this.margin.top}, ${this.margin.left})`)
       .call(
         d3.axisBottom(this.xScale)
-          .ticks(d3.timeYear.every(10))
+          .ticks(d3.timeYear.every(2))
           .tickSize(10)
           .tickFormat((d: Date) => {
             return d3.timeFormat('%Y')(d);
@@ -298,8 +334,8 @@ export class TestComponent implements OnInit {
       .key((d: any) => { return d.person; })
       .entries(data);
 
-      /*******************
-     * D3 ENTER + MERGE STEP *
+    /*******************
+    * D3 ENTER + MERGE STEP *
     *******************/
     let beforeDeathLines = this.g.selectAll('.before-death').data(dataByPerson);
 
@@ -307,27 +343,15 @@ export class TestComponent implements OnInit {
       .enter()
       .append('line')
       .attr('class', 'before-death')
-      .attr('stroke', (d: any) => { return '#b5b5b5'; })//this.colors(d.key); })
+      .attr('stroke', (d: any) => { return '#b5b5b5'; })
       .attr('stroke-width', 4)
-      .merge(beforeDeathLines)
-      .attr('x1', (d: any) => {
-        let date = d3.min(d.values.map((v: any) => { return v.startDate; }))
-        return this.xScale(moment(date));
-      })
-      .attr('x2', (d: any) => {
-        let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
-        return this.xScale(moment(date));
-      })
-      .attr('y1', (d: any, i: number) => {
-        this.personHeightMap.set(d.key, i * (2 + this.verticalPadding));
-        return i * (2 + this.verticalPadding);
-      })
-      .attr('y2', (d: any, i: number) => {
-        return i * (2 + this.verticalPadding);
-      })
+      .attr('x1', 0)
+      .attr('x2', 0)
+      .attr('y1', 0)
+      .attr('y2', 0)
       .on('mouseover', (d: any) => {
         let birthDate = d.values.find((dd: any) => { return dd.dateName === 'Birth'; }).startDate;
-        let deathDate = d.values.find((dd: any) => { return dd.dateName === 'Death'; }).startDate;
+        let deathDate = d.values.find((dd: any) => { return dd.dateName === 'Death' ? dd.startDate : null; });
         if (!deathDate) deathDate = moment();
         this.tooltip.nativeElement.style.opacity = '1';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
@@ -337,7 +361,28 @@ export class TestComponent implements OnInit {
               <p>Born: ${moment(birthDate).format('DD/MM/YYYY')} - Died: ${moment(deathDate).format('DD/MM/YYYY')}</p>
             `;
       })
-      .on('mouseout', () => { this.tooltip.nativeElement.style.opacity = '0'; });
+      .on('mouseout', () => { this.tooltip.nativeElement.style.opacity = '0'; })
+      .merge(beforeDeathLines)
+      .transition().duration(750)
+      .attr('stroke', (d: any) => { return '#A5D5E6' })
+      .attr('x1', (d: any) => {
+        let birthDate = d.values.find((dd: any) => dd.dateName === 'Birth' ? dd : null);
+        let date = birthDate.startDate;
+        return this.xScale(moment(date));
+      })
+      .attr('x2', (d: any) => {
+        let deathDate = d.values.find((dd: any) => dd.dateName === 'Death' ? dd : null);
+        let date = deathDate ? deathDate.endDate : Date.now();
+        return this.xScale(moment(date));
+      })
+      .attr('y1', (d: any, i: number) => {
+        this.personHeightMap.set(d.key, i * (2 + this.verticalPadding));
+        return i * (2 + this.verticalPadding);
+      })
+      .attr('y2', (d: any, i: number) => {
+        return i * (2 + this.verticalPadding);
+      });
+   
 
     let afterDeathLines = this.g.selectAll('.after-death').data(dataByPerson);
     afterDeathLines
@@ -346,10 +391,19 @@ export class TestComponent implements OnInit {
       .attr('class', 'after-death')
       .attr('stroke', (d: any) => { return '#b5b5b5'; })//this.colors(d.key); })
       .attr('stroke-width', 4)
-      .attr('stroke-dasharray', 4)
+      .attr('stroke-dasharray', 8)
+      .attr('stroke-linecap', 'round')
+      .attr('x1', 0)
+      .attr('x2', 0)
+      .attr('y1', 0)
+      .attr('y2', 0)
       .merge(afterDeathLines)
+      .transition().duration(750)
+      .attr('stroke', (d: any) => { return '#b5b5b5' })
+      .attr('stroke-opacity', 0.5)
       .attr('x1', (d: any) => {
-        let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+        let deathDate = d.values.find((dd: any) => dd.dateName === 'Death' ? dd : null);
+        let date = deathDate ? deathDate.endDate : Date.now();
         return this.xScale(moment(date));
       })
       .attr('x2', (d: any) => {
@@ -367,17 +421,13 @@ export class TestComponent implements OnInit {
       .enter()
       .append('line')
       .attr('class', 'event')
+      .attr('stroke', (d: any) => { return d.type ? '#ff0000' : '#b5b5b5'; })//this.colors(d.key); })
       .attr('stroke-width', 8)
       .attr('stroke-linecap', 'round')
-      .merge(eventLines)
-      .attr('stroke', (d: any) => {
-        let exiled = d.dateName.toLowerCase().includes('exil');
-        return exiled ? '#ff0000' : '#b5b5b5';
-      })//this.colors(d.key); })
-      .attr('x1', (d: any) => { return this.xScale(d.startDate.toDate()); })
-      .attr('x2', (d: any) => { return this.xScale(d.endDate.toDate()); })
-      .attr('y1', (d: any) => { return this.personHeightMap.get(d.person); })
-      .attr('y2', (d: any) => { return this.personHeightMap.get(d.person); })
+      .attr('x1', 0)
+      .attr('x2', 0)
+      .attr('y1', 0)
+      .attr('y2', 0)
       .on('mouseover', (d: any) => {
         // console.log(d);
         this.tooltip.nativeElement.style.opacity = '1';
@@ -389,14 +439,45 @@ export class TestComponent implements OnInit {
               <p>${moment(d.startDate).format('DD/MM/YYYY')} - ${moment(d.endDate).format('DD/MM/YYYY')}</p>
             `;
       })
-      .on('mouseout', () => { this.tooltip.nativeElement.style.opacity = '0'; });
+      .on('mouseout', () => { this.tooltip.nativeElement.style.opacity = '0'; })
+      .merge(eventLines)
+      .transition().duration(750)
+      .attr('stroke-width', 10)
+      .attr('stroke', (d: any) => { return d.type ? '#ff0000' : '#b5b5b5'; })//this.colors(d.key); })
+      // .attr('stroke', (d: any) => { return '#A5D5E6' })
+      .attr('x1', (d: any) => { return this.xScale(d.startDate.toDate()); })
+      .attr('x2', (d: any) => { return this.xScale(d.endDate.toDate()); })
+      .attr('y1', (d: any) => { return this.personHeightMap.get(d.person); })
+      .attr('y2', (d: any) => { return this.personHeightMap.get(d.person); });
+    
 
     /*******************
       * D3 EXIT STEP *
     *******************/
-    beforeDeathLines.exit().remove();
-    afterDeathLines.exit().remove();
-    eventLines.exit().remove();
+    beforeDeathLines.exit()
+      .transition().duration(750)
+      .attr('x1', 0)
+      .attr('x2', 0)
+      .attr('y1', 0)
+      .attr('y2', 0)
+      .attr('stroke', (d: any) => { return '#ffffff'; })//this.colors(d.key); })
+      .remove();
+    afterDeathLines.exit()
+      .transition().duration(750)
+      .attr('x1', 0)
+      .attr('x2', 0)
+      .attr('y1', 0)
+      .attr('y2', 0)
+      .attr('stroke', (d: any) => { return '#ffffff'; })//this.colors(d.key); })
+      .remove();
+    eventLines.exit()
+      .transition().duration(750)
+      .attr('x1', 0)
+      .attr('x2', 0)
+      .attr('y1', 0)
+      .attr('y2', 0)
+      .attr('stroke', (d: any) => { return '#ffffff'; })//this.colors(d.key); })
+      .remove();
   }
 
   /**
@@ -469,11 +550,13 @@ export class TestComponent implements OnInit {
       .transition()
       .duration(250)
       .attr('x1', (d: any) => {
-        let date = d3.min(d.values.map((v: any) => { return v.startDate; }))
+        let birthDate = d.values.find((dd: any) => dd.dateName === 'Birth' ? dd : null);
+        let date = birthDate.startDate;
         return newXScale(moment(date));
       })
       .attr('x2', (d: any) => {
-        let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+        let deathDate = d.values.find((dd: any) => dd.dateName === 'Death' ? dd : null);
+        let date = deathDate ? deathDate.endDate : Date.now();
         return newXScale(moment(date));
       })
       .attr('y1', (d: any, i: any) => {
@@ -487,7 +570,8 @@ export class TestComponent implements OnInit {
       .transition()
       .duration(250)
       .attr('x1', (d: any) => {
-        let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+        let deathDate = d.values.find((dd: any) => dd.dateName === 'Death' ? dd : null);
+        let date = deathDate ? deathDate.endDate : Date.now();
         return newXScale(moment(date));
       })
       .attr('x2', (d: any) => {
@@ -526,11 +610,13 @@ export class TestComponent implements OnInit {
       .transition()
       .duration(250)
       .attr('x1', (d: any) => {
-        let date = d3.min(d.values.map((v: any) => { return v.startDate; }))
+        let birthDate = d.values.find((dd: any) => dd.dateName === 'Birth' ? dd : null);
+        let date = birthDate.startDate;
         return newXScale(moment(date));
       })
       .attr('x2', (d: any) => {
-        let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+        let deathDate = d.values.find((dd: any) => dd.dateName === 'Death' ? dd : null);
+        let date = deathDate ? deathDate.endDate : Date.now();
         return newXScale(moment(date));
       })
       .attr('y1', (d: any, i: any) => {
@@ -544,7 +630,8 @@ export class TestComponent implements OnInit {
       .transition()
       .duration(250)
       .attr('x1', (d: any) => {
-        let date = d3.max(d.values.map((v: any) => { return v.endDate; }))
+        let deathDate = d.values.find((dd: any) => dd.dateName === 'Death' ? dd : null);
+        let date = deathDate ? deathDate.endDate : Date.now();
         return newXScale(moment(date));
       })
       .attr('x2', (d: any) => {
