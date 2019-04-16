@@ -3,7 +3,6 @@ import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import * as mongoose from 'mongoose';
 import * as path from 'path';
-import { Expression } from '@angular/compiler';
 
 let EventSchema = require('./database/schemas/event');
 let HistoricEventSchema = require('./database/schemas/historicevent');
@@ -11,6 +10,7 @@ let LocationSchema = require('./database/schemas/location');
 let ThemeSchema = require('./database/schemas/theme');
 let PersonOrganizationSchema = require('./database/schemas/personorganization');
 let SourceSchema = require('./database/schemas/source');
+
 const DATABASE_COLLECTION = 'immv2';
 
 
@@ -19,7 +19,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   const UPLOAD_DIR_PATH = 'uploads';
   mongoose.set('useNewUrlParser', true);
   mongoose.set('useCreateIndex', true);
-  mongoose.connect(`mongodb://localhost/${DATABASE_COLLECTION}`, (err) => {
+  mongoose.connect(`mongodb://localhost/${DATABASE_COLLECTION}`, (err: Error) => {
     if (err) { 
       console.log(err);
       return;
@@ -36,7 +36,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
 
 
   api.get('/api/v1/events', (req: express.Request, res: express.Response) => {
-    EventSchema.find({}, (err, events) => {
+    EventSchema.find({}, (err: Error, events: Array<any>) => {
       if (err) {
         console.log(err);
         res.status(404).json({ "message": 'No documents matching ' + req.body.query + ' were found.' })
@@ -48,7 +48,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   });
 
   api.get('/api/v1/historicevents', (req: express.Request, res: express.Response) => {
-    HistoricEventSchema.find({}, (err, historicEvents) => {
+    HistoricEventSchema.find({}, (err: Error, historicEvents: Array<any>) => {
       if (err) {
         console.log(err);
         res.status(404).json({ "message": 'No documents matching ' + req.body.query + ' were found.' })
@@ -60,7 +60,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   });
 
   api.get('/api/v1/peopleorganizations', (req: express.Request, res: express.Response) => {
-    PersonOrganizationSchema.find({}, (err, peopleOrganizations) => {
+    PersonOrganizationSchema.find({}, (err: Error, peopleOrganizations: Array<any>) => {
       if (err) {
         console.log(err);
         res.status(404).json({ "message": 'No documents matching ' + req.body.query + ' were found.' })
@@ -72,7 +72,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   });
 
   api.get('/api/v1/locations', (req: express.Request, res: express.Response) => {
-    LocationSchema.find({}, (err, locations) => {
+    LocationSchema.find({}, (err: Error, locations: Array<any>) => {
       if (err) {
         console.log(err);
         res.status(404).json({ "message": 'No documents matching ' + req.body.query + ' were found.' })
@@ -84,7 +84,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   });
 
   api.get('/api/v1/sources', (req: express.Request, res: express.Response) => {
-    SourceSchema.find({}, (err, sources) => {
+    SourceSchema.find({}, (err: Error, sources: Array<any>) => {
       if (err) {
         console.log(err);
         res.status(404).json({ "message": 'No documents matching ' + req.body.query + ' were found.' })
@@ -96,7 +96,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   });
 
   api.get('/api/v1/themes', (req: express.Request, res: express.Response) => {
-    ThemeSchema.find({}, (err, themes) => {
+    ThemeSchema.find({}, (err: Error, themes: Array<any>) => {
       if (err) {
         console.log(err);
         res.status(404).json({ "message": 'No documents matching ' + req.body.query + ' were found.' })
@@ -108,7 +108,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   });
 
   api.get('/api/v1/events/:id', (req: express.Request, res: express.Response) => {
-    EventSchema.findOne({ _id: req.params.id }, (err, event) => {
+    EventSchema.findOne({ _id: req.params.id }, (err: Error, event: any) => {
       if (err) {
         console.log(err);
         res.status(404).json({ "message": 'No documents matching ' + req.params.id + ' found' });
@@ -120,7 +120,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   });
 
   api.get('/api/v1/historicevents/:id', (req: express.Request, res: express.Response) => {
-    HistoricEventSchema.findOne({ _id: req.params.id }, (err, historicEvent) => {
+    HistoricEventSchema.findOne({ _id: req.params.id }, (err: Error, historicEvent: any) => {
       if (err) {
         console.log(err);
         res.status(404).json({ "message": 'No documents matching ' + req.params.id + ' found' });
@@ -132,7 +132,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   });
 
   api.get('/api/v1/peopleorganizations/:id', (req: express.Request, res: express.Response) => {
-    PersonOrganizationSchema.findOne({ _id: req.params.id }, (err, personOrganization) => {
+    PersonOrganizationSchema.findOne({ _id: req.params.id }, (err: Error, personOrganization: any) => {
       if (err) {
         console.log(err);
         res.status(404).json({ "message": 'No documents matching ' + req.params.id + ' found' });
@@ -144,7 +144,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   });
 
   api.get('/api/v1/locations/:id', (req: express.Request, res: express.Response) => {
-    LocationSchema.findOne({ _id: req.params.id }, (err, location) => {
+    LocationSchema.findOne({ _id: req.params.id }, (err: Error, location: any) => {
       if (err) {
         console.log(err);
         res.status(404).json({ "message": 'No documents matching ' + req.params.id + ' found' });
@@ -156,7 +156,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   });
 
   api.get('/api/v1/sources/:id', (req: express.Request, res: express.Response) => {
-    SourceSchema.findOne({ _id: req.params.id }, (err, source) => {
+    SourceSchema.findOne({ _id: req.params.id }, (err: Error, source: any) => {
       if (err) {
         console.log(err);
         res.status(404).json({ "message": 'No documents matching ' + req.params.id + ' found' });
@@ -168,7 +168,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   });
 
   api.get('/api/v1/themes/:id', (req: express.Request, res: express.Response) => {
-    ThemeSchema.findOne({ _id: req.params.id }, (err, theme) => {
+    ThemeSchema.findOne({ _id: req.params.id }, (err: Error, theme: any) => {
       if (err) {
         console.log(err);
         res.status(404).json({ "message": 'No documents matching ' + req.params.id + ' found' });
@@ -186,7 +186,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
     let promiseArr = new Array<Promise<any>>();
     // EVENTS
     promiseArr.push(new Promise<any>((resolve, reject) => {
-      EventSchema.find({ $text: { $search: req.body.query } }, (err, events) => {
+      EventSchema.find({ $text: { $search: req.body.query } }, (err: Error, events: Array<any>) => {
         if (err) {
           reject();//res.status(404).json({ "message" : 'No documents matching ' + req.body.query + ' were found.'})
         }
@@ -198,13 +198,13 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
     }));
     // HISTORIC EVENTS
     promiseArr.push(new Promise<any>((resolve, reject) => {
-      HistoricEventSchema.find({ $text: { $search: req.body.query } }, (err, events) => {
+      HistoricEventSchema.find({ $text: { $search: req.body.query } }, (err: Error, historicEvents: Array<any>) => {
         if (err) {
           reject();
           // res.status(404).json({ "message" : 'No documents matching ' + req.body.query + ' were found.'})
         }
-        if (events) {
-          resolve({ historicEvents: events, type: 'historicevents' });
+        if (historicEvents) {
+          resolve({ historicEvents: historicEvents, type: 'historicevents' });
           // searchResults.push(events);
         }
       }).exec()
@@ -212,13 +212,13 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
 
     // LOCATIONS
     promiseArr.push(new Promise<any>((resolve, reject) => {
-      LocationSchema.find({ $text: { $search: req.body.query } }, (err, events) => {
+      LocationSchema.find({ $text: { $search: req.body.query } }, (err: Error, locations: Array<any>) => {
         if (err) {
           reject();
           // res.status(404).json({ "message" : 'No documents matching ' + req.body.query + ' were found.'})
         }
-        if (events) {
-          resolve({ locations: events, type: 'locations' });
+        if (locations) {
+          resolve({ locations: locations, type: 'locations' });
           // searchResults.push(events);
         }
       }).exec()
@@ -226,13 +226,13 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
 
     // THEMES
     promiseArr.push(new Promise<any>((resolve, reject) => {
-      ThemeSchema.find({ $text: { $search: req.body.query } }, (err, events) => {
+      ThemeSchema.find({ $text: { $search: req.body.query } }, (err: Error, themes: Array<any>) => {
         if (err) {
           reject();
           // res.status(404).json({ "message" : 'No documents matching ' + req.body.query + ' were found.'})
         }
-        if (events) {
-          resolve({ themes: events, type: 'themes' });
+        if (themes) {
+          resolve({ themes: themes, type: 'themes' });
           // searchResults.push(events);
         }
       }).exec()
@@ -240,13 +240,13 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
 
     // PEOPLE/ORGANIZATIONS
     promiseArr.push(new Promise<any>((resolve, reject) => {
-      PersonOrganizationSchema.find({ $text: { $search: req.body.query } }, (err, events) => {
+      PersonOrganizationSchema.find({ $text: { $search: req.body.query } }, (err: Error, peopleOrganizations: Array<any>) => {
         if (err) {
           reject();
           // res.status(404).json({ "message" : 'No documents matching ' + req.body.query + ' were found.'})
         }
-        if (events) {
-          resolve({ peopleOrganizations: events, type: 'peopleorganizations' });
+        if (peopleOrganizations) {
+          resolve({ peopleOrganizations: peopleOrganizations, type: 'peopleorganizations' });
           // searchResults.push(events);
         }
       }).exec()
@@ -254,13 +254,13 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
 
     // SOURCES
     promiseArr.push(new Promise<any>((resolve, reject) => {
-      SourceSchema.find({ $text: { $search: req.body.query } }, (err, events) => {
+      SourceSchema.find({ $text: { $search: req.body.query } }, (err: Error, sources: Array<any>) => {
         if (err) {
           reject();
           // res.status(404).json({ "message" : 'No documents matching ' + req.body.query + ' were found.'})
         }
-        if (events) {
-          resolve({ sources: events, type: 'sources' });
+        if (sources) {
+          resolve({ sources: sources, type: 'sources' });
           // searchResults.push(events);
         }
       }).exec()
@@ -273,7 +273,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
 
   api.post('/api/v1/query', (req: express.Request, res: express.Response) => {
     let query = { themes: { $elemMatch: { theme: mongoose.Types.ObjectId(req.body.query) } } };
-    EventSchema.find(query, (err, events) => {
+    EventSchema.find(query, (err: Error, events: Array<any>) => {
       if (err) {
         console.log(err);
         res.status(500).json({ "message": "ERROR", "error": err });
@@ -287,7 +287,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
    */
   api.post('/api/v1/reverseLookupEvents', (req: express.Request, res: express.Response) => {
     let query = { [req.body.relationship]: { $elemMatch: { [req.body.field]: mongoose.Types.ObjectId(req.body.query) } } };
-    EventSchema.find(query, (err, events) => {
+    EventSchema.find(query, (err: Error, events: Array<any>) => {
       if (err) {
         console.log(err);
         res.status(500).json({ "message": "ERROR", "error": err });
@@ -310,7 +310,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   api.get('*.*', express.static(distPath));
 
   // All regular routes use the Universal engine
-  api.get('*', (req, res) => res.render('index', { req }));
+  api.get('*', (req: express.Request, res: express.Response) => res.render('index', { req }));
 
   return api;
 }
