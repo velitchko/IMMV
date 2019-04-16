@@ -296,6 +296,40 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
     });
   });
 
+  api.post('/api/v1/getPeopleByTheme', (req: express.Request, res: express.Response) => {
+    let themeId = req.body.theme;
+
+    let query = { themes : { $elemMatch: { theme: themeId }}};
+    // get events by theme
+    EventSchema.find(query, (err: Error, events: Array<any>) => {
+      if(err) {
+        console.log(err);
+        res.status(500).json({ "message": "ERROR", "error": err});
+      }
+      // get people by events
+      let people = new Set();
+      events.forEach((event: any) => {
+        event.peopleOrganizations.forEach((person: any) => {
+          people.add(person.personOrganization);
+        })
+      });
+
+      // promise array to resolve after all queries have been performed
+      let promiseArr = new Array<Promise<any>>();
+      people.forEach((p: any) => {
+        promiseArr.push(
+          PersonOrganizationSchema.findOne({ _id: mongoose.Types.ObjectId(p)}, (err: Error, person: any) => {
+          }).exec());
+      })
+
+      // send response after promise array resolves
+      // TODO: Parse and provide response in data format that D3 will understand
+      Promise.all(promiseArr).then((success: any) => { 
+        res.status(200).json({ "message": "OK", results: success });
+      });
+    });
+  });
+
   // GET uploaded files
   api.get('/api/v1/uploads/:id', (req: express.Request, res: express.Response) => {
     if (req.params.id) {
