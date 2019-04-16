@@ -7,8 +7,6 @@ import { Event } from '../../models/event';
 import { environment } from '../../../environments/environment';
 import * as d3 from 'd3';
 import * as moment from 'moment';
-import { filter } from 'rxjs/operators';
-import { resolve } from 'q';
 // black voodoo workaround for leaflet (ReferenceError: window is not defined)
 declare var L: any;
 
