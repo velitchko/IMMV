@@ -1,16 +1,23 @@
-<div id="wrapper">
-    <div id="role-holder">
-        <mat-chip-list>
-            <mat-chip *ngFor="let r of getPeopleRoles()" selected="true" (click)="filterByRole(r)">{{ r }}</mat-chip>
-        </mat-chip-list>
+<div id="options">
+    <div *ngFor="let e of eventTypes">
+        <mat-radio-button (change)="filterEventsByType(e)">{{ e }}</mat-radio-button>
     </div>
+    <div>
+        <mat-radio-button (change)="filterEventsByType()">all</mat-radio-button>
+    </div>
+    <div>
+        <mat-select [(value)]="currentOrder" (selectionChange)="updateOrder()">
+            <mat-option *ngFor="let o of ordering" [value]="o" >{{ o }}</mat-option>
+        </mat-select>
+    </div>
+</div>
+<div id="wrapper">
     <div id="timeline-holder" #timelineHolder></div>
-    <div id="brush-holder" #brushHolder></div>
-    <div id="map-holder" #mapHolder></div>
 </div>
 <div id="date-extent">
     <h3>{{ displayDate(currentlySelectedMinDate) }}</h3>
     <h3>&nbsp; - &nbsp;</h3>
-    <h3>{{ displayDate(currentlySelectedMaxDate) }}</h3>
+    <h3>{{ displayDate(currentlySelectedMaxDate) }}
+        ({{ getDuration(currentlySelectedMinDate, currentlySelectedMaxDate)}})</h3>
 </div>
 <div id="tooltip" #tooltip></div>
