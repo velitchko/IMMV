@@ -332,7 +332,7 @@ export class TestComponent implements OnInit {
     let g = this.timelineSVG.append('g')
       .attr('width', this.WIDTH)
       .attr('height', this.HEIGHT)
-      .attr('transform', `translate(${this.rScale.range()[1]}, ${this.rScale.range()[1]})`);
+      .attr('transform', `translate(${this.WIDTH / 2}, ${this.rScale.range()[1]})`);
 
     this.g = g.append('g')
       .attr('width', this.WIDTH)
@@ -688,21 +688,21 @@ export class TestComponent implements OnInit {
 
     let categoricalArc = d3.arc();
     categoricalArc
-      .innerRadius(() => { return this.rScale.range()[1] + 5; }) 
+      .innerRadius(() => { return this.rScale.range()[1] + 5; })
       .outerRadius(() => { return this.rScale.range()[1] + 20; })
-      .startAngle((d: any) => { 
+      .startAngle((d: any) => {
         // console.log(this.peopleAngles.get(d.key));
         // console.log(this.theta);
-        return (this.peopleAngles.get(d.key) + Math.PI/2) - this.theta/2; 
+        return (this.peopleAngles.get(d.key) + Math.PI / 2) - this.theta / 2;
       })
-      .endAngle((d: any) => { return (this.peopleAngles.get(d.key) + Math.PI/2) + this.theta/2; });
+      .endAngle((d: any) => { return (this.peopleAngles.get(d.key) + Math.PI / 2) + this.theta / 2; });
 
     let categoricalBars = this.g.selectAll('.category').data(dataByPerson);
     categoricalBars
       .enter()
       .append('path')
       .attr('d', categoricalArc)
-      .on('mouseover', (d: any) => { 
+      .on('mouseover', (d: any) => {
         let person = this.people.find((p: PersonOrganization) => { return p.name === d.key; })
         this.tooltip.nativeElement.style.display = 'block';
         this.tooltip.nativeElement.style.opacity = '1';
@@ -719,11 +719,13 @@ export class TestComponent implements OnInit {
       })
       .merge(categoricalBars)
       .transition().duration('750')
+      .attr('d', categoricalArc)
       .attr('stroke', '#828282')
       .attr('fill', (d: any) => {
         let person = this.people.find((p: any) => { return p.name === d.key; });
         return this.colors((person as any).category);
       });
+
     /*******************
       * D3 EXIT STEP *
     *******************/
