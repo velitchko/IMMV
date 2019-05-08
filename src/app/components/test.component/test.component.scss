@@ -13,6 +13,14 @@
     position: relative;
 }
 
+#people {
+    position: absolute;
+    top: 0em;
+    right: 1em;
+    max-height: 100%;
+    overflow-y: scroll;
+}
+
 #options {
     position: absolute;
     top: 20%;

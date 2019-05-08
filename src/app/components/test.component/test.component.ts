@@ -24,6 +24,8 @@ export class TestComponent implements OnInit {
   // display range
   currentlySelectedMinDate: Date;           // currently displayed min date (selection)
   currentlySelectedMaxDate: Date;           // currently displayed max date (selection)
+  currentlySelectedPeople: Array<any>;
+  currentlySelectedEvents: Array<any>;
 
   // Dimensions
   WIDTH: number;                            // width of the browsers viewport
@@ -40,6 +42,7 @@ export class TestComponent implements OnInit {
   angleScale: d3.ScaleLinear<number, number>;
   rScale: d3.ScaleTime<number, number>;
   colors: d3.ScaleOrdinal<string, {}>;  // d3 color coding
+  categoricalColors: d3.ScaleOrdinal<string, {}>;
   /**
    *  "#006345" - dark green - exile
       "#e333af" - pink - other renamings
@@ -47,15 +50,14 @@ export class TestComponent implements OnInit {
       "#027cef" - blue - rest
       "#fe444a" - red - street renaming
    */
-  outerRadius: number;
-  innerRadius: number;
+  dragEndPoint: number;
+  dragStartPoint: number;
   theta: number;
   arc: d3.Arc<any, {}>;
 
   // internal data structures
   orderingMap: Map<string, Map<string, any>>;
   peopleAngles: Map<string, number>;
-  categoricalArray: Array<string>;
 
   margin = {                                 // margin config for the svg's
     top: 50,
@@ -91,12 +93,14 @@ export class TestComponent implements OnInit {
     this.theta = 0;
 
     this.colors = d3.scaleOrdinal()
-      .domain(['street', 'exhibition', 'exile', 'none', 'A', 'B', 'C'])
-      .range(['#fe444a', '#e333af', '#006345', '#54c53e', '#ffe542', '#f4a442', '#f44141']); // old none blue - #027cef
+      .domain(['street', 'exhibition', 'exile', 'prize', 'none'])
+      .range(['#fe444a', '#e333af', '#006345', '#377eb8', '#54c53e']); // old none blue - #027cef
+
+    this.categoricalColors = d3.scaleOrdinal()
+      .domain(['Musician', 'Composer', 'Conductor', 'Author', 'Mixed'])
+      .range(['#fff200', '#ffa500', '#ff5000', '#ff0000', '#efefef']);
 
     this.eventTypes = new Array<string>('street', 'exhibition');
-
-    this.categoricalArray = new Array<string>('A', 'B', 'C');
 
     this.peopleAngles = new Map<string, number>();
     // meta map
@@ -110,6 +114,9 @@ export class TestComponent implements OnInit {
     this.ordering = Array.from(this.orderingMap.keys());
 
     this.currentOrder = 'Birth';
+
+    this.currentlySelectedEvents = new Array<any>();
+    this.currentlySelectedPeople = new Array<any>();
 
     this.isBrowser = isPlatformBrowser(this._platformId);
   }
@@ -139,10 +146,13 @@ export class TestComponent implements OnInit {
   }
 
   getEventType(eventName: string): string {
-    if (eventName.includes('benannt')) return 'street';
-    if (eventName.includes('Ausstellung')) return 'exhibition';
-    if (eventName.includes('Exil')) return 'exile';
-    return 'none';
+    let cat = 'none';
+    if (eventName.includes('benannt')) cat = 'street';
+    if (eventName.includes('Ehrenring') || eventName.includes('bürger') || eventName.includes('Preis der Stadt Wien')) cat = 'prize';
+    if (eventName.includes('Ausstellung')) cat = 'exhibition';
+    if (eventName.includes('Exil')) cat = 'exile';
+    
+    return cat;
   }
 
 
@@ -152,8 +162,7 @@ export class TestComponent implements OnInit {
     if (!deathDate) return;
 
     events.forEach((event: Event) => {
-
-      if (moment(event.startDate).isBefore(moment(deathDate.date))) return; // only interested in events after death
+      // if (moment(event.startDate).isBefore(moment(deathDate.date))) return; // only interested in events after death
       if (!event.startDate) return; // no startdate
 
       if (!this.orderingMap.get('First Post-death Event').has(person.objectId)) {
@@ -170,14 +179,42 @@ export class TestComponent implements OnInit {
       dataPoint.endDate = event.endDate ? moment(event.endDate) : moment(event.startDate);
       dataPoint.dateName = event.name;
       dataPoint.type = 'post-life';
-      // dataPoint.category = this.getRandomCategory();
       dataPoint.color = this.getEventType(event.name);
       this.data.push(dataPoint);
     });
   }
 
-  getRandomCategory(): string {
-    return this.categoricalArray[Math.floor(Math.random() * 3)];
+  getCategory(person: PersonOrganization): string {
+    let cat = '';
+
+    // Musician, Performer, Vocalist - 1 Cat
+    // Author - 1 cat
+    // Composer - 1 cat
+    // Conductor - 1 cat
+    // Mixed - 1 cat
+    let fallsIntoCat = 0;
+    
+    if(person.roles.includes('Musician') || person.roles.includes('Performer') || person.roles.includes('Vocalist')) {
+      cat = 'Musician';
+      fallsIntoCat++;
+    } 
+    if(person.roles.includes('Author')) {
+      cat = 'Author';
+      fallsIntoCat++;
+    }
+    if(person.roles.includes('Composer')) {
+      cat = 'Composer'
+      fallsIntoCat++;
+    }
+    if(person.roles.includes('Conductor')) {
+      cat = 'Conductor';
+      fallsIntoCat++;
+    }
+
+    if(fallsIntoCat > 1) return 'Mixed';
+
+    return cat;
+    // return this.categoricalArray[Math.floor(Math.random() * 3)];
   }
 
   updateOrder(): void {
@@ -201,9 +238,13 @@ export class TestComponent implements OnInit {
     let themeID = '5be942be2447d22473b2e80c'; // austropop'5bc7216b69405101a3a789e9'; mdt'5be942be2447d22473b2e80c';
     this.db.getPeopleByTheme(themeID).then((success) => {
       this.people = success;
+      let roles = new Set<string>();
       let themePromiseEventArray = new Array<Promise<any>>();
       success.forEach((person: any) => {
-        person.category = this.getRandomCategory();
+        person.roles.forEach((r: any) => {
+          roles.add(r);
+        });
+        person.category = this.getCategory(person);
         themePromiseEventArray.push(
           this.db.getEventsByPersonOrganization(person)
             .then((eventsByPerson: Array<Event>) => {
@@ -220,10 +261,12 @@ export class TestComponent implements OnInit {
               };
             })
         );
+        
       });
 
       Promise.all(themePromiseEventArray).then((peopleEvents: Array<any>) => {
         // populate map
+        let eventCounter = 0;
         peopleEvents.forEach((personEvents: any) => {
           let person = personEvents.person;
           // person.category = this.getRandomCategory();
@@ -241,6 +284,7 @@ export class TestComponent implements OnInit {
               // dataPoint.category = this.getRandomCategory();
               dataPoint.color = this.getEventType(func.dateName);
               this.data.push(dataPoint);
+              eventCounter++;
             });
 
             // other dates
@@ -260,9 +304,11 @@ export class TestComponent implements OnInit {
               // dataPoint.category = this.getRandomCategory();
               dataPoint.color = this.getEventType(date.dateName);
               this.data.push(dataPoint);
+              eventCounter++;
             });
           }
           this.addEventsToPerson(person, events);
+          eventCounter+= events.length;
         });
 
         this.orderingMap.get('First Post-death Event').forEach((value: any, key: string) => {
@@ -282,11 +328,10 @@ export class TestComponent implements OnInit {
         this.data = this.data.sort((a: any, b: any) => {
           return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
         });
-        this.render(this.data)
+        this.render(this.data);
       });
     });
   }
-
 
   calculateScales(): void {
     this.WIDTH = this.timelineContainer.nativeElement.clientWidth;
@@ -343,14 +388,14 @@ export class TestComponent implements OnInit {
     this.currentlySelectedMaxDate = this.MAX_DATE.toDate();
   }
 
-  drawDonut(): void {
+  drawDonut(startRadius: number, endRadius: number): void {
     this.g.select('#arc-selection').remove();
 
     if (!this.arc) this.arc = d3.arc();
 
     this.arc
-      .innerRadius(this.innerRadius)
-      .outerRadius(this.outerRadius)
+      .innerRadius(startRadius)
+      .outerRadius(endRadius)
       .startAngle(0)
       .endAngle(2 * Math.PI);
     // ({
@@ -373,36 +418,83 @@ export class TestComponent implements OnInit {
     // console.log(d3.event);
     let mouseClickX = d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2;
     let mouseClickY = d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2;
+    
     let sqrt = Math.ceil(Math.sqrt(mouseClickX * mouseClickX + mouseClickY * mouseClickY));
-    // console.log(mouseClickX, mouseClickY, sqrt);
-    let date = this.rScale.invert(sqrt);
 
-    this.innerRadius = moment(date).isBefore(this.MIN_DATE) ? this.rScale(this.MIN_DATE) : sqrt;
+    let date = moment(this.rScale.invert(sqrt));
+
+    if(date.isBefore(this.MIN_DATE)) sqrt = this.rScale(this.MIN_DATE);
+    this.dragStartPoint = sqrt;
+  }
+
+  dragging(): void {
+    let mouseClickX = d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2;
+    let mouseClickY = d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2;
+
+    let sqrt = Math.ceil(Math.sqrt(mouseClickX * mouseClickX + mouseClickY * mouseClickY));
+
+    let date = moment(this.rScale.invert(sqrt));
+
+    if(date.isAfter(this.MAX_DATE)) sqrt = this.rScale(this.MAX_DATE);
+    
+    this.dragEndPoint = sqrt;
+
+    let tmpStart = this.dragStartPoint;
+    let tmpEnd = this.dragEndPoint;
+
+    if(tmpStart > tmpEnd) {
+      let tmp = tmpStart;
+      tmpStart = tmpEnd;
+      tmpEnd = tmp;
+    } 
+
+    let startDate = this.rScale.invert(tmpStart);
+    let endDate = this.rScale.invert(tmpEnd);
+
+    if(moment(startDate).isBefore(this.MIN_DATE)) {
+      tmpStart = this.rScale(this.MIN_DATE);
+    }
+
+    if(moment(endDate).isAfter(this.MAX_DATE)) {
+      tmpEnd = this.rScale(this.MAX_DATE);
+    }
+
+    this.currentlySelectedMinDate = this.rScale.invert(tmpStart);
+    this.currentlySelectedMaxDate = this.rScale.invert(tmpEnd);
+
+    this.drawDonut(tmpStart, tmpEnd);
   }
 
   dragEnd(): void {
-    let mouseClickX = d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2;
-    let mouseClickY = d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2;
-    let sqrt = Math.ceil(Math.sqrt(mouseClickX * mouseClickX + mouseClickY * mouseClickY));
-    // console.log(mouseClickX, mouseClickY, sqrt);
-    let date = this.rScale.invert(sqrt);
+    this.getDataInRange(this.currentlySelectedMinDate, this.currentlySelectedMaxDate);
+  }
 
-    // FIXME: make sure that the arc selection doesnt exceed min_date and max_date radii
-    if (sqrt > this.innerRadius) {
-      //   console.log(date, this.MAX_DATE);
-      //   console.log(moment(date).isAfter(this.MAX_DATE));
-      this.outerRadius = moment(date).isAfter(this.MAX_DATE) ? this.rScale(this.MAX_DATE) : sqrt;
-      //   console.log(this.innerRadius, this.outerRadius);
-    } else {
-      //   console.log(date, this.MAX_DATE);
-      //   console.log(moment(date).isAfter(this.MAX_DATE));
-      this.outerRadius = moment(date).isAfter(this.MAX_DATE) ? this.rScale(this.MAX_DATE) : sqrt;
-      this.innerRadius = moment(date).isBefore(this.MIN_DATE) ? this.rScale(this.MIN_DATE) : sqrt;
-    }
+  getDataInRange(start: Date, end: Date): void {
+    let events = new Array<any>();
+    // let people = new Set<any>();
 
-    this.drawDonut();
-    this.currentlySelectedMinDate = moment(this.rScale.invert(this.innerRadius)).toDate();
-    this.currentlySelectedMaxDate = moment(this.rScale.invert(this.outerRadius)).toDate();
+    this.data.forEach((d: any) => {
+      if(d.startDate.isAfter(start) && d.endDate.isBefore(end)) {
+        events.push(d);
+        // people.add(d.person);
+      }
+    });
+
+    this.currentlySelectedEvents = events;
+    
+    // get sorted list of events by person descending
+    let eventsByPeople = d3.nest()
+      .key((d: any) => {
+        return d.person;
+      })
+      .entries(events)
+      .sort((a: any, b: any) => {
+        return a.values.length - b.values.length;
+      })
+      .reverse()
+      .map((d: any) => { return { name: d.key, events: d.values.length }; });
+
+    this.currentlySelectedPeople = eventsByPeople;
   }
 
   // doReorder(d: any, i: number, n: any): void {
@@ -469,23 +561,21 @@ export class TestComponent implements OnInit {
    * - Events - lines / circles plotted on the timelines with the class '.event'
    */
   render(data: Array<any>, orderUpdate: boolean = false): void {
-    this.theta = 2 * Math.PI / this.people.length;
     let personNameArray = new Set<string>();
     let dataByPerson = d3.nest()
-      .key((d: any) => {
-        if (!personNameArray.has(d.person)) personNameArray.add(d.person);
-        return d.person;
-      })
-      .entries(data);
-    // console.log(personNameArray);
+    .key((d: any) => {
+      if (!personNameArray.has(d.person)) personNameArray.add(d.person);
+      return d.person;
+    })
+    .entries(data);
+
+    this.theta = 2 * Math.PI / dataByPerson.length;
+
     this.timelineSVG.call(
       d3.drag()
-        .on('start', () => {
-          this.dragStart();
-        })
-        .on('end', () => {
-          this.dragEnd();
-        })
+        .on('start', () => { this.dragStart(); })
+        .on('drag', () => { this.dragging(); })
+        .on('end', () => { this.dragEnd(); })
     );
 
     let temporalData = d3.timeYear.range(this.MIN_DATE.toDate(), this.MAX_DATE.toDate(), 10);
@@ -502,7 +592,9 @@ export class TestComponent implements OnInit {
       .style('font-size', '25px')
       .text('');
 
-    let circleAxis = this.g.selectAll('.circle-axis').data(temporalData);
+ 
+
+      let circleAxis = this.g.selectAll('.circle-axis').data(temporalData);
     circleAxis
       .enter()
       .append('circle')
@@ -516,6 +608,7 @@ export class TestComponent implements OnInit {
         d3.select(n[i])
           .attr('stroke', '#000')
           .attr('stroke-width', 4)
+          .raise();
 
         textInside
           .attr('opacity', 1)
@@ -523,11 +616,13 @@ export class TestComponent implements OnInit {
       })
       .on('mouseout', (d: any, i: number, n: any) => {
         let year = moment(d).year().toString();
+        // d3.select(n[i]).lower();
 
         if (year !== '1945') {
           d3.select(n[i])
             .attr('stroke', '#efefef')
             .attr('stroke-width', 4)
+            .lower();
         }
 
         textInside
@@ -536,8 +631,10 @@ export class TestComponent implements OnInit {
       })
       .merge(circleAxis)
       .transition().duration(750)
-      .attr('stroke', (d: any) => {
+      .attr('stroke', (d: any, i: number, n: any) => {
         let year = moment(d).year().toString();
+        
+        if(year === '1945') d3.select(n[i]).raise();
 
         return year === '1945' ? '#828282' : '#efefef';
       })
@@ -723,8 +820,10 @@ export class TestComponent implements OnInit {
       .attr('stroke', '#828282')
       .attr('fill', (d: any) => {
         let person = this.people.find((p: any) => { return p.name === d.key; });
-        return this.colors((person as any).category);
+        return this.categoricalColors((person as any).category);
       });
+      
+   
 
     /*******************
       * D3 EXIT STEP *
