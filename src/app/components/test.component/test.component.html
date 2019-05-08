@@ -13,11 +13,16 @@
 </div>
 <div id="wrapper">
     <div id="timeline-holder" #timelineHolder></div>
+    <div id="people">
+        <div *ngFor="let p of currentlySelectedPeople">
+            <p>{{ p.name }} ({{ p.events }})</p>
+        </div>
+    </div>
 </div>
 <div id="date-extent">
     <h3>{{ displayDate(currentlySelectedMinDate) }}</h3>
     <h3>&nbsp; - &nbsp;</h3>
     <h3>{{ displayDate(currentlySelectedMaxDate) }}
-        ({{ getDuration(currentlySelectedMinDate, currentlySelectedMaxDate)}})</h3>
+        ({{ getDuration(currentlySelectedMinDate, currentlySelectedMaxDate)}} years)</h3>
 </div>
 <div id="tooltip" #tooltip></div>
