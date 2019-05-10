@@ -1,28 +1,69 @@
-<div id="options">
-    <div *ngFor="let e of eventTypes">
-        <mat-radio-button (change)="filterEventsByType(e)">{{ e }}</mat-radio-button>
-    </div>
-    <div>
-        <mat-radio-button (change)="filterEventsByType()">all</mat-radio-button>
-    </div>
-    <div>
-        <mat-select [(value)]="currentOrder" (selectionChange)="updateOrder()">
-            <mat-option *ngFor="let o of ordering" [value]="o" >{{ o }}</mat-option>
-        </mat-select>
-    </div>
-</div>
-<div id="wrapper">
-    <div id="timeline-holder" #timelineHolder></div>
-    <div id="people">
-        <div *ngFor="let p of currentlySelectedPeople">
-            <p>{{ p.name }} ({{ p.events }})</p>
+<mat-sidenav-container class="container">
+    <mat-sidenav #sidenav mode="side" [opened]="personSelected">
+        <!-- Details about selected person -->
+        <div class="detail" *ngIf="selectedPerson">
+            <button id="close-btn" mat-icon-button (click)="closePersonDetails()">
+                <mat-icon>close</mat-icon>
+            </button>
+            <div class="person-details">
+                <h3>{{ selectedPerson.name }}</h3>
+                <mat-chip-list>
+                    <mat-chip *ngFor="let r of selectedPerson.roles">{{ r }}</mat-chip>
+                </mat-chip-list>
+                <div *ngFor="let d of selectedPerson.dates">
+                    <p>{{ displayDate(d.date) }} {{ d.dateName }}</p>
+                </div>
+
+                <div *ngFor="let d of selectedPerson.functions">
+                    <p>{{ displayDate(d.startDate) }} - {{ displayDate((d.endDate)) }} {{ d.dateName }}</p>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-<div id="date-extent">
-    <h3>{{ displayDate(currentlySelectedMinDate) }}</h3>
-    <h3>&nbsp; - &nbsp;</h3>
-    <h3>{{ displayDate(currentlySelectedMaxDate) }}
-        ({{ getDuration(currentlySelectedMinDate, currentlySelectedMaxDate)}} years)</h3>
-</div>
+    </mat-sidenav>
+
+    <mat-sidenav-content>
+        <div id="options">
+            <div *ngFor="let e of eventTypes">
+                <mat-radio-button (change)="filterEventsByType(e)">{{ e }}</mat-radio-button>
+            </div>
+            <div>
+                <mat-radio-button (change)="filterEventsByType()">all</mat-radio-button>
+            </div>
+            <div>
+                <mat-select [(value)]="currentOrder" (selectionChange)="updateOrder()">
+                    <mat-option *ngFor="let o of ordering" [value]="o">{{ o }}</mat-option>
+                </mat-select>
+            </div>
+            <div id="autocomplete">
+                <mat-form-field>
+                    <input matInput placeholder="Person" [matAutocomplete]="auto" [formControl]="peopleCtrl">
+                    <button mat-button matSuffix mat-icon-button aria-label="Clear" (click)="clearAutoComplete()">
+                        <mat-icon>close</mat-icon>
+                    </button>
+                    <mat-autocomplete #auto="matAutocomplete">
+                        <mat-option *ngFor="let person of filteredPeople | async" [value]="person.name" (click)="displayPersonDetails(person.name)">
+                            <span>{{ person.name }}</span> 
+                        </mat-option>
+                    </mat-autocomplete>
+                </mat-form-field>
+            </div>
+        </div>
+        <div id="wrapper">
+            <div id="timeline-holder" #timelineHolder></div>
+            <div id="people">
+                <mat-list>
+                    <mat-list-item matRipple *ngFor="let p of currentlySelectedPeople"
+                        (click)="displayPersonDetails(p.name)"> {{ p.name }} ({{ p.events }}) </mat-list-item>
+                </mat-list>
+            </div>
+        </div>
+        <div id="date-extent">
+            <h3>{{ displayDate(currentlySelectedMinDate) }}</h3>
+            <h3>&nbsp; - &nbsp;</h3>
+            <h3>{{ displayDate(currentlySelectedMaxDate) }}
+                ({{ getDuration(currentlySelectedMinDate, currentlySelectedMaxDate)}} years)</h3>
+        </div>
+    </mat-sidenav-content>
+</mat-sidenav-container>
+
 <div id="tooltip" #tooltip></div>
