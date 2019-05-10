@@ -7,6 +7,9 @@ import { Event } from '../../models/event';
 import { environment } from '../../../environments/environment';
 import * as d3 from 'd3';
 import * as moment from 'moment';
+import { FormControl } from '@angular/forms';
+import { Observable } from 'rxjs';
+import { map, startWith } from 'rxjs/operators';
 
 @Component({
   selector: 'app-test',
@@ -80,6 +83,13 @@ export class TestComponent implements OnInit {
   eventTypes: Array<string>;
   ordering: Array<string>;
   currentOrder: string;
+  personSelected: boolean;
+  selectedPerson: PersonOrganization;
+
+  // Autocomplete
+  peopleCtrl: FormControl;
+  filteredPeople: Observable<Array<PersonOrganization>>;
+
 
   /**
    * @param db DatabaseService - the service we use to perform database queries and get requests
@@ -87,6 +97,15 @@ export class TestComponent implements OnInit {
    * @param _platformId Object determining if we are on the server or browser side
    */
   constructor(private db: DatabaseService, @Inject('WINDOW') private window: any, @Inject(PLATFORM_ID) private _platformId: Object) {
+    this.personSelected = false;
+
+    this.peopleCtrl = new FormControl;
+    this.filteredPeople = this.peopleCtrl.valueChanges
+      .pipe(
+        startWith(''),
+        map(person => person ? this.filterPeople(person) : this.people.slice())
+      );
+  
     this.people = new Array<PersonOrganization>();
     this.data = new Array<any>();
 
@@ -135,6 +154,44 @@ export class TestComponent implements OnInit {
     }
   }
 
+  clearAutoComplete(): void {
+    this.peopleCtrl.setValue('');
+  }
+
+
+  filterPeople(person: string): Array<PersonOrganization> {
+    const nameVal = person.trim().toLowerCase();
+
+    return this.people.filter((person: PersonOrganization) => {
+      return person.name.trim().toLowerCase().indexOf(nameVal) === 0;
+    });
+  }
+
+  resize(closed: boolean = false): void {
+    // let sideNavWidth = 500; // in pixel
+    // let newWidth = this.timelineContainer.nativeElement.clientWidth;
+    // let newHeight = this.timelineContainer.nativeElement.clientHeight;
+
+    // if(!closed) newWidth -= sideNavWidth;
+    // TODO: Just update SVG instead of redraw if possible
+    // this.render(this.data);
+    if (closed) {
+      // rotate back by -Math.PI
+      this.timelineSVG
+        .transition().duration(750)
+        .attr('transform', 'rotate(0)');
+        this.unhighlightPerson();
+    } else {
+      // rotate to Math.PI
+      let currentAngle = this.peopleAngles.get(this.selectedPerson.name) * (180 / Math.PI); // to degrees
+      this.timelineSVG
+        .transition().duration(750)
+        .attr('transform', `rotate(${180 - currentAngle})`);
+
+      this.highlightPerson(this.selectedPerson.name);
+    }
+  }
+
   filterEventsByType(type?: string): void {
     this.data.forEach((d: any) => {
       d.hidden = false;
@@ -151,7 +208,7 @@ export class TestComponent implements OnInit {
     if (eventName.includes('Ehrenring') || eventName.includes('bürger') || eventName.includes('Preis der Stadt Wien')) cat = 'prize';
     if (eventName.includes('Ausstellung')) cat = 'exhibition';
     if (eventName.includes('Exil')) cat = 'exile';
-    
+
     return cat;
   }
 
@@ -179,7 +236,7 @@ export class TestComponent implements OnInit {
       dataPoint.endDate = event.endDate ? moment(event.endDate) : moment(event.startDate);
       dataPoint.dateName = event.name;
       dataPoint.type = 'post-life';
-      dataPoint.color = this.getEventType(event.name);
+      dataPoint.color = this.getEventType(event.name ? event.name : '');
       this.data.push(dataPoint);
     });
   }
@@ -193,25 +250,25 @@ export class TestComponent implements OnInit {
     // Conductor - 1 cat
     // Mixed - 1 cat
     let fallsIntoCat = 0;
-    
-    if(person.roles.includes('Musician') || person.roles.includes('Performer') || person.roles.includes('Vocalist')) {
+
+    if (person.roles.includes('Musician') || person.roles.includes('Performer') || person.roles.includes('Vocalist')) {
       cat = 'Musician';
       fallsIntoCat++;
-    } 
-    if(person.roles.includes('Author')) {
+    }
+    if (person.roles.includes('Author')) {
       cat = 'Author';
       fallsIntoCat++;
     }
-    if(person.roles.includes('Composer')) {
+    if (person.roles.includes('Composer')) {
       cat = 'Composer'
       fallsIntoCat++;
     }
-    if(person.roles.includes('Conductor')) {
+    if (person.roles.includes('Conductor')) {
       cat = 'Conductor';
       fallsIntoCat++;
     }
 
-    if(fallsIntoCat > 1) return 'Mixed';
+    if (fallsIntoCat > 1) return 'Mixed';
 
     return cat;
     // return this.categoricalArray[Math.floor(Math.random() * 3)];
@@ -261,7 +318,7 @@ export class TestComponent implements OnInit {
               };
             })
         );
-        
+
       });
 
       Promise.all(themePromiseEventArray).then((peopleEvents: Array<any>) => {
@@ -282,7 +339,7 @@ export class TestComponent implements OnInit {
               dataPoint.dateName = func.dateName;
               dataPoint.personID = person.objectId;
               // dataPoint.category = this.getRandomCategory();
-              dataPoint.color = this.getEventType(func.dateName);
+              dataPoint.color = this.getEventType(func.dateName ? func.dateName : '');
               this.data.push(dataPoint);
               eventCounter++;
             });
@@ -302,13 +359,13 @@ export class TestComponent implements OnInit {
               dataPoint.person = person.name;
               dataPoint.personID = person.objectId;
               // dataPoint.category = this.getRandomCategory();
-              dataPoint.color = this.getEventType(date.dateName);
+              dataPoint.color = this.getEventType(date.dateName ? date.dateName : '');
               this.data.push(dataPoint);
               eventCounter++;
             });
           }
           this.addEventsToPerson(person, events);
-          eventCounter+= events.length;
+          eventCounter += events.length;
         });
 
         this.orderingMap.get('First Post-death Event').forEach((value: any, key: string) => {
@@ -333,9 +390,9 @@ export class TestComponent implements OnInit {
     });
   }
 
-  calculateScales(): void {
-    this.WIDTH = this.timelineContainer.nativeElement.clientWidth;
-    this.HEIGHT = this.timelineContainer.nativeElement.clientHeight;
+  calculateScales(width?: number, height?: number): void {
+    this.WIDTH = width ? width : this.timelineContainer.nativeElement.clientWidth;
+    this.HEIGHT = height ? height : this.timelineContainer.nativeElement.clientHeight;
 
     // our temporal range based on the data
     this.MIN_DATE = d3.min(this.data.map((d: any) => { return moment(d.startDate, ['YYYY-MM-DD',]); }));
@@ -354,6 +411,19 @@ export class TestComponent implements OnInit {
 
   getYCoordinates(date: Date, angle: number): number {
     return Math.sin(angle) * this.rScale(date);
+  }
+
+  displayPersonDetails(name: string): void {
+    this.personSelected = true;
+    this.selectedPerson = this.people.find((p: PersonOrganization) => { return p.name === name; });
+    this.resize(); // notify that we have opened the side panel
+
+  }
+
+  closePersonDetails(): void {
+    this.personSelected = false;
+    this.selectedPerson = undefined;
+    this.resize(true); // notify that we have closed the side panel
   }
 
   /**
@@ -416,46 +486,46 @@ export class TestComponent implements OnInit {
 
   dragStart(): void {
     // console.log(d3.event);
-    let mouseClickX = d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2;
-    let mouseClickY = d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2;
-    
+    let mouseClickX = d3.event.x - (this.WIDTH / 2);
+    let mouseClickY = d3.event.y - (this.HEIGHT / 2);
+
     let sqrt = Math.ceil(Math.sqrt(mouseClickX * mouseClickX + mouseClickY * mouseClickY));
 
     let date = moment(this.rScale.invert(sqrt));
 
-    if(date.isBefore(this.MIN_DATE)) sqrt = this.rScale(this.MIN_DATE);
+    if (date.isBefore(this.MIN_DATE)) sqrt = this.rScale(this.MIN_DATE);
     this.dragStartPoint = sqrt;
   }
 
   dragging(): void {
-    let mouseClickX = d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2;
-    let mouseClickY = d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2;
+    let mouseClickX = d3.event.x - (this.WIDTH / 2);
+    let mouseClickY = d3.event.y - (this.HEIGHT / 2);
 
     let sqrt = Math.ceil(Math.sqrt(mouseClickX * mouseClickX + mouseClickY * mouseClickY));
 
     let date = moment(this.rScale.invert(sqrt));
 
-    if(date.isAfter(this.MAX_DATE)) sqrt = this.rScale(this.MAX_DATE);
-    
+    if (date.isAfter(this.MAX_DATE)) sqrt = this.rScale(this.MAX_DATE);
+
     this.dragEndPoint = sqrt;
 
     let tmpStart = this.dragStartPoint;
     let tmpEnd = this.dragEndPoint;
 
-    if(tmpStart > tmpEnd) {
+    if (tmpStart > tmpEnd) {
       let tmp = tmpStart;
       tmpStart = tmpEnd;
       tmpEnd = tmp;
-    } 
+    }
 
     let startDate = this.rScale.invert(tmpStart);
     let endDate = this.rScale.invert(tmpEnd);
 
-    if(moment(startDate).isBefore(this.MIN_DATE)) {
+    if (moment(startDate).isBefore(this.MIN_DATE)) {
       tmpStart = this.rScale(this.MIN_DATE);
     }
 
-    if(moment(endDate).isAfter(this.MAX_DATE)) {
+    if (moment(endDate).isAfter(this.MAX_DATE)) {
       tmpEnd = this.rScale(this.MAX_DATE);
     }
 
@@ -466,6 +536,8 @@ export class TestComponent implements OnInit {
   }
 
   dragEnd(): void {
+    this.dragStartPoint = 0;
+    this.dragEndPoint = 0;
     this.getDataInRange(this.currentlySelectedMinDate, this.currentlySelectedMaxDate);
   }
 
@@ -474,14 +546,14 @@ export class TestComponent implements OnInit {
     // let people = new Set<any>();
 
     this.data.forEach((d: any) => {
-      if(d.startDate.isAfter(start) && d.endDate.isBefore(end)) {
+      if (d.startDate.isAfter(start) && d.endDate.isBefore(end)) {
         events.push(d);
         // people.add(d.person);
       }
     });
 
     this.currentlySelectedEvents = events;
-    
+
     // get sorted list of events by person descending
     let eventsByPeople = d3.nest()
       .key((d: any) => {
@@ -552,6 +624,46 @@ export class TestComponent implements OnInit {
   //   }), true);
   // }
 
+  unhighlightPerson(): void {
+    let beforeDeathLines = this.g.selectAll('.before-death');
+    beforeDeathLines
+      .transition().duration(750)
+      .attr('stroke-opacity', 1);
+
+    let eventLines = this.g.selectAll('.event')
+    eventLines
+      .transition().duration(750)
+      .attr('stroke-opacity', 1);
+
+    let categoricalBars = this.g.selectAll('.category');
+    categoricalBars
+      .transition().duration(750)
+      .attr('opacity', 1);
+  }
+
+  highlightPerson(name: string): void {
+    let beforeDeathLines = this.g.selectAll('.before-death');
+    beforeDeathLines
+      .transition().duration(750)
+      .attr('stroke-opacity', (d: any) => {
+        return d.key !== name ? 0 : 1;
+      });
+
+    let eventLines = this.g.selectAll('.event');
+    eventLines
+      .transition().duration(750)
+      .attr('stroke-opacity', (d: any) => {
+        return d.person !== name ? 0 : 1;
+      });
+
+    let categoricalBars = this.g.selectAll('.category');
+    categoricalBars
+      .transition().duration(750)
+      .attr('opacity', (d: any) => {
+        return d.key !== name ? 0 : 1;
+      });
+  }
+
 
   /**
    * Creates the 'timelines' and plots them on the timeline
@@ -563,11 +675,11 @@ export class TestComponent implements OnInit {
   render(data: Array<any>, orderUpdate: boolean = false): void {
     let personNameArray = new Set<string>();
     let dataByPerson = d3.nest()
-    .key((d: any) => {
-      if (!personNameArray.has(d.person)) personNameArray.add(d.person);
-      return d.person;
-    })
-    .entries(data);
+      .key((d: any) => {
+        if (!personNameArray.has(d.person)) personNameArray.add(d.person);
+        return d.person;
+      })
+      .entries(data);
 
     this.theta = 2 * Math.PI / dataByPerson.length;
 
@@ -592,9 +704,9 @@ export class TestComponent implements OnInit {
       .style('font-size', '25px')
       .text('');
 
- 
 
-      let circleAxis = this.g.selectAll('.circle-axis').data(temporalData);
+
+    let circleAxis = this.g.selectAll('.circle-axis').data(temporalData);
     circleAxis
       .enter()
       .append('circle')
@@ -633,8 +745,8 @@ export class TestComponent implements OnInit {
       .transition().duration(750)
       .attr('stroke', (d: any, i: number, n: any) => {
         let year = moment(d).year().toString();
-        
-        if(year === '1945') d3.select(n[i]).raise();
+
+        if (year === '1945') d3.select(n[i]).raise();
 
         return year === '1945' ? '#828282' : '#efefef';
       })
@@ -645,7 +757,7 @@ export class TestComponent implements OnInit {
       })
       .attr('cx', 0)
       .attr('cy', 0)
-      .attr('r', (d: any) => { return this.rScale(d); });
+      .attr('r', (d: any) => { return Math.abs(this.rScale(d)); });
 
     /*******************
     * D3 ENTER + MERGE STEP *
@@ -680,7 +792,6 @@ export class TestComponent implements OnInit {
       });
 
     let beforeDeathLines = this.g.selectAll('.before-death').data(dataByPerson);
-
     beforeDeathLines
       .enter()
       .append('line')
@@ -798,6 +909,7 @@ export class TestComponent implements OnInit {
     categoricalBars
       .enter()
       .append('path')
+      .attr('class', 'category')
       .attr('d', categoricalArc)
       .on('mouseover', (d: any) => {
         let person = this.people.find((p: PersonOrganization) => { return p.name === d.key; })
@@ -822,8 +934,8 @@ export class TestComponent implements OnInit {
         let person = this.people.find((p: any) => { return p.name === d.key; });
         return this.categoricalColors((person as any).category);
       });
-      
-   
+
+
 
     /*******************
       * D3 EXIT STEP *
