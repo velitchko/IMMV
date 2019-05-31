@@ -110,14 +110,17 @@ export class TestComponent implements OnInit {
     this.data = new Array<any>();
 
     this.theta = 0;
-
+    // use #4286f4 for the selection + .15 opacity or even .1 - .05
+    // TODO: fix selection radius position (doesn't correspond to mouse drag positions)
+    // TODO: add more info to side panel
+    // TODO: update event categories ('Benennung' is now a thing)
     this.colors = d3.scaleOrdinal()
       .domain(['street', 'exhibition', 'exile', 'prize', 'none'])
-      .range(['#fe444a', '#e333af', '#006345', '#377eb8', '#54c53e']); // old none blue - #027cef
+      .range(['#FF8B53', '#FFAD86', '#4F8874', '#FFAD86', '#47DBA7']); // old none blue - #027cef
 
     this.categoricalColors = d3.scaleOrdinal()
       .domain(['Musician', 'Composer', 'Conductor', 'Author', 'Mixed'])
-      .range(['#fff200', '#ffa500', '#ff5000', '#ff0000', '#efefef']);
+      .range(['#F286D2', '#36b3d0', '#FFE18D', '#ff0000', '#efefef']);
 
     this.eventTypes = new Array<string>('street', 'exhibition');
 
@@ -796,7 +799,7 @@ export class TestComponent implements OnInit {
       .enter()
       .append('line')
       .attr('class', 'before-death')
-      .attr('stroke', '#54c53e')
+      .attr('stroke', '#A5F0D6')
       .attr('stroke-width', 8)
       .attr('x1', 0)
       .attr('x2', 0)
@@ -824,7 +827,7 @@ export class TestComponent implements OnInit {
       .merge(beforeDeathLines)
       .transition().duration(750)
       .attr('stroke', (d: any, i: number) => {
-        return '#cbeabb';
+        return '#A5F0D6';
       })
       .attr('x1', (d: any, i: number) => {
         if (!this.peopleAngles.has(d.key)) this.peopleAngles.set(d.key, i * this.theta);
@@ -884,9 +887,7 @@ export class TestComponent implements OnInit {
         return d.hidden ? 0 : 1;
       })
       .attr('stroke-width', 8)
-      .attr('stroke', (d: any) => {
-        return this.colors(d.color);
-      })
+      .attr('stroke', (d: any) => { return this.colors(d.color); })
       // .attr('stroke', (d: any) => { return '#A5D5E6' })
       .attr('x1', (d: any, i: number) => { return this.getXCoordinates(d.startDate.toDate(), this.peopleAngles.get(d.person)); })
       .attr('x2', (d: any, i: number) => { return this.getXCoordinates(d.endDate.toDate(), this.peopleAngles.get(d.person)); })
