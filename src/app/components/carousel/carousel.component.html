@@ -10,20 +10,29 @@
     </div>
     <ul class="carousel-slides" #slideContainer>
         <li *ngFor="let slide of slides; let idx = index" class="slide" (click)="open(slides, idx)">
-            <div [ngClass]="{'active': currentSlide === idx, 'inactive': currentSlide !== idx}">
                 <div class="slide-inner">
-                    <h2 class="slide-title">{{ slide.title }}</h2>
+                    <h2 class="slide-title">{{ slide.title }} {{ idx }} </h2>
+                    <!-- TODO: Bug is somewhere here it starts from slide 2 and doesnt display first 2 -->
                     <!-- object type should work for images/videos/pdfs coming from server (excl. external resources) -->
-                    <object *ngIf="isPDF(slide.url)" [data]="slide.url | safeURL"></object>
-                    <video *ngIf="isVideo(slide.url)" controls >
-                        <source [src]="slide.url">
-                    </video>
-                    <img *ngIf="isImage(slide.url)" [src]="slide.url"/>
-                    <audio *ngIf="isAudio(slide.url)" controls>
-                        <source [src]="slide.url">
-                    </audio>
+                    <!-- <div *ngIf="isImage(slide.url)">
+                        <img [src]="slide.url | safeURL">
+                    </div>
+                    <div *ngIf="isPDF(slide.url)"> -->
+                        <div>
+                            <object [data]="slide.url | safeURL" autoplay="0" autostart="0"></object>
+                        </div>
+                    <!-- </div>
+                    <div *ngIf="isVideo(slide.url)">
+                        <video controls>
+                            <source [src]="slide.url | safeURL">
+                        </video>
+                    </div>
+                    <div *ngIf="isAudio(slide.url)">
+                        <audio controls>
+                            <source [src]="slide.url | safeURL">
+                        </audio>
+                    </div> -->
                 </div>
-            </div>
         </li>
     </ul>
     <div class="carousel-arrows next" #nextArrow>
