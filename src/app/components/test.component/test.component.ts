@@ -19,7 +19,8 @@ import { map, startWith } from 'rxjs/operators';
 
 export class TestComponent implements OnInit {
   // HTML 
-  @ViewChild('timelineHolder') timelineContainer: ElementRef;
+  @ViewChild('timelineRadial') timelineRadial: ElementRef;
+  @ViewChild('timelineChart') timelineChart: ElementRef;
   @ViewChild('brushHolder') brushContainer: ElementRef;
   @ViewChild('mapHolder') mapContainer: ElementRef;
   @ViewChild('tooltip') tooltip: ElementRef;
@@ -37,21 +38,26 @@ export class TestComponent implements OnInit {
   MAX_DATE: moment.Moment;                  // max date
 
   // D3 things
-  timelineSVG: any;                         // timeline svg holder
-  brushSVG: any;                            // brush svg holder
-  g: any;                                   // timeline group wrapper
-  xScale: d3.ScaleTime<number, number>;     // timeline extent
-  yScale: d3.ScaleLinear<number, number>    // horizontal extent
+  timelineSVG: any;                            // timeline svg holder
+  timeChartSVG: any;                           // timeline chart
+  brushSVG: any;                               // brush svg holder
+  chartBrush: d3.BrushBehavior<any>;               // d3 brush for the chart
+  radialG: any;                                // radial group wrapper
+  chartG: any;                                 // timeline group wrapper
+  xScale: d3.ScaleTime<number, number>;        // timeline extent
+  yScale: d3.ScaleLinear<number, number>;      // vertical extent
+  xChartScale: d3.ScaleTime<number, number>;   // horizontal scale for the line chart
+  yChartScale: d3.ScaleLinear<number, number>; // vertical scale for the line chart
   angleScale: d3.ScaleLinear<number, number>;
   rScale: d3.ScaleTime<number, number>;
   colors: d3.ScaleOrdinal<string, {}>;  // d3 color coding
   categoricalColors: d3.ScaleOrdinal<string, {}>;
   /**
-   *  "#006345" - dark green - exile
-      "#e333af" - pink - other renamings
-      "#54c53e" - light green - life line
-      "#027cef" - blue - rest
-      "#fe444a" - red - street renaming
+   *  '#006345' - dark green - exile
+      '#e333af' - pink - other renamings
+      '#54c53e' - light green - life line
+      '#027cef' - blue - rest
+      '#fe444a' - red - street renaming
    */
   dragEndPoint: number;
   dragStartPoint: number;
@@ -66,7 +72,7 @@ export class TestComponent implements OnInit {
     top: 50,
     bottom: 50,
     left: 50,
-    right: 0
+    right: 50
   };
 
   // ordering
@@ -85,6 +91,7 @@ export class TestComponent implements OnInit {
   currentOrder: string;
   personSelected: boolean;
   selectedPerson: PersonOrganization;
+  exiledFilter: boolean;
 
   // Autocomplete
   peopleCtrl: FormControl;
@@ -105,18 +112,20 @@ export class TestComponent implements OnInit {
         startWith(''),
         map(person => person ? this.filterPeople(person) : this.people.slice())
       );
-  
+
     this.people = new Array<PersonOrganization>();
     this.data = new Array<any>();
 
     this.theta = 0;
+    this.exiledFilter = false;
+
     // use #4286f4 for the selection + .15 opacity or even .1 - .05
     // TODO: fix selection radius position (doesn't correspond to mouse drag positions)
     // TODO: add more info to side panel
     // TODO: update event categories ('Benennung' is now a thing)
     this.colors = d3.scaleOrdinal()
       .domain(['street', 'exhibition', 'exile', 'prize', 'none'])
-      .range(['#FF8B53', '#FFAD86', '#4F8874', '#FFAD86', '#47DBA7']); // old none blue - #027cef
+      .range(['red', 'blue', '#4F8874', 'purple', '#47DBA7']); // old none blue - #027cef
 
     this.categoricalColors = d3.scaleOrdinal()
       .domain(['Musician', 'Composer', 'Conductor', 'Author', 'Mixed'])
@@ -157,33 +166,45 @@ export class TestComponent implements OnInit {
     }
   }
 
+  /**
+   * Clears the input in the autocomplete field
+   */
   clearAutoComplete(): void {
     this.peopleCtrl.setValue('');
   }
 
+  /**
+   * Returns color for the event type / categorical value
+   * @param type event type or categorical value
+   */
+  getColorForType(type: string): {} {
+    return this.colors(type);
+  }
 
-  filterPeople(person: string): Array<PersonOrganization> {
-    const nameVal = person.trim().toLowerCase();
+
+  /**
+   * Filters the data to find a person by name
+   * @param personName the persons name
+   */
+  filterPeople(personName: string): Array<PersonOrganization> {
+    let nameVal = personName.trim().toLowerCase();
 
     return this.people.filter((person: PersonOrganization) => {
       return person.name.trim().toLowerCase().indexOf(nameVal) === 0;
     });
   }
 
-  resize(closed: boolean = false): void {
-    // let sideNavWidth = 500; // in pixel
-    // let newWidth = this.timelineContainer.nativeElement.clientWidth;
-    // let newHeight = this.timelineContainer.nativeElement.clientHeight;
-
-    // if(!closed) newWidth -= sideNavWidth;
-    // TODO: Just update SVG instead of redraw if possible
-    // this.render(this.data);
+  /**
+   * Rotates the radial vis to focus on a specific highlight
+   * @param closed - boolean indicating if a person is selected or de-selected
+   */
+  spinTo(closed: boolean = false): void {
     if (closed) {
       // rotate back by -Math.PI
       this.timelineSVG
         .transition().duration(750)
         .attr('transform', 'rotate(0)');
-        this.unhighlightPerson();
+      this.unhighlightPerson();
     } else {
       // rotate to Math.PI
       let currentAngle = this.peopleAngles.get(this.selectedPerson.name) * (180 / Math.PI); // to degrees
@@ -195,6 +216,12 @@ export class TestComponent implements OnInit {
     }
   }
 
+  /**
+   * Filters the data based on the type of event provided 
+   * Default (no type) returns all data points
+   * Calls render to update changes
+   * @param type optional parameter to check type for
+   */
   filterEventsByType(type?: string): void {
     this.data.forEach((d: any) => {
       d.hidden = false;
@@ -202,21 +229,29 @@ export class TestComponent implements OnInit {
       if (type) d.hidden = d.color === type ? false : true;
     });
 
-    this.render(this.data);
+    this.renderRadial(this.data);
   }
 
+  /**
+   * Does some string comparison to determine the type of event 
+   * @param eventName name of the event
+   */
   getEventType(eventName: string): string {
+    let name = eventName.toLowerCase();
     let cat = 'none';
-    if (eventName.includes('benannt')) cat = 'street';
-    if (eventName.includes('Ehrenring') || eventName.includes('bürger') || eventName.includes('Preis der Stadt Wien')) cat = 'prize';
-    if (eventName.includes('Ausstellung')) cat = 'exhibition';
-    if (eventName.includes('Exil')) cat = 'exile';
+    if (name.includes('benannt') || name.includes('benennung')) cat = 'street';
+    if (name.includes('ehrenring') || name.includes('bürger') || name.includes('preis der stadt wien')) cat = 'prize';
+    if (name.includes('ausstellung')) cat = 'exhibition';
+    if (eventName.includes('exil')) cat = 'exile';
 
     return cat;
   }
 
-
-
+  /**
+   * Extends the dataset by introducing new events related to certain people
+   * @param person person/organization object
+   * @param events list of events related to the person/organization object
+   */
   addEventsToPerson(person: PersonOrganization, events: Array<Event>): void {
     let deathDate = person.dates.find((d: any) => { return d.dateName === 'Death' ? d : null });
     if (!deathDate) return;
@@ -244,6 +279,10 @@ export class TestComponent implements OnInit {
     });
   }
 
+  /**
+   * Retrieve the persons category
+   * @param person person/organization object
+   */
   getCategory(person: PersonOrganization): string {
     let cat = '';
 
@@ -277,13 +316,54 @@ export class TestComponent implements OnInit {
     // return this.categoricalArray[Math.floor(Math.random() * 3)];
   }
 
+  /**
+   * Filters the events and people to only show those that are exiled
+   * then orders them according to the current ordering strategy
+   * calls render to update changes
+   */
+  showExiled(): void {
+    this.exiledFilter = !this.exiledFilter;
+
+    if (!this.exiledFilter) {
+      this.updateOrder();
+      return;
+    }
+
+    let exiled = new Set<string>();
+
+    this.people.forEach((person: PersonOrganization) => {
+      if (person.functions.map((f: any) => {
+        if (!f.dateName) return; // someone forgot to add a date name
+        return f.dateName.toLowerCase();
+      }).includes('exil')) {
+        exiled.add(person.objectId);
+      }
+    });
+
+    let sortedMap = [...this.orderingMap.get(this.currentOrder).entries()]
+      .sort((a: any, b: any) => {
+        return a[1] - b[1];
+      }).map((d: any) => { return d[0]; });
+
+    this.renderRadial(this.data.filter((d: any) => {
+      if (exiled.has(d.personID)) return d;
+    }).sort((a: any, b: any) => {
+      return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
+    }), true);
+  }
+
+  /**
+   * Updates the ordering strategy
+   * Get the selected ordering strategy and propagate new order to the 
+   * dataset then call render to update changes.
+   */
   updateOrder(): void {
     let sortedMap = [...this.orderingMap.get(this.currentOrder).entries()]
       .sort((a: any, b: any) => {
         return a[1] - b[1];
       }).map((d: any) => { return d[0]; });
 
-    this.render(this.data.sort((a: any, b: any) => {
+    this.renderRadial(this.data.sort((a: any, b: any) => {
       return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
     }), true);
   }
@@ -388,45 +468,80 @@ export class TestComponent implements OnInit {
         this.data = this.data.sort((a: any, b: any) => {
           return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
         });
-        this.render(this.data);
+
+
+        this.renderRadial(this.data);
+        this.renderChart(this.data);
       });
     });
   }
 
+  /**
+   * Calculates the scales that are needed to map data to space
+   * based on the width and height for the visualization
+   * @param width visualization width
+   * @param height visualization height
+   */
   calculateScales(width?: number, height?: number): void {
-    this.WIDTH = width ? width : this.timelineContainer.nativeElement.clientWidth;
-    this.HEIGHT = height ? height : this.timelineContainer.nativeElement.clientHeight;
+    this.WIDTH = width ? width : this.timelineRadial.nativeElement.clientWidth;
+    this.HEIGHT = height ? height : this.timelineRadial.nativeElement.clientHeight;
 
     // our temporal range based on the data
     this.MIN_DATE = d3.min(this.data.map((d: any) => { return moment(d.startDate, ['YYYY-MM-DD',]); }));
     this.MAX_DATE = moment(); // d3.max(this.data.map((d: any) => { return moment(d.endDate, ['YYYY-MM-DD']); })); 
 
-    this.xScale = d3.scaleTime().domain([this.MIN_DATE, this.MAX_DATE]).range([0, (this.WIDTH - this.margin.left)]);
-    this.yScale = d3.scaleLinear().range([0, (this.HEIGHT - (this.margin.top + this.margin.bottom))]);
+    this.xScale = d3.scaleTime()
+      .domain([this.MIN_DATE, this.MAX_DATE])
+      .range([0, (this.WIDTH - (this.margin.left + this.margin.right))]);
 
-    this.rScale = d3.scaleTime().domain([this.MIN_DATE, this.MAX_DATE]).range([50, Math.min((this.WIDTH - this.margin.left) / 2, (this.HEIGHT - (this.margin.top + this.margin.bottom)) / 2)]);
+    this.yScale = d3.scaleLinear()
+      .range([0, (this.HEIGHT - (this.margin.top + this.margin.bottom))]);
+
+    // rScale range starts from 50 to create an empty hole at the center
+    this.rScale = d3.scaleTime()
+      .domain([this.MIN_DATE, this.MAX_DATE])
+      .range([50, Math.min((this.WIDTH - (this.margin.left + this.margin.right) / 2), (this.HEIGHT - (this.margin.top + this.margin.bottom)) / 2)]);
+
     this.angleScale = d3.scaleLinear().range([0, 360]); // circle 0-360 degrees
   }
 
+  /**
+   * Returns the x-coordinate based on the date (radius) and angle (theta)
+   * @param date date object of a specific event
+   * @param angle angle of the persons timeline
+   */
   getXCoordinates(date: Date, angle: number): number {
     return Math.cos(angle) * this.rScale(date);
   }
 
+  /**
+   * Returns the y-coordinate based on the date (radius) and angle (theta)
+   * @param date date object of a specific event
+   * @param angle angle of the persons timeline
+   */
   getYCoordinates(date: Date, angle: number): number {
     return Math.sin(angle) * this.rScale(date);
   }
 
+  /**
+   * Open up sidepanel to display a persons details, including
+   * events / other people related to them
+   * @param name the persons name
+   */
   displayPersonDetails(name: string): void {
     this.personSelected = true;
     this.selectedPerson = this.people.find((p: PersonOrganization) => { return p.name === name; });
-    this.resize(); // notify that we have opened the side panel
+    this.spinTo(); // notify that we have opened the side panel
 
   }
 
+  /**
+   * Closes the sidepanel
+   */
   closePersonDetails(): void {
     this.personSelected = false;
     this.selectedPerson = undefined;
-    this.resize(true); // notify that we have closed the side panel
+    this.spinTo(true); // notify that we have closed the side panel
   }
 
   /**
@@ -437,7 +552,7 @@ export class TestComponent implements OnInit {
   createTimeline(): void {
     // get the x,y scales so we can draw things
 
-    this.timelineSVG = d3.select(this.timelineContainer.nativeElement)
+    this.timelineSVG = d3.select(this.timelineRadial.nativeElement)
       .append('svg')
       .attr('width', this.WIDTH)
       .attr('height', this.HEIGHT);
@@ -452,17 +567,29 @@ export class TestComponent implements OnInit {
       .attr('height', this.HEIGHT)
       .attr('transform', `translate(${this.WIDTH / 2}, ${this.rScale.range()[1]})`);
 
-    this.g = g.append('g')
+    this.radialG = g.append('g')
       .attr('width', this.WIDTH)
       .attr('height', this.HEIGHT)
       .attr('transform', `translate(${this.margin.top}, ${this.margin.left})`);
+
     // set display range
     this.currentlySelectedMinDate = this.MIN_DATE.toDate();
     this.currentlySelectedMaxDate = this.MAX_DATE.toDate();
+
+    this.timeChartSVG = d3.select(this.timelineChart.nativeElement)
+      .append('svg')
+      .attr('width', this.timelineChart.nativeElement.clientWidth)
+      .attr('height', 200); // 200px
   }
 
+  /**
+   * Draws the outer donut of the circle used to encode categorical data
+   * We draw it stepwise by angle intervals
+   * @param startRadius starting angle of the arc
+   * @param endRadius ending angle of the arc
+   */
   drawDonut(startRadius: number, endRadius: number): void {
-    this.g.select('#arc-selection').remove();
+    // this.radialG.select('#arc-selection').remove();
 
     if (!this.arc) this.arc = d3.arc();
 
@@ -471,26 +598,37 @@ export class TestComponent implements OnInit {
       .outerRadius(endRadius)
       .startAngle(0)
       .endAngle(2 * Math.PI);
-    // ({
-    //   innerRadius: this.innerRadius,
-    //   outerRadius: this.outerRadius,
-    //   startAngle: 0,
-    //   endAngle: 2*Math.PI
-    // }); // "M0,-100A100,100,0,0,1,100,0L0,0Z"
 
-    this.g.append('path')
+    
+      d3.select('.radial-brush')
+      .transition().duration(0)
       .attr('d', this.arc)
-      .attr('fill', '#000')
-      .attr('id', 'arc-selection')
-      .lower();
+      .attr('fill', '#4286f4')
+      .attr('fill-opacity', '.15')
+      .attr('stroke', '#fff')
+      .attr('stroke-opacity', '1')
+      .attr('stroke-width', '2px')
+      .attr('id', 'arc-selection');
+    // .lower();
     // .attr('')
     // .attr('transform', 'translate(200,200)')
   }
 
-  dragStart(): void {
-    // console.log(d3.event);
-    let mouseClickX = d3.event.x - (this.WIDTH / 2);
-    let mouseClickY = d3.event.y - (this.HEIGHT / 2);
+  /**
+   * Gets a list of people in the selected date range
+   */
+  getList(): void {
+    let start = this.currentlySelectedMinDate ? this.currentlySelectedMinDate : this.MIN_DATE.toDate();
+    let end = this.currentlySelectedMaxDate ? this.currentlySelectedMaxDate : this.MAX_DATE.toDate();
+    this.getDataInRange(start, end);
+  }
+
+  /**
+   * Drag start event handler
+   */
+  radialDragStart(): void {
+    let mouseClickX = (d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2);
+    let mouseClickY = (d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2);
 
     let sqrt = Math.ceil(Math.sqrt(mouseClickX * mouseClickX + mouseClickY * mouseClickY));
 
@@ -500,16 +638,19 @@ export class TestComponent implements OnInit {
     this.dragStartPoint = sqrt;
   }
 
-  dragging(): void {
-    let mouseClickX = d3.event.x - (this.WIDTH / 2);
-    let mouseClickY = d3.event.y - (this.HEIGHT / 2);
+  /**
+   * Dragging event handler
+   */
+  radialDragging(): void {
+    let mouseClickX = (d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2);
+    let mouseClickY = (d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2);
 
     let sqrt = Math.ceil(Math.sqrt(mouseClickX * mouseClickX + mouseClickY * mouseClickY));
 
     let date = moment(this.rScale.invert(sqrt));
 
     if (date.isAfter(this.MAX_DATE)) sqrt = this.rScale(this.MAX_DATE);
-
+    if (date.isBefore(this.MIN_DATE)) sqrt = this.rScale(this.MIN_DATE);
     this.dragEndPoint = sqrt;
 
     let tmpStart = this.dragStartPoint;
@@ -536,14 +677,24 @@ export class TestComponent implements OnInit {
     this.currentlySelectedMaxDate = this.rScale.invert(tmpEnd);
 
     this.drawDonut(tmpStart, tmpEnd);
+
+    this.setChartBrush(startDate, endDate);
+
   }
 
-  dragEnd(): void {
+  /**
+   * Drag end event handler
+   */
+  radialDragEnd(): void {
     this.dragStartPoint = 0;
     this.dragEndPoint = 0;
-    this.getDataInRange(this.currentlySelectedMinDate, this.currentlySelectedMaxDate);
   }
 
+  /**
+   * Returns data points that fall into the provided date range
+   * @param start start of the date range
+   * @param end end of the date range
+   */
   getDataInRange(start: Date, end: Date): void {
     let events = new Array<any>();
     // let people = new Set<any>();
@@ -567,11 +718,15 @@ export class TestComponent implements OnInit {
         return a.values.length - b.values.length;
       })
       .reverse()
-      .map((d: any) => { return { name: d.key, events: d.values.length }; });
-
+      .map((d: any) => { return { name: d.key, events: d.values.sort((a, b) => { return a.startDate - b.startDate; }) }; });
+      // return events by people (people sorted by #events; events sorted chronologically)
     this.currentlySelectedPeople = eventsByPeople;
   }
 
+  /**
+   * Should allow the user to drag and drop timlines to manually set the order
+   * TODO: Implement / Fix this function
+   */
   // doReorder(d: any, i: number, n: any): void {
   //   // do math
   //   let radius = this.rScale((moment(this.rScale.domain()[1]).add(10, 'years')));
@@ -627,44 +782,73 @@ export class TestComponent implements OnInit {
   //   }), true);
   // }
 
+  /**
+   * De-selects the selected person (highlighted)
+   */
   unhighlightPerson(): void {
-    let beforeDeathLines = this.g.selectAll('.before-death');
+    let beforeDeathLines = this.radialG.selectAll('.before-death');
     beforeDeathLines
       .transition().duration(750)
       .attr('stroke-opacity', 1);
 
-    let eventLines = this.g.selectAll('.event')
+    let eventLines = this.radialG.selectAll('.event')
     eventLines
       .transition().duration(750)
       .attr('stroke-opacity', 1);
 
-    let categoricalBars = this.g.selectAll('.category');
+    let categoricalBars = this.radialG.selectAll('.category');
     categoricalBars
       .transition().duration(750)
       .attr('opacity', 1);
   }
 
+  /**
+   * Hightlights (selects) a person
+   * @param name person to highlight
+   */
   highlightPerson(name: string): void {
-    let beforeDeathLines = this.g.selectAll('.before-death');
+    let beforeDeathLines = this.radialG.selectAll('.before-death');
     beforeDeathLines
       .transition().duration(750)
       .attr('stroke-opacity', (d: any) => {
         return d.key !== name ? 0 : 1;
       });
 
-    let eventLines = this.g.selectAll('.event');
+    let eventLines = this.radialG.selectAll('.event');
     eventLines
       .transition().duration(750)
       .attr('stroke-opacity', (d: any) => {
         return d.person !== name ? 0 : 1;
       });
 
-    let categoricalBars = this.g.selectAll('.category');
+    let categoricalBars = this.radialG.selectAll('.category');
     categoricalBars
       .transition().duration(750)
       .attr('opacity', (d: any) => {
         return d.key !== name ? 0 : 1;
       });
+  }
+
+  /**
+   * Mouseover handler for the circle axis grid
+   * @param year the year that is being mouseovered
+   */
+  gridMouseover(year: Date): void {
+    this.radialG.append('circle')
+      .attr('class', 'circle-axis-tooltip')
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('r', this.rScale(year))
+      .attr('stroke', '#828282')
+      .attr('stroke-width', '4')
+      .attr('fill', 'none')
+  }
+
+  /**
+   * Mouseout handle for the circle grid axis
+   */
+  gridMouseout(): void {
+    this.radialG.select('.circle-axis-tooltip').remove();
   }
 
 
@@ -675,7 +859,7 @@ export class TestComponent implements OnInit {
    * - Post life span - defined as a dashed line with the class '.after-death'
    * - Events - lines / circles plotted on the timelines with the class '.event'
    */
-  render(data: Array<any>, orderUpdate: boolean = false): void {
+  renderRadial(data: Array<any>, orderUpdate: boolean = false): void {
     let personNameArray = new Set<string>();
     let dataByPerson = d3.nest()
       .key((d: any) => {
@@ -688,15 +872,15 @@ export class TestComponent implements OnInit {
 
     this.timelineSVG.call(
       d3.drag()
-        .on('start', () => { this.dragStart(); })
-        .on('drag', () => { this.dragging(); })
-        .on('end', () => { this.dragEnd(); })
+        .on('start', () => { this.radialDragStart(); })
+        .on('drag', () => { this.radialDragging(); })
+        .on('end', () => { this.radialDragEnd(); })
     );
 
     let temporalData = d3.timeYear.range(this.MIN_DATE.toDate(), this.MAX_DATE.toDate(), 10);
     temporalData.push(moment('01-01-1945').toDate());
 
-    let textInside = this.g
+    let textInside = this.radialG
       .append('text')
       .attr('class', 'text-inside')
       .attr('text-anchor', 'middle')
@@ -707,79 +891,24 @@ export class TestComponent implements OnInit {
       .style('font-size', '25px')
       .text('');
 
-
-
-    let circleAxis = this.g.selectAll('.circle-axis').data(temporalData);
-    circleAxis
-      .enter()
-      .append('circle')
-      .attr('class', 'circle-axis')
-      .attr('cx', 0)
-      .attr('cy', 0)
-      .attr('r', 0)
-      .attr('stroke-width', 0)
-      .attr('stroke', '#fff')
-      .on('mouseover', (d: any, i: number, n: any) => {
-        d3.select(n[i])
-          .attr('stroke', '#000')
-          .attr('stroke-width', 4)
-          .raise();
-
-        textInside
-          .attr('opacity', 1)
-          .text(moment(d).year());
-      })
-      .on('mouseout', (d: any, i: number, n: any) => {
-        let year = moment(d).year().toString();
-        // d3.select(n[i]).lower();
-
-        if (year !== '1945') {
-          d3.select(n[i])
-            .attr('stroke', '#efefef')
-            .attr('stroke-width', 4)
-            .lower();
-        }
-
-        textInside
-          .attr('opacity', 0)
-          .text('');
-      })
-      .merge(circleAxis)
-      .transition().duration(750)
-      .attr('stroke', (d: any, i: number, n: any) => {
-        let year = moment(d).year().toString();
-
-        if (year === '1945') d3.select(n[i]).raise();
-
-        return year === '1945' ? '#828282' : '#efefef';
-      })
-      .attr('stroke-width', (d: any) => {
-        let year = moment(d).year().toString();
-
-        return year === '1945' ? '6' : '4';
-      })
-      .attr('cx', 0)
-      .attr('cy', 0)
-      .attr('r', (d: any) => { return Math.abs(this.rScale(d)); });
-
     /*******************
     * D3 ENTER + MERGE STEP *
     *******************/
-    let afterDeathLines = this.g.selectAll('.after-death').data(dataByPerson);
+    let afterDeathLines = this.radialG.selectAll('.after-death').data(dataByPerson);
     afterDeathLines
       .enter()
       .append('line')
       .attr('class', 'after-death')
-      // .attr('stroke-opacity', .5)
-      .attr('stroke-width', 4)
-      // .attr('stroke-dasharray', 4)
-      .attr('stroke-linecap', 'round')
       .attr('x1', 0)
       .attr('x2', 0)
       .attr('y1', 0)
       .attr('y2', 0)
       .merge(afterDeathLines)
       .transition().duration(750)
+      .attr('stroke-dasharray', '2,2')
+      .attr('stroke', '#efefef')
+      .attr('stroke-width', '2')
+      // .attr('stroke-linecap', 'round')
       // .attr('stroke-opacity', 0.5)
       .attr('x1', (d: any, i: number) => {
         return this.getXCoordinates(this.MIN_DATE.toDate(), i * this.theta);
@@ -794,7 +923,47 @@ export class TestComponent implements OnInit {
         return this.getYCoordinates(this.MAX_DATE.toDate(), i * this.theta);
       });
 
-    let beforeDeathLines = this.g.selectAll('.before-death').data(dataByPerson);
+    // TODO: Improve this by creating a mouseover/mouseout handler
+    // that creates one element on demaind regardless where the users cursor is
+    // and displays date in the center of the circle
+    // instead of trying to mouseover the grid lines
+    let circleAxis = this.radialG.selectAll('.circle-axis').data(temporalData);
+    circleAxis
+      .enter()
+      .append('circle')
+      .attr('class', 'circle-axis')
+      .attr('data-year', (d: any) => { return moment(d).year(); })
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('r', 0)
+      .attr('fill', 'none')
+      .attr('stroke-width', 0)
+      .attr('stroke', '#fff')
+      .on('mouseover', (d: any, i: number, n: any) => {
+        this.gridMouseover(d);
+        textInside
+          .attr('opacity', 1)
+          .text(moment(d).year());
+      })
+      .on('mouseout', (d: any, i: number, n: any) => {
+        this.gridMouseout();
+        textInside
+          .attr('opacity', 0)
+          .text('');
+        // this.g.select('.circle-axis[data-year="1945"]').attr('stroke', '#828282').attr('stroke-width', 4);
+      })
+      .merge(circleAxis)
+      .transition().duration(750)
+      .attr('stroke-dasharray', '2,2')
+      .attr('stroke', (d: any) => {
+        return moment(d).isSame(moment('1945'), 'year') ? '#828282' : '#efefef';
+      })
+      .attr('stroke-width', '2')
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('r', (d: any) => { return Math.abs(this.rScale(d)); });
+
+    let beforeDeathLines = this.radialG.selectAll('.before-death').data(dataByPerson);
     beforeDeathLines
       .enter()
       .append('line')
@@ -852,7 +1021,7 @@ export class TestComponent implements OnInit {
         return this.getYCoordinates(date, i * this.theta);
       });
 
-    let eventLines = this.g.selectAll('.event').data(data);
+    let eventLines = this.radialG.selectAll('.event').data(data);
     eventLines
       .enter()
       .append('line')
@@ -866,7 +1035,6 @@ export class TestComponent implements OnInit {
       .attr('y1', 0)
       .attr('y2', 0)
       .on('mouseover', (d: any) => {
-        // console.log(d);
         this.tooltip.nativeElement.style.display = 'block';
         this.tooltip.nativeElement.style.opacity = '1';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
@@ -900,13 +1068,11 @@ export class TestComponent implements OnInit {
       .innerRadius(() => { return this.rScale.range()[1] + 5; })
       .outerRadius(() => { return this.rScale.range()[1] + 20; })
       .startAngle((d: any) => {
-        // console.log(this.peopleAngles.get(d.key));
-        // console.log(this.theta);
         return (this.peopleAngles.get(d.key) + Math.PI / 2) - this.theta / 2;
       })
       .endAngle((d: any) => { return (this.peopleAngles.get(d.key) + Math.PI / 2) + this.theta / 2; });
 
-    let categoricalBars = this.g.selectAll('.category').data(dataByPerson);
+    let categoricalBars = this.radialG.selectAll('.category').data(dataByPerson);
     categoricalBars
       .enter()
       .append('path')
@@ -928,7 +1094,7 @@ export class TestComponent implements OnInit {
         this.tooltip.nativeElement.style.opacity = '0';
       })
       .merge(categoricalBars)
-      .transition().duration('750')
+      .transition().duration(750)
       .attr('d', categoricalArc)
       .attr('stroke', '#828282')
       .attr('fill', (d: any) => {
@@ -936,7 +1102,8 @@ export class TestComponent implements OnInit {
         return this.categoricalColors((person as any).category);
       });
 
-
+    // add radial brush
+    this.radialG.append('path').attr('class', 'radial-brush');
 
     /*******************
       * D3 EXIT STEP *
@@ -987,10 +1154,232 @@ export class TestComponent implements OnInit {
       .remove();
   }
 
+  /**
+   * Renders a timeline chart of event types (count) over time
+   * @param data the dataset 
+   */
+  renderChart(data: Array<any>): void {
+    //'street', 'exhibition', 'exile', 'prize', 'none'
+    let countByYear = d3.nest<any, any>()
+      .key((d: any) => {
+        return moment(d.startDate).year().toString();
+      })
+      .sortKeys(d3.ascending)
+      .rollup((s: any) => {
+        return {
+          street: s.filter((ss: any) => { return ss.color === 'street' }).length,
+          exhibition: s.filter((ss: any) => { return ss.color === 'exhibition' }).length,
+          prize: s.filter((ss: any) => { return ss.color === 'prize' }).length,
+          exile: s.filter((ss: any) => { return ss.color === 'exile' }).length,
+          none: s.filter((ss: any) => { return ss.color === 'none' }).length,
+        };
+      })
+      .entries(data);
+    let lineGraph = d3.line<{ date: Date, count: number }>()
+      .defined((d: any) => { return d.date; })
+      .x((d: any) => {
+        return this.xChartScale(d.date);
+      })
+      .y((d: any) => {
+        return this.yChartScale(d.count);
+      })
+      .curve(d3.curveMonotoneX);
+
+    // TODO: replace with dynamic height variables
+    this.xChartScale = d3.scaleTime().range([0, this.timelineChart.nativeElement.clientWidth]).domain([this.MIN_DATE, this.MAX_DATE]);
+    this.yChartScale = d3.scaleLinear().range([100, 0]).domain([0, 20]).nice();
+    // special year
+    let tickAmount = this.MAX_DATE.diff(this.MIN_DATE, 'years') / 10;
+    let ticks = this.xChartScale.ticks(Math.floor(tickAmount));
+    ticks.push(moment('01-01-1945').toDate());
+
+    let xAxis = d3.axisBottom(this.xChartScale)
+      // .ticks(d3.timeYear.every(10))
+      .tickSize(200)
+      .tickFormat((d: Date) => {
+        return d3.timeFormat('%Y')(d);
+      })
+      .tickValues(ticks);
+
+    this.chartG = this.timeChartSVG
+      .append('g')
+      .attr('width', 1920)
+      .attr('height', 100)
+      .call(xAxis);
+
+    // set data attribute so we can select via css
+    this.chartG.selectAll('.tick').attr('data-year', (d: any) => { return moment(d).year(); });
+    // style axis ticks
+    this.chartG.selectAll('.tick line').attr('stroke', '#efefef').attr('stroke-dasharray', '2,2');
+    // special stroke for special year
+    this.chartG.select('.tick[data-year="1945"] > line').attr('stroke-width', '3px').attr('stroke', '#828282').attr('stroke-dasharray', '0,0');
+    // position text
+    this.chartG.selectAll('.tick text').attr('y', 10).attr('dy', 0);
+
+    let exhibitionData = countByYear.map((d: any) => {
+      return {
+        date: moment(d.key).toDate(),
+        count: d.value['exhibition']
+      }
+    });
+
+    let streetData = countByYear.map((d: any) => {
+      return {
+        date: moment(d.key).toDate(),
+        count: d.value['street']
+      }
+    });
+
+    let prizeData = countByYear.map((d: any) => {
+      return {
+        date: moment(d.key).toDate(),
+        count: d.value['prize']
+      }
+    });
+
+    this.chartG.append('g').attr('class', 'exhibition');
+    this.chartG.append('g').attr('class', 'street');
+    this.chartG.append('g').attr('class', 'prize');
+
+    let exhibitions = d3.select('.exhibition');
+    exhibitions
+      .append('path')
+      .data(exhibitionData)
+      .attr('class', 'exhibition-line')
+      // .attr('d', null)
+      // .merge(exhibitions)
+      // .transition().duration(250)
+      .attr('d', () => { return lineGraph(exhibitionData); })
+      .attr('fill', 'none')
+      .attr('stroke', <string>this.colors('exhibition'))
+      .attr('stroke-width', '2px');
+
+
+    let streets = d3.select('.street');
+    streets
+      .append('path')
+      .data(streetData)
+      .attr('class', 'street-line')
+      // .attr('d', null)
+      // .merge(exhibitions)
+      // .transition().duration(250)
+      .attr('d', () => { return lineGraph(streetData); })
+      .attr('fill', 'none')
+      .attr('stroke', <string>this.colors('street'))
+      .attr('stroke-width', '2px');
+
+    let prizes = d3.select('.prize');
+    prizes
+      .append('path')
+      .data(prizeData)
+      .attr('class', 'prize-line')
+      // .attr('d', null)
+      // .merge(exhibitions)
+      // .transition().duration(250)
+      .attr('d', () => { return lineGraph(prizeData); })
+      .attr('fill', 'none')
+      .attr('stroke', <string>this.colors('prize'))
+      .attr('stroke-width', '2px');
+
+    // brush
+    this.chartBrush = d3.brushX()
+      .extent([[0, 0], [this.xChartScale.range()[1], 200]]) // 0,0 - width, height
+      // .on('brush', this.chartBrushing.bind(this))
+      .on('end', this.chartBrushEnd.bind(this));
+    this.chartG.append('g')
+      .attr('class', 'brush')
+      .call(this.chartBrush);
+
+    d3.select('.selection').attr('fill', '#4286f4').attr('fill-opacity', .15).attr('stroke', '#fff').attr('stroke-opacity', 1);
+  }
+
+  /**
+   * Updates the D3 scales to map the full vis space to the new temporal range 
+   * "Temporal zooming"
+   * @param from starting point of the temporal selection (Date object)
+   * @param to end point of the temporal selection (Date object)
+   */
+  updateScales(from?: Date, to?: Date): void {
+    return; 
+    // TODO: Doesn't work as intended
+    if(!from) from = this.currentlySelectedMinDate;
+    if(!to) to = this.currentlySelectedMaxDate;
+    
+    this.xScale = d3.scaleTime()
+    .domain([moment(from), moment(to)])
+        .range([0, (this.WIDTH - (this.margin.left + this.margin.right))]);
+    // .range([0, (this.WIDTH - (this.margin.left + this.margin.right))]);
+
+    // rScale range starts from 50 to create an empty hole at the center
+    this.rScale = d3.scaleTime()
+    .domain([moment(from), moment(to)])
+    .range([50, Math.min((this.WIDTH - (this.margin.left + this.margin.right) / 2), (this.HEIGHT - (this.margin.top + this.margin.bottom)) / 2)])
+
+    this.xChartScale = d3.scaleTime().domain([moment(from), moment(to)]);
+    let newData = this.data.filter((d: any) => {
+      return moment(d.startDate).isBetween(from, to, 'year');
+    });
+    this.renderRadial(newData);
+    this.renderChart(newData);
+  }
+
+  /**
+   * Programatically set the timeline chart brush extent
+   * @param startDate start date (mapped to x coords)
+   * @param endDate end date (mapped to x coords)
+   */
+  setChartBrush(startDate: Date, endDate: Date): void {
+    if (!startDate) return;
+
+    let startX = this.xChartScale(startDate);
+    let endX = this.xChartScale(endDate);
+
+    d3.select('.brush').call(this.chartBrush.move, [startX, endX]);
+  }
+
+  chartBrushing(): void {
+    if (!d3.event.selection) return;
+    let start = d3.event.selection[0];
+    let end = d3.event.selection[1];
+
+    let startDate = this.xChartScale.invert(start);
+    let endDate = this.xChartScale.invert(end);
+
+    this.drawDonut(this.rScale(startDate), this.rScale(endDate));
+  }
+
+  /**
+   * Programatically set the radial vis brush extent
+   */
+  chartBrushEnd(): void {
+    if (!d3.event.selection) return;
+    let start = d3.event.selection[0];
+    let end = d3.event.selection[1];
+
+    let startDate = this.xChartScale.invert(start);
+    let endDate = this.xChartScale.invert(end);
+    // update date selection
+    this.currentlySelectedMinDate = startDate;
+    this.currentlySelectedMaxDate = endDate;
+    // update radial selection
+    this.drawDonut(this.rScale(startDate), this.rScale(endDate));
+  }
+
+
+  /**
+   * Return human readable date format
+   * @param date date object
+   */
   displayDate(date: Date): string {
+    if(!date) return;
     return moment(date).format('MMMM Do YYYY');
   }
 
+  /**
+   * Calculate the duration of a date interval (in years)
+   * @param from start date
+   * @param to end date
+   */
   getDuration(from: Date, to: Date): string {
     return Math.abs(moment(from).diff(moment(to), 'years')).toString();
   }

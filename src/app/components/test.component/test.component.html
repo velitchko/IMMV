@@ -23,6 +23,15 @@
 
     <mat-sidenav-content>
         <div id="options">
+            <div>
+                <button mat-flat-button (click)="getList()"><mat-icon>list</mat-icon> show list</button>
+            </div>
+            <div>
+                <button mat-flat-button (click)="updateScales()"><mat-icon>zoom_in</mat-icon> apply zoom</button>
+            </div>
+            <div>
+                <mat-slide-toggle (change)="showExiled()">Exiled</mat-slide-toggle>
+            </div>
             <div *ngFor="let e of eventTypes">
                 <mat-radio-button (change)="filterEventsByType(e)">{{ e }}</mat-radio-button>
             </div>
@@ -49,12 +58,23 @@
             </div>
         </div>
         <div id="wrapper">
-            <div id="timeline-holder" #timelineHolder></div>
+            <div id="timeline-radial" #timelineRadial></div>
+            <div id="timeline-chart" #timelineChart></div>
             <div id="people">
-                <mat-list>
-                    <mat-list-item matRipple *ngFor="let p of currentlySelectedPeople"
-                        (click)="displayPersonDetails(p.name)"> {{ p.name }} ({{ p.events }}) </mat-list-item>
-                </mat-list>
+                <mat-accordion>
+                    <mat-expansion-panel *ngFor="let p of currentlySelectedPeople">
+                        <mat-expansion-panel-header class="people-headers-align">
+                            <mat-panel-title><b>{{ p.name }}</b></mat-panel-title>
+                            <mat-panel-description>{{ p.events.length }} events</mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <button mat-flat-button (click)="displayPersonDetails(p.name)"><mat-icon>info</mat-icon> Details</button>
+                        <div *ngFor="let e of p.events">    
+                            <div class="event-dot" [ngStyle]="{'background-color': getColorForType(e.color)}" [matTooltip]="e.color"></div>
+                            <h4 class="event-header">{{ e.dateName }}</h4>
+                            <p>({{ displayDate(e.startDate) }} - {{ displayDate(e.endDate) }})</p>
+                        </div>
+                    </mat-expansion-panel>
+                </mat-accordion>
             </div>
         </div>
         <div id="date-extent">
