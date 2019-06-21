@@ -1,15 +1,17 @@
 let mongoose = require('mongoose');
-let EventSchema = require('./event');
+let EventSchema = require('../data_schemes/event');
 let axios = require('axios');
 let throttledQueue  = require('throttled-queue');
 let cli = require('cli-progress');
+
+let db = require('../data_schemes/db.config');
 
 const api_token = '87a158b71e76a7';
 const progressBar = new cli.Bar({}, cli.Presets.shades_classic);
 let results = [];
 
 let throttle = throttledQueue(1, 1000);
-mongoose.connect('mongodb://localhost:27017/immv_db', function(err) {
+mongoose.connect(`mongodb://localhost:27017/${db.collectionName}`, function(err) {
     console.log('DB Connected');
     if(err) {
         console.log(err);
@@ -73,7 +75,6 @@ function findEvents() {
                 }        
             });
         }
-       
     });
 
 }
