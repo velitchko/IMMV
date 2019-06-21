@@ -126,7 +126,8 @@ export class PersonOrganizationComponent implements AfterViewInit {
         if(this.countByTypeAndYear.has(node.objectType)) {
           let exists = this.countByTypeAndYear.get(node.objectType);
           exists.forEach((value: number, key: string) => {
-            if(moment.utc(key).isBetween(moment(node.startDate), moment(node.endDate), 'years', '()')) {
+            // inBetween(start, end, granularity, inclusion)
+            if(moment.utc(key).isBetween(moment(node.startDate), moment(node.endDate), 'years', '[]')) {
               // inc value  
               exists.set(key, exists.get(key) + 1);
             }
@@ -155,7 +156,6 @@ export class PersonOrganizationComponent implements AfterViewInit {
       outputArr.push({ name: oKey, values: tmpArr });
     });
 
-    console.log(outputArr);
   }
 
   highlightNodeType($event: string): void {
