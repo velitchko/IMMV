@@ -1,3 +1,5 @@
+$timeline-width: 100px;
+
 .container {
     position: absolute;
     top: 0;
@@ -37,10 +39,18 @@
     padding: 0;
     overflow-x: hidden;
 }
-#timeline-holder {
-    width: 98vw;
-    height: 98vh;
+#timeline-radial {
+    width: 100%;
+    height: calc(100% - #{$timeline-width});
     position: relative;
+    overflow: hidden;
+}
+
+#timeline-chart {
+    width: 100%;
+    height: $timeline-width;
+    position: absolute;
+    bottom: 0em;
     overflow: hidden;
 }
 
@@ -51,8 +61,9 @@
     padding-left: .5em;
     padding-right: .5em;
     background-color: white;
-    max-height: 100%;
+    max-height: calc(100% - #{$timeline-width});
     overflow-y: scroll;
+    width: calc(4*#{$timeline-width});
 }
 
 #options {
@@ -70,6 +81,32 @@
     z-index: 1000;
 }
 
+::ng-deep rect .selection {
+    fill: #4286f4 !important;
+    fill-opacity: 0.15 !important;
+    stroke: #fff !important;
+    stroke-opacity: 1 !important;
+}
+
+::ng-deep .people-headers-align > .mat-content {
+    justify-content: space-between;
+}
+
+::ng-deep .mat-content > mat-panel-title, .mat-content > mat-panel-description {
+    flex: 0 0 auto;
+}
+
+::ng-deep .event-dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    position: absolute;
+    margin-top: 2px;
+}
+
+::ng-deep .event-header {
+    margin-left: 30px;
+}
 // #map-holder {
 //     width: 100%;
 //     height: 40%;
@@ -107,18 +144,18 @@
     font-size: 14px;
 }
 
-::ng-deep .after-death {
-    stroke: #efefef;   
-}
+// ::ng-deep .after-death {
+//     stroke: #efefef;   
+// }
 
-::ng-deep .circle-axis {
-    fill: none;
+// ::ng-deep .circle-axis {
+    // fill: none;
     // stroke: #efefef;
-}
+// }
 
-::ng-deep #arc-selection {
-    opacity: .25;
-}
+// ::ng-deep #arc-selection {
+//     opacity: .25;
+// }
 
 #date-extent {
     position: absolute;
