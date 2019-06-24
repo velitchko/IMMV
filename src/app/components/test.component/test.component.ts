@@ -882,27 +882,27 @@ export class TestComponent implements OnInit {
       });
   }
 
-  /**
-   * Mouseover handler for the circle axis grid
-   * @param year the year that is being mouseovered
-   */
-  gridMouseover(year: Date): void {
-    this.radialG.append('circle')
-      .attr('class', 'circle-axis-tooltip')
-      .attr('cx', 0)
-      .attr('cy', 0)
-      .attr('r', this.rScale(year))
-      .attr('stroke', '#828282')
-      .attr('stroke-width', '4')
-      .attr('fill', 'none')
-  }
+  // /**
+  //  * Mouseover handler for the circle axis grid
+  //  * @param year the year that is being mouseovered
+  //  */
+  // gridMouseover(year: Date): void {
+  //   this.radialG.append('circle')
+  //     .attr('class', 'circle-axis-tooltip')
+  //     .attr('cx', 0)
+  //     .attr('cy', 0)
+  //     .attr('r', this.rScale(year))
+  //     .attr('stroke', '#828282')
+  //     .attr('stroke-width', '4')
+  //     .attr('fill', 'none')
+  // }
 
-  /**
-   * Mouseout handle for the circle grid axis
-   */
-  gridMouseout(): void {
-    this.radialG.select('.circle-axis-tooltip').remove();
-  }
+  // /**
+  //  * Mouseout handle for the circle grid axis
+  //  */
+  // gridMouseout(): void {
+  //   this.radialG.select('.circle-axis-tooltip').remove();
+  // }
 
 
   /**
@@ -959,86 +959,86 @@ export class TestComponent implements OnInit {
     /*******************
     * D3 ENTER + MERGE STEP *
     *******************/
-    let afterDeathLines = this.radialG.selectAll('.after-death').data(dataByPerson);
-    afterDeathLines
-      .enter()
-      .append('line')
-      .attr('class', 'after-death')
-      .attr('x1', (d: any, i: number, n: any) => {
-        let x1 = d3.select(n[i]).attr('x1');
-        return x1 ? x1 : 0;
-      })
-      .attr('x2', (d: any, i: number, n: any) => {
-        let x2 = d3.select(n[i]).attr('x2');
-        return x2 ? x2 : 0;
-      })
-      .attr('y1', (d: any, i: number, n: any) => {
-        let y1 = d3.select(n[i]).attr('y1');
-        return y1 ? y1 : 0;
-      })
-      .attr('y2', (d: any, i: number, n: any) => {
-        let y2 = d3.select(n[i]).attr('y2');
-        return y2 ? y2 : 0;
-      })
-      .merge(afterDeathLines)
-      .transition().duration(750)
-      .attr('stroke-dasharray', '2,2')
-      .attr('stroke', '#efefef')
-      .attr('stroke-width', '2')
-      // .attr('stroke-linecap', 'round')
-      // .attr('stroke-opacity', 0.5)
-      .attr('x1', (d: any, i: number) => {
-        return this.getXCoordinates(this.MIN_DATE.toDate(), i * this.theta);
-      })
-      .attr('x2', (d: any, i: number) => {
-        return this.getXCoordinates(this.MAX_DATE.toDate(), i * this.theta);
-      })
-      .attr('y1', (d: any, i: number) => {
-        return this.getYCoordinates(this.MIN_DATE.toDate(), i * this.theta);
-      })
-      .attr('y2', (d: any, i: number) => {
-        return this.getYCoordinates(this.MAX_DATE.toDate(), i * this.theta);
-      });
+    // let afterDeathLines = this.radialG.selectAll('.after-death').data(dataByPerson);
+    // afterDeathLines
+    //   .enter()
+    //   .append('line')
+    //   .attr('class', 'after-death')
+    //   .attr('x1', (d: any, i: number, n: any) => {
+    //     let x1 = d3.select(n[i]).attr('x1');
+    //     return x1 ? x1 : 0;
+    //   })
+    //   .attr('x2', (d: any, i: number, n: any) => {
+    //     let x2 = d3.select(n[i]).attr('x2');
+    //     return x2 ? x2 : 0;
+    //   })
+    //   .attr('y1', (d: any, i: number, n: any) => {
+    //     let y1 = d3.select(n[i]).attr('y1');
+    //     return y1 ? y1 : 0;
+    //   })
+    //   .attr('y2', (d: any, i: number, n: any) => {
+    //     let y2 = d3.select(n[i]).attr('y2');
+    //     return y2 ? y2 : 0;
+    //   })
+    //   .merge(afterDeathLines)
+    //   .transition().duration(750)
+    //   .attr('stroke-dasharray', '2,2')
+    //   .attr('stroke', '#efefef')
+    //   .attr('stroke-width', '2')
+    //   // .attr('stroke-linecap', 'round')
+    //   // .attr('stroke-opacity', 0.5)
+    //   .attr('x1', (d: any, i: number) => {
+    //     return this.getXCoordinates(this.MIN_DATE.toDate(), i * this.theta);
+    //   })
+    //   .attr('x2', (d: any, i: number) => {
+    //     return this.getXCoordinates(this.MAX_DATE.toDate(), i * this.theta);
+    //   })
+    //   .attr('y1', (d: any, i: number) => {
+    //     return this.getYCoordinates(this.MIN_DATE.toDate(), i * this.theta);
+    //   })
+    //   .attr('y2', (d: any, i: number) => {
+    //     return this.getYCoordinates(this.MAX_DATE.toDate(), i * this.theta);
+    //   });
 
     // TODO: Improve this by creating a mouseover/mouseout handler
     // that creates one element on demaind regardless where the users cursor is
     // and displays date in the center of the circle
     // instead of trying to mouseover the grid lines
-    let circleAxis = this.radialG.selectAll('.circle-axis').data(temporalData);
-    circleAxis
-      .enter()
-      .append('circle')
-      .attr('class', 'circle-axis')
-      .attr('data-year', (d: any) => { return moment(d).year(); })
-      .attr('cx', 0)
-      .attr('cy', 0)
-      .attr('r', 0)
-      .attr('fill', 'none')
-      .attr('stroke-width', 0)
-      .attr('stroke', '#fff')
-      .on('mouseover', (d: any, i: number, n: any) => {
-        this.gridMouseover(d);
-        textInside
-          .attr('opacity', 1)
-          .text(moment(d).year());
-      })
-      .on('mouseout', (d: any, i: number, n: any) => {
-        this.gridMouseout();
-        textInside
-          .attr('opacity', 0)
-          .text('');
-        // this.g.select('.circle-axis[data-year="1945"]').attr('stroke', '#828282').attr('stroke-width', 4);
-      })
-      .merge(circleAxis)
-      .transition().duration(750)
-      .attr('stroke-dasharray', '2,2')
-      .attr('stroke', (d: any) => {
-        return moment(d).isSame(moment('1945'), 'year') ? '#828282' : '#efefef';
-      })
-      .attr('stroke-width', '2')
-      .attr('cx', 0)
-      .attr('cy', 0)
-      .attr('r', (d: any) => { return Math.abs(this.rScale(d)); });
+    // let circleAxis = this.radialG.selectAll('.circle-axis').data(temporalData);
+    // circleAxis
+    //   .enter()
+    //   .append('circle')
+    //   .attr('class', 'circle-axis')
+    //   .attr('data-year', (d: any) => { return moment(d).year(); })
+    //   .attr('cx', 0)
+    //   .attr('cy', 0)
+    //   .attr('r', 0)
+    //   .attr('fill', 'none')
+    //   .attr('stroke-width', 0)
+    //   .attr('stroke', '#fff')
+    //   .on('mouseover', (d: any, i: number, n: any) => {
+    //     this.gridMouseover(d);
+    //     textInside
+    //       .attr('opacity', 1)
+    //       .text(moment(d).year());
+    //   })
+    //   .on('mouseout', (d: any, i: number, n: any) => {
+    //     this.gridMouseout();
+    //     textInside
+    //       .attr('opacity', 0)
+    //       .text('');
+    //     // this.g.select('.circle-axis[data-year="1945"]').attr('stroke', '#828282').attr('stroke-width', 4);
+    //   })
+    //   .merge(circleAxis)
+    //   .transition().duration(750)
+    //   .attr('stroke-dasharray', '2,2')
+    //   .attr('stroke', (d: any) => {
+    //     return moment(d).isSame(moment('1945'), 'year') ? '#828282' : '#efefef';
+    //   })
+    //   .attr('stroke-width', '2')
+    //   .attr('cx', 0)
+    //   .attr('cy', 0)
+    //   .attr('r', (d: any) => { return Math.abs(this.rScale(d)); });
 
     let beforeDeathLines = this.radialG.selectAll('.before-death').data(dataByPerson);
     beforeDeathLines
@@ -1194,6 +1194,9 @@ export class TestComponent implements OnInit {
         this.tooltip.nativeElement.style.display = 'none';
         this.tooltip.nativeElement.style.opacity = '0';
       })
+      .on('click', (d: any) => { 
+        this.displayPersonDetails(d.key);
+      })
       .merge(categoricalBars)
       .transition().duration(750)
       .attr('d', categoricalArc)
@@ -1209,12 +1212,12 @@ export class TestComponent implements OnInit {
     /*******************
       * D3 EXIT STEP *
     *******************/
-    circleAxis.exit()
-      .transition().duration(750)
-      .attr('cx', 0)
-      .attr('cy', 0)
-      .attr('r', 0)
-      .remove();
+    // circleAxis.exit()
+    //   .transition().duration(750)
+    //   .attr('cx', 0)
+    //   .attr('cy', 0)
+    //   .attr('r', 0)
+    //   .remove();
 
     beforeDeathLines.exit()
       .transition().duration(750)
@@ -1225,14 +1228,14 @@ export class TestComponent implements OnInit {
       .attr('stroke', (d: any) => { return '#ffffff'; })//this.colors(d.key); })
       .remove();
 
-    afterDeathLines.exit()
-      .transition().duration(750)
-      .attr('x1', 0)
-      .attr('x2', 0)
-      .attr('y1', 0)
-      .attr('y2', 0)
-      .attr('stroke', (d: any) => { return '#ffffff'; })//this.colors(d.key); })
-      .remove();
+    // afterDeathLines.exit()
+    //   .transition().duration(750)
+    //   .attr('x1', 0)
+    //   .attr('x2', 0)
+    //   .attr('y1', 0)
+    //   .attr('y2', 0)
+    //   .attr('stroke', (d: any) => { return '#ffffff'; })//this.colors(d.key); })
+    //   .remove();
 
     // reorderingHooks.exit()
     //   .transition().duration(750)
