@@ -32,17 +32,18 @@
             <div>
                 <mat-slide-toggle (change)="showExiled()">Exiled</mat-slide-toggle>
             </div>
-            <div *ngFor="let e of eventTypes">
-                <mat-radio-button (change)="filterEventsByType(e)">{{ e }}</mat-radio-button>
-            </div>
-            <div>
-                <mat-radio-button (change)="filterEventsByType()">all</mat-radio-button>
-            </div>
-            <div>
-                <mat-select [(value)]="currentOrder" (selectionChange)="updateOrder()">
+            <mat-form-field>
+                <mat-label>Order by</mat-label>
+                <mat-select [(value)]="currentOrder" placeholder="Order by" (selectionChange)="updateOrder()">
                     <mat-option *ngFor="let o of ordering" [value]="o">{{ o }}</mat-option>
                 </mat-select>
-            </div>
+            </mat-form-field>
+            <mat-form-field>
+                    <mat-label>Group by</mat-label>
+                    <mat-select [(value)]="currentGrouping" placeholder="Group by" (selectionChange)="updateGroup()">
+                        <mat-option *ngFor="let o of grouping" [value]="o">{{ o }}</mat-option>
+                    </mat-select>
+                </mat-form-field>
             <div id="autocomplete">
                 <mat-form-field>
                     <input matInput placeholder="Person" [matAutocomplete]="auto" [formControl]="peopleCtrl">
