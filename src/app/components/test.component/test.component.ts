@@ -654,6 +654,14 @@ export class TestComponent implements OnInit {
     // .attr('transform', 'translate(200,200)')
   }
 
+  clearTimeSelection() { 
+    d3.select('.brush').call(this.chartBrush.move, null);
+    this.drawDonut(null, null);
+
+    this.currentlySelectedMaxDate = this.MAX_DATE.toDate();
+    this.currentlySelectedMinDate = this.MIN_DATE.toDate();
+  }
+
   /**
    * Gets a list of people in the selected date range
    */
