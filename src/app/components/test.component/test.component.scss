@@ -39,6 +39,13 @@ $timeline-width: 100px;
     padding: 0;
     overflow-x: hidden;
 }
+
+.filter-radio-group {
+    display: flex;
+    flex-direction: column;
+    margin: 15px 0;
+}
+
 #timeline-radial {
     width: 100%;
     height: calc(100% - #{$timeline-width});
