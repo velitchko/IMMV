@@ -93,7 +93,7 @@ export class TestComponent implements OnInit {
 
   grouping: Array<string>;
   currentGrouping: string;
-  
+
   personSelected: boolean;
   selectedPerson: PersonOrganization;
   exiledFilter: boolean;
@@ -227,14 +227,32 @@ export class TestComponent implements OnInit {
    * @param type optional parameter to check type for
    */
   filterEventsByType(type?: string): void {
-    if(!type) type = 'all';
+    if (!type) type = 'all';
     this.radialG.selectAll('.event')
-                .transition()
-                .duration(250)
-                .attr('opacity', (d: any) => { 
-                  if(type === 'all') return 1;
-                  return (d.color !== type && d.color !== 'none') ? 0 : 1;
-                });
+      .transition()
+      .duration(250)
+      .attr('opacity', (d: any) => {
+        if (type === 'all') return 1;
+        return (d.color !== type && d.color !== 'none') ? 0 : 1;
+      });
+
+    let show = this.eventTypes.filter((t: string) => { return t !== 'all'; });
+    show.forEach((type: string) => {
+      this.chartG.select(`.${type}`)
+        .transition()
+        .duration(250)
+        .attr('opacity', 1);
+    });
+    
+    if (type !== 'all') {
+      let hide = this.eventTypes.filter((t: string) => { return (t !== type) && (t !== 'all'); });
+      hide.forEach((type: string) => {
+        this.chartG.select(`.${type}`)
+          .transition()
+          .duration(250)
+          .attr('opacity', 0);
+      });
+    }
   }
 
   /**
@@ -374,15 +392,15 @@ export class TestComponent implements OnInit {
   }
 
   updateGroup(): void {
-    if(this.currentGrouping === 'None') { 
+    if (this.currentGrouping === 'None') {
       this.updateOrder();
       return;
     }
     let sortedMap = [...this.orderingMap.get(this.currentOrder).entries()]
-    .sort((a: any, b: any) => {
-      return a[1] - b[1];
-    }).map((d: any) => { return d[0]; });
-    
+      .sort((a: any, b: any) => {
+        return a[1] - b[1];
+      }).map((d: any) => { return d[0]; });
+
     this.renderRadial(this.data.sort((a: any, b: any) => {
       return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
     }), { order: true, group: true }); // full update (order needs to be true to update the personAngleMap)
@@ -621,8 +639,8 @@ export class TestComponent implements OnInit {
       .startAngle(0)
       .endAngle(2 * Math.PI);
 
-    
-      d3.select('.radial-brush')
+
+    d3.select('.radial-brush')
       .transition().duration(0)
       .attr('d', this.arc)
       .attr('fill', '#4286f4')
@@ -656,7 +674,7 @@ export class TestComponent implements OnInit {
   radialDragStart(): void {
     let mouseClickX = (d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2);
     let mouseClickY = (d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2);
-    
+
     let sqrt = Math.ceil(Math.sqrt(mouseClickX * mouseClickX + mouseClickY * mouseClickY));
 
     let date = moment(this.rScale.invert(sqrt));
@@ -746,7 +764,7 @@ export class TestComponent implements OnInit {
       })
       .reverse()
       .map((d: any) => { return { name: d.key, events: d.values.sort((a, b) => { return a.startDate - b.startDate; }) }; });
-      // return events by people (people sorted by #events; events sorted chronologically)
+    // return events by people (people sorted by #events; events sorted chronologically)
     this.currentlySelectedPeople = eventsByPeople;
   }
 
@@ -887,7 +905,7 @@ export class TestComponent implements OnInit {
    * - Events - lines / circles plotted on the timelines with the class '.event'
    */
   renderRadial(data: Array<any>, update?: any): void {
-    
+
     let personNameArray = new Set<string>();
     let dataByPerson = d3.nest()
       .key((d: any) => {
@@ -896,11 +914,11 @@ export class TestComponent implements OnInit {
       })
       .entries(data);
 
-    if(update && update.group){
+    if (update && update.group) {
       dataByPerson.sort((a: any, b: any) => {
         let personA = this.people.find((p: PersonOrganization) => { return p.name === a.key; });
         let personB = this.people.find((p: PersonOrganization) => { return p.name === b.key; });
-  
+
         let catA = this.getCategory(personA);
         let catB = this.getCategory(personB);
         return catA.localeCompare(catB);
@@ -1377,18 +1395,18 @@ export class TestComponent implements OnInit {
   updateScales(from?: Date, to?: Date): void {
     // return; 
     // // TODO: Doesn't work as intended
-    if(!from) from = this.currentlySelectedMinDate;
-    if(!to) to = this.currentlySelectedMaxDate;
-    
+    if (!from) from = this.currentlySelectedMinDate;
+    if (!to) to = this.currentlySelectedMaxDate;
+
     this.xScale = d3.scaleTime()
-    .domain([moment(from), moment(to)])
-        .range([0, (this.WIDTH - (this.margin.left + this.margin.right))]);
+      .domain([moment(from), moment(to)])
+      .range([0, (this.WIDTH - (this.margin.left + this.margin.right))]);
     // .range([0, (this.WIDTH - (this.margin.left + this.margin.right))]);
 
     // rScale range starts from 50 to create an empty hole at the center
     this.rScale = d3.scaleTime()
-    .domain([moment(from), moment(to)])
-    .range([50, Math.min((this.WIDTH - (this.margin.left + this.margin.right) / 2), (this.HEIGHT - (this.margin.top + this.margin.bottom)) / 2)])
+      .domain([moment(from), moment(to)])
+      .range([50, Math.min((this.WIDTH - (this.margin.left + this.margin.right) / 2), (this.HEIGHT - (this.margin.top + this.margin.bottom)) / 2)])
 
     this.xChartScale = d3.scaleTime().domain([moment(from), moment(to)]);
     let newData = this.data.filter((d: any) => {
@@ -1446,7 +1464,7 @@ export class TestComponent implements OnInit {
    * @param date date object
    */
   displayDate(date: Date): string {
-    if(!date) return;
+    if (!date) return;
     return moment(date).format('MMMM Do YYYY');
   }
 
