@@ -391,6 +391,11 @@ export class TestComponent implements OnInit {
     }), { order: true });
   }
 
+  /**
+   * Updates the grouping strategy
+   * Get the selected ordering strategy and apply a grouping 
+   * If 'None' is selected revert to default ordering
+   */
   updateGroup(): void {
     if (this.currentGrouping === 'None') {
       this.updateOrder();
@@ -654,12 +659,28 @@ export class TestComponent implements OnInit {
     // .attr('transform', 'translate(200,200)')
   }
 
+  /**
+   * Clears the radial and timeline brush 
+   * Resets the currently selected min and max dates back to default
+   */
   clearTimeSelection() { 
     d3.select('.brush').call(this.chartBrush.move, null);
     this.drawDonut(null, null);
 
     this.currentlySelectedMaxDate = this.MAX_DATE.toDate();
     this.currentlySelectedMinDate = this.MIN_DATE.toDate();
+
+    this.radialG.selectAll('.event') // after death / event line
+                .transition()
+                .duration(250)
+                .attr('stroke', (d: any) => { return this.colors(d.color); })
+                .attr('opacity', 1);
+
+    this.radialG.selectAll('.before-death')
+                .transition()
+                .duration(250)
+                .attr('stroke', '#A5F0D6')
+                .attr('opacity', 1);
   }
 
   /**
@@ -671,6 +692,10 @@ export class TestComponent implements OnInit {
     this.getDataInRange(start, end);
   }
 
+  /**
+   * Clears the list of currently selected people
+   * based on the temporal selection
+   */
   clearList(): void {
     this.currentlySelectedPeople = new Array<any>();
   }
@@ -774,6 +799,39 @@ export class TestComponent implements OnInit {
       .map((d: any) => { return { name: d.key, events: d.values.sort((a, b) => { return a.startDate - b.startDate; }) }; });
     // return events by people (people sorted by #events; events sorted chronologically)
     this.currentlySelectedPeople = eventsByPeople;
+
+    // also highlight the people in the vis
+    this.radialG.selectAll('.event') // after death / event line
+                .transition()
+                .duration(250)
+                .attr('stroke', (d: any) => {
+                  return d.startDate.isBetween(start, end, 'year') ? this.colors(d.color) : '#777777';
+                })
+                .attr('opacity', (d: any) => {
+                  return d.startDate.isBetween(start, end, 'year') ? 1 : .25;
+                });
+
+    this.radialG.selectAll('.before-death')
+                .transition()
+                .duration(250)
+                .attr('stroke', (d: any) => {
+                  // find bday
+                  let bday = d.values.filter((dd: any) => { return dd.dateName === 'Birth'; })[0];
+                  if(bday && bday.startDate) {
+                    return bday.startDate.isBetween(start, end, 'year') ? '#A5F0D6' : '#777777';
+                  } else {
+                    return '#A5F0D6';
+                  }
+                })
+                .attr('opacity', (d: any) => {
+                  // find bday
+                  let bday = d.values.filter((dd: any) => { return dd.dateName === 'Birth'; })[0];
+                  if(bday && bday.startDate) {
+                    return bday.startDate.isBetween(start, end, 'year') ? 1 : .25;
+                  } else {
+                    return 1;
+                  }
+                });
   }
 
   /**
@@ -1389,7 +1447,7 @@ export class TestComponent implements OnInit {
     this.chartBrush = d3.brushX()
       .extent([[0, 0], [this.xChartScale.range()[1], 200]]) // 0,0 - width, height
       // .on('brush', this.chartBrushing.bind(this))
-      .on('end', this.chartBrushEnd.bind(this));
+      .on('end', this.setRadialBrushExtent.bind(this));
     this.chartG.append('g')
       .attr('class', 'brush')
       .call(this.chartBrush);
@@ -1441,6 +1499,10 @@ export class TestComponent implements OnInit {
     d3.select('.brush').call(this.chartBrush.move, [startX, endX]);
   }
 
+  /**
+   * Event handler for the timeline brush
+   * Triggered when a selection has been made
+   */
   chartBrushing(): void {
     if (!d3.event.selection) return;
     let start = d3.event.selection[0];
@@ -1455,7 +1517,7 @@ export class TestComponent implements OnInit {
   /**
    * Programatically set the radial vis brush extent
    */
-  chartBrushEnd(): void {
+  setRadialBrushExtent(): void {
     if (!d3.event.selection) return;
     let start = d3.event.selection[0];
     let end = d3.event.selection[1];
