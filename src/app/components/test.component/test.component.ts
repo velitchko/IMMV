@@ -87,8 +87,13 @@ export class TestComponent implements OnInit {
 
   // Frontend
   eventTypes: Array<string>;
+
   ordering: Array<string>;
   currentOrder: string;
+
+  grouping: Array<string>;
+  currentGrouping: string;
+  
   personSelected: boolean;
   selectedPerson: PersonOrganization;
   exiledFilter: boolean;
@@ -119,10 +124,6 @@ export class TestComponent implements OnInit {
     this.theta = 0;
     this.exiledFilter = false;
 
-    // use #4286f4 for the selection + .15 opacity or even .1 - .05
-    // TODO: fix selection radius position (doesn't correspond to mouse drag positions)
-    // TODO: add more info to side panel
-    // TODO: update event categories ('Benennung' is now a thing)
     this.colors = d3.scaleOrdinal()
       .domain(['street', 'exhibition', 'exile', 'prize', 'none'])
       .range(['red', 'blue', '#4F8874', 'purple', '#47DBA7']); // old none blue - #027cef
@@ -131,7 +132,7 @@ export class TestComponent implements OnInit {
       .domain(['Musician', 'Composer', 'Conductor', 'Author', 'Mixed'])
       .range(['#F286D2', '#36b3d0', '#FFE18D', '#ff0000', '#efefef']);
 
-    this.eventTypes = new Array<string>('street', 'exhibition');
+    this.eventTypes = new Array<string>('street', 'exhibition', 'prize', 'all');
 
     this.peopleAngles = new Map<string, number>();
     // meta map
@@ -145,6 +146,9 @@ export class TestComponent implements OnInit {
     this.ordering = Array.from(this.orderingMap.keys());
 
     this.currentOrder = 'Birth';
+
+    this.grouping = new Array<string>('None', 'Role', 'Gender');
+    this.currentGrouping = 'None';
 
     this.currentlySelectedEvents = new Array<any>();
     this.currentlySelectedPeople = new Array<any>();
@@ -223,13 +227,14 @@ export class TestComponent implements OnInit {
    * @param type optional parameter to check type for
    */
   filterEventsByType(type?: string): void {
-    this.data.forEach((d: any) => {
-      d.hidden = false;
-      if (d.color === 'exile' || d.color === 'none') return;
-      if (type) d.hidden = d.color === type ? false : true;
-    });
-
-    this.renderRadial(this.data);
+    if(!type) type = 'all';
+    this.radialG.selectAll('.event')
+                .transition()
+                .duration(250)
+                .attr('opacity', (d: any) => { 
+                  if(type === 'all') return 1;
+                  return (d.color !== type && d.color !== 'none') ? 0 : 1;
+                });
   }
 
   /**
@@ -349,7 +354,7 @@ export class TestComponent implements OnInit {
       if (exiled.has(d.personID)) return d;
     }).sort((a: any, b: any) => {
       return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
-    }), true);
+    }), { order: true });
   }
 
   /**
@@ -365,7 +370,22 @@ export class TestComponent implements OnInit {
 
     this.renderRadial(this.data.sort((a: any, b: any) => {
       return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
-    }), true);
+    }), { order: true });
+  }
+
+  updateGroup(): void {
+    if(this.currentGrouping === 'None') { 
+      this.updateOrder();
+      return;
+    }
+    let sortedMap = [...this.orderingMap.get(this.currentOrder).entries()]
+    .sort((a: any, b: any) => {
+      return a[1] - b[1];
+    }).map((d: any) => { return d[0]; });
+    
+    this.renderRadial(this.data.sort((a: any, b: any) => {
+      return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
+    }), { order: true, group: true }); // full update (order needs to be true to update the personAngleMap)
   }
 
   /**
@@ -419,6 +439,7 @@ export class TestComponent implements OnInit {
               dataPoint.startDate = moment(func.startDate);
               dataPoint.endDate = func.endDate ? moment(func.endDate) : moment(func.startdate);
               dataPoint.person = person.name;
+              dataPoint.personCategory = person.category;
               dataPoint.dateName = func.dateName;
               dataPoint.personID = person.objectId;
               // dataPoint.category = this.getRandomCategory();
@@ -440,6 +461,7 @@ export class TestComponent implements OnInit {
               dataPoint.endDate = moment(date.date);
               dataPoint.dateName = date.dateName;
               dataPoint.person = person.name;
+              dataPoint.personCategory = person.category;
               dataPoint.personID = person.objectId;
               // dataPoint.category = this.getRandomCategory();
               dataPoint.color = this.getEventType(date.dateName ? date.dateName : '');
@@ -623,13 +645,18 @@ export class TestComponent implements OnInit {
     this.getDataInRange(start, end);
   }
 
+  clearList(): void {
+    this.currentlySelectedPeople = new Array<any>();
+  }
+
+
   /**
    * Drag start event handler
    */
   radialDragStart(): void {
     let mouseClickX = (d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2);
     let mouseClickY = (d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2);
-
+    
     let sqrt = Math.ceil(Math.sqrt(mouseClickX * mouseClickX + mouseClickY * mouseClickY));
 
     let date = moment(this.rScale.invert(sqrt));
@@ -859,7 +886,8 @@ export class TestComponent implements OnInit {
    * - Post life span - defined as a dashed line with the class '.after-death'
    * - Events - lines / circles plotted on the timelines with the class '.event'
    */
-  renderRadial(data: Array<any>, orderUpdate: boolean = false): void {
+  renderRadial(data: Array<any>, update?: any): void {
+    
     let personNameArray = new Set<string>();
     let dataByPerson = d3.nest()
       .key((d: any) => {
@@ -867,6 +895,17 @@ export class TestComponent implements OnInit {
         return d.person;
       })
       .entries(data);
+
+    if(update && update.group){
+      dataByPerson.sort((a: any, b: any) => {
+        let personA = this.people.find((p: PersonOrganization) => { return p.name === a.key; });
+        let personB = this.people.find((p: PersonOrganization) => { return p.name === b.key; });
+  
+        let catA = this.getCategory(personA);
+        let catB = this.getCategory(personB);
+        return catA.localeCompare(catB);
+      });
+    }
 
     this.theta = 2 * Math.PI / dataByPerson.length;
 
@@ -899,10 +938,22 @@ export class TestComponent implements OnInit {
       .enter()
       .append('line')
       .attr('class', 'after-death')
-      .attr('x1', 0)
-      .attr('x2', 0)
-      .attr('y1', 0)
-      .attr('y2', 0)
+      .attr('x1', (d: any, i: number, n: any) => {
+        let x1 = d3.select(n[i]).attr('x1');
+        return x1 ? x1 : 0;
+      })
+      .attr('x2', (d: any, i: number, n: any) => {
+        let x2 = d3.select(n[i]).attr('x2');
+        return x2 ? x2 : 0;
+      })
+      .attr('y1', (d: any, i: number, n: any) => {
+        let y1 = d3.select(n[i]).attr('y1');
+        return y1 ? y1 : 0;
+      })
+      .attr('y2', (d: any, i: number, n: any) => {
+        let y2 = d3.select(n[i]).attr('y2');
+        return y2 ? y2 : 0;
+      })
       .merge(afterDeathLines)
       .transition().duration(750)
       .attr('stroke-dasharray', '2,2')
@@ -970,10 +1021,22 @@ export class TestComponent implements OnInit {
       .attr('class', 'before-death')
       .attr('stroke', '#A5F0D6')
       .attr('stroke-width', 8)
-      .attr('x1', 0)
-      .attr('x2', 0)
-      .attr('y1', 0)
-      .attr('y2', 0)
+      .attr('x1', (d: any, i: number, n: any) => {
+        let x1 = d3.select(n[i]).attr('x1');
+        return x1 ? x1 : 0;
+      })
+      .attr('x2', (d: any, i: number, n: any) => {
+        let x2 = d3.select(n[i]).attr('x2');
+        return x2 ? x2 : 0;
+      })
+      .attr('y1', (d: any, i: number, n: any) => {
+        let y1 = d3.select(n[i]).attr('y1');
+        return y1 ? y1 : 0;
+      })
+      .attr('y2', (d: any, i: number, n: any) => {
+        let y2 = d3.select(n[i]).attr('y2');
+        return y2 ? y2 : 0;
+      })
       .on('mouseover', (d: any) => {
         let birthDate = d.values.find((dd: any) => { return dd.dateName === 'Birth'; });
         let deathDate = d.values.find((dd: any) => { return dd.dateName === 'Death'; });
@@ -1000,7 +1063,7 @@ export class TestComponent implements OnInit {
       })
       .attr('x1', (d: any, i: number) => {
         if (!this.peopleAngles.has(d.key)) this.peopleAngles.set(d.key, i * this.theta);
-        if (orderUpdate) this.peopleAngles.set(d.key, i * this.theta);
+        if (update && update.order) this.peopleAngles.set(d.key, i * this.theta);
         let birthDate = d.values.find((dd: any) => dd.dateName === 'Birth' ? dd : null);
         let date = birthDate ? birthDate.startDate : Date.now();
         return this.getXCoordinates(date, i * this.theta);
@@ -1030,10 +1093,22 @@ export class TestComponent implements OnInit {
       .attr('stroke-width', 2)
       .attr('stroke-linecap', 'round')
       .attr('stroke-opacity', 1)
-      .attr('x1', 0)
-      .attr('x2', 0)
-      .attr('y1', 0)
-      .attr('y2', 0)
+      .attr('x1', (d: any, i: number, n: any) => {
+        let x1 = d3.select(n[i]).attr('x1');
+        return x1 ? x1 : 0;
+      })
+      .attr('x2', (d: any, i: number, n: any) => {
+        let x2 = d3.select(n[i]).attr('x2');
+        return x2 ? x2 : 0;
+      })
+      .attr('y1', (d: any, i: number, n: any) => {
+        let y1 = d3.select(n[i]).attr('y1');
+        return y1 ? y1 : 0;
+      })
+      .attr('y2', (d: any, i: number, n: any) => {
+        let y2 = d3.select(n[i]).attr('y2');
+        return y2 ? y2 : 0;
+      })
       .on('mouseover', (d: any) => {
         this.tooltip.nativeElement.style.display = 'block';
         this.tooltip.nativeElement.style.opacity = '1';
@@ -1175,6 +1250,7 @@ export class TestComponent implements OnInit {
         };
       })
       .entries(data);
+
     let lineGraph = d3.line<{ date: Date, count: number }>()
       .defined((d: any) => { return d.date; })
       .x((d: any) => {
@@ -1185,9 +1261,8 @@ export class TestComponent implements OnInit {
       })
       .curve(d3.curveMonotoneX);
 
-    // TODO: replace with dynamic height variables
     this.xChartScale = d3.scaleTime().range([0, this.timelineChart.nativeElement.clientWidth]).domain([this.MIN_DATE, this.MAX_DATE]);
-    this.yChartScale = d3.scaleLinear().range([100, 0]).domain([0, 20]).nice();
+    this.yChartScale = d3.scaleLinear().range([this.timelineChart.nativeElement.clientHeight, 0]).domain([0, 20]).nice();
     // special year
     let tickAmount = this.MAX_DATE.diff(this.MIN_DATE, 'years') / 10;
     let ticks = this.xChartScale.ticks(Math.floor(tickAmount));
@@ -1300,8 +1375,8 @@ export class TestComponent implements OnInit {
    * @param to end point of the temporal selection (Date object)
    */
   updateScales(from?: Date, to?: Date): void {
-    return; 
-    // TODO: Doesn't work as intended
+    // return; 
+    // // TODO: Doesn't work as intended
     if(!from) from = this.currentlySelectedMinDate;
     if(!to) to = this.currentlySelectedMaxDate;
     
