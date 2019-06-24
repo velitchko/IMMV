@@ -25,13 +25,17 @@
         <div id="options">
             <div>
                 <button mat-flat-button (click)="getList()"><mat-icon>list</mat-icon> show list</button>
+                <button mat-flat-button (click)="clearList()"><mat-icon>clear_all</mat-icon> hide list</button>
             </div>
             <div>
-                <button mat-flat-button (click)="updateScales()"><mat-icon>zoom_in</mat-icon> apply zoom</button>
+                <!-- <button mat-flat-button (click)="updateScales()"><mat-icon>zoom_in</mat-icon> apply zoom</button> -->
             </div>
             <div>
                 <mat-slide-toggle (change)="showExiled()">Exiled</mat-slide-toggle>
             </div>
+            <mat-radio-group class="filter-radio-group">
+                <mat-radio-button *ngFor="let e of eventTypes" (change)="filterEventsByType(e)" [value]="e">{{ e }}</mat-radio-button>
+            </mat-radio-group>
             <mat-form-field>
                 <mat-label>Order by</mat-label>
                 <mat-select [(value)]="currentOrder" placeholder="Order by" (selectionChange)="updateOrder()">
