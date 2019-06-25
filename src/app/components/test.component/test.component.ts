@@ -24,7 +24,6 @@ export class TestComponent implements OnInit {
   @ViewChild('brushHolder') brushContainer: ElementRef;
   @ViewChild('mapHolder') mapContainer: ElementRef;
   @ViewChild('tooltip') tooltip: ElementRef;
-
   // display range
   currentlySelectedMinDate: Date;           // currently displayed min date (selection)
   currentlySelectedMaxDate: Date;           // currently displayed max date (selection)
@@ -67,7 +66,10 @@ export class TestComponent implements OnInit {
   // internal data structures
   orderingMap: Map<string, Map<string, any>>;
   peopleAngles: Map<string, number>;
-  mouseBehavior: boolean;
+  
+  
+
+  countByYear: Array<any>;
 
   margin = {                                 // margin config for the svg's
     top: 50,
@@ -87,6 +89,10 @@ export class TestComponent implements OnInit {
   isBrowser: boolean;
 
   // Frontend
+  mouseBehavior: boolean;
+
+  brushBehavior: boolean; 
+
   eventTypes: Array<string>;
 
   ordering: Array<string>;
@@ -97,6 +103,7 @@ export class TestComponent implements OnInit {
 
   personSelected: boolean;
   selectedPerson: PersonOrganization;
+
   exiledFilter: boolean;
 
   // Autocomplete
@@ -111,7 +118,9 @@ export class TestComponent implements OnInit {
    */
   constructor(private db: DatabaseService, @Inject('WINDOW') private window: any, @Inject(PLATFORM_ID) private _platformId: Object) {
     this.personSelected = false;
+
     this.mouseBehavior = true;
+    this.brushBehavior = true;
 
     this.peopleCtrl = new FormControl;
     this.filteredPeople = this.peopleCtrl.valueChanges
@@ -757,6 +766,10 @@ export class TestComponent implements OnInit {
       .duration(250)
       .attr('stroke', '#A5F0D6')
       .attr('opacity', 1);
+
+    d3.select('#count-tooltip')
+      .style('opacity', 0)
+      .html('');
   }
 
   /**
@@ -774,6 +787,22 @@ export class TestComponent implements OnInit {
    */
   clearList(): void {
     this.currentlySelectedPeople = new Array<any>();
+  }
+
+  showBrush(): void {
+    d3.select('.selection').style('opacity', 1);
+    d3.select('.radial-brush').style('opacity', 1);
+  }
+
+  hideBrush(): void {
+    d3.select('.selection').style('opacity', 0);
+    d3.select('.radial-brush').style('opacity', 0);
+  }
+
+  toggleBrushBehavior(): void {
+    this.brushBehavior = !this.brushBehavior;
+
+    this.brushBehavior ? this.showBrush() : this.hideBrush();
   }
 
   toggleMouseBehavior(): void {
@@ -1282,6 +1311,9 @@ export class TestComponent implements OnInit {
       .attr('y2', 0)
       .attr('stroke', (d: any) => { return '#ffffff'; })//this.colors(d.key); })
       .remove();
+
+    // brush above things
+    d3.select('.radial-brush').raise();
   }
 
   /**
@@ -1290,7 +1322,7 @@ export class TestComponent implements OnInit {
    */
   renderChart(data: Array<any>): void {
     //'street', 'exhibition', 'exile', 'prize', 'none'
-    let countByYear = d3.nest<any, any>()
+    this.countByYear = d3.nest<any, any>()
       .key((d: any) => {
         return moment(d.startDate).year().toString();
       })
@@ -1346,21 +1378,21 @@ export class TestComponent implements OnInit {
     // position text
     this.chartG.selectAll('.tick text').attr('y', 10).attr('dy', 0);
 
-    let exhibitionData = countByYear.map((d: any) => {
+    let exhibitionData = this.countByYear.map((d: any) => {
       return {
         date: moment(d.key).toDate(),
         count: d.value['exhibition']
       }
     });
 
-    let streetData = countByYear.map((d: any) => {
+    let streetData = this.countByYear.map((d: any) => {
       return {
         date: moment(d.key).toDate(),
         count: d.value['street']
       }
     });
 
-    let prizeData = countByYear.map((d: any) => {
+    let prizeData = this.countByYear.map((d: any) => {
       return {
         date: moment(d.key).toDate(),
         count: d.value['prize']
@@ -1414,8 +1446,7 @@ export class TestComponent implements OnInit {
     // brush
     this.chartBrush = d3.brushX()
       .extent([[0, 0], [this.xChartScale.range()[1], 200]]) // 0,0 - width, height
-      // .on('brush', this.chartBrushing.bind(this))
-      .on('end', this.setRadialBrushExtent.bind(this));
+      .on('end', this.brushing.bind(this));
     this.chartG.append('g')
       .attr('class', 'brush')
       .call(this.chartBrush);
@@ -1467,10 +1498,7 @@ export class TestComponent implements OnInit {
     d3.select('.brush').call(this.chartBrush.move, [startX, endX]);
   }
 
-  /**
-   * Event handler for the timeline brush
-   * Triggered when a selection has been made
-   */
+ 
   chartBrushing(): void {
     if (!d3.event.selection) return;
     let start = d3.event.selection[0];
@@ -1479,13 +1507,15 @@ export class TestComponent implements OnInit {
     let startDate = this.xChartScale.invert(start);
     let endDate = this.xChartScale.invert(end);
 
+
     this.drawDonut(this.rScale(startDate), this.rScale(endDate));
   }
 
   /**
-   * Programatically set the radial vis brush extent
+   * Event handler for the timeline brush
+   * Triggered when a selection has been made
    */
-  setRadialBrushExtent(): void {
+  brushing(): void {
     if (!d3.event.selection) return;
     let start = d3.event.selection[0];
     let end = d3.event.selection[1];
@@ -1495,7 +1525,34 @@ export class TestComponent implements OnInit {
     // update date selection
     this.currentlySelectedMinDate = startDate;
     this.currentlySelectedMaxDate = endDate;
+
+    let exhibitionCount = 0;
+    let streetCount = 0;
+    let prizeCount = 0;
+    this.countByYear.forEach((c: any) => {
+      if(moment(c.key).isBetween(this.currentlySelectedMinDate, this.currentlySelectedMaxDate, 'year')) {
+        exhibitionCount += c.value['exhibition'];
+        streetCount += c.value['street'];
+        prizeCount += c.value['prize'];
+      }
+    })
+    
     // update radial selection
+    let width = end-start;
+    let tooltipBBox = (d3.select('#count-tooltip').node() as any).getBoundingClientRect();
+    
+
+    d3.select('#count-tooltip')
+            .style('left', `${start + width/2 - tooltipBBox.width/2}px`)
+            .style('bottom', `calc(${this.timelineChart.nativeElement.clientHeight}px + 5px)`) // 20px from tl
+            .style('opacity', 1)
+            .html(
+              `<p style="color: ${this.colors('exhibition')}">Exhibitions ${exhibitionCount}</p>
+              <p style="color: ${this.colors('street')}">Street-namings ${streetCount}</p>
+              <p style="color: ${this.colors('prize')}">Prizes ${prizeCount}</p>
+              `
+            );
+
     this.drawDonut(this.rScale(startDate), this.rScale(endDate));
   }
 
