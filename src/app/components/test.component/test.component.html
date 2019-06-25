@@ -29,6 +29,7 @@
             </div>
             <div>
                 <button mat-flat-button (click)="clearTimeSelection()"><mat-icon>refresh</mat-icon> clear selection</button>
+                <button mat-flat-button (click)="toggleMouseBehavior()"><mat-icon>{{ mouseBehavior ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> toggle mouse behavior</button>
                 <!-- <button mat-flat-button (click)="updateScales()"><mat-icon>zoom_in</mat-icon> apply zoom</button> -->
             </div>
             <div>
