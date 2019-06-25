@@ -30,11 +30,12 @@
             <div>
                 <button mat-flat-button (click)="clearTimeSelection()"><mat-icon>refresh</mat-icon> clear selection</button>
                 <button mat-flat-button (click)="toggleMouseBehavior()"><mat-icon>{{ mouseBehavior ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> toggle mouse behavior</button>
+                <button mat-flat-button (click)="toggleBrushBehavior()"><mat-icon>{{ brushBehavior ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> toggle brush visibility</button>
                 <!-- <button mat-flat-button (click)="updateScales()"><mat-icon>zoom_in</mat-icon> apply zoom</button> -->
             </div>
-            <div>
-                <mat-slide-toggle (change)="showExiled()">Exiled</mat-slide-toggle>
-            </div>
+            <!-- <div>
+                <mat-slide-toggle (change)="toggleBrush()">Brush</mat-slide-toggle>
+            </div> -->
             <mat-radio-group class="filter-radio-group">
                 <mat-radio-button *ngFor="let e of eventTypes" (change)="filterEventsByType(e)" [value]="e">{{ e }}</mat-radio-button>
             </mat-radio-group>
@@ -94,3 +95,4 @@
 </mat-sidenav-container>
 
 <div id="tooltip" #tooltip></div>
+<div id="count-tooltip"></div>
