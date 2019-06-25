@@ -243,7 +243,7 @@ export class TestComponent implements OnInit {
         .duration(250)
         .attr('opacity', 1);
     });
-    
+
     if (type !== 'all') {
       let hide = this.eventTypes.filter((t: string) => { return (t !== type) && (t !== 'all'); });
       hide.forEach((type: string) => {
@@ -625,6 +625,30 @@ export class TestComponent implements OnInit {
       .append('svg')
       .attr('width', this.timelineChart.nativeElement.clientWidth)
       .attr('height', 200); // 200px
+
+    this.radialG.append('circle')
+      .attr('class', 'circle-grid')
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('r', 0);
+
+    this.radialG
+      .append('text')
+      .attr('class', 'text-inside')
+      .attr('text-anchor', 'middle')
+      .attr('opacity', 0)
+      .attr('x', 0)
+      .attr('y', 0)
+      .attr('dy', '.4em')
+      .style('font-size', '25px')
+      .text('');
+
+    this.timelineSVG.on('mousemove', (d: any) => {
+      this.drawGridCircle();
+    });
+
+    // add radial brush
+    this.radialG.append('path').attr('class', 'radial-brush');
   }
 
   /**
@@ -663,7 +687,7 @@ export class TestComponent implements OnInit {
    * Clears the radial and timeline brush 
    * Resets the currently selected min and max dates back to default
    */
-  clearTimeSelection() { 
+  clearTimeSelection() {
     d3.select('.brush').call(this.chartBrush.move, null);
     this.drawDonut(null, null);
 
@@ -671,16 +695,16 @@ export class TestComponent implements OnInit {
     this.currentlySelectedMinDate = this.MIN_DATE.toDate();
 
     this.radialG.selectAll('.event') // after death / event line
-                .transition()
-                .duration(250)
-                .attr('stroke', (d: any) => { return this.colors(d.color); })
-                .attr('opacity', 1);
+      .transition()
+      .duration(250)
+      .attr('stroke', (d: any) => { return this.colors(d.color); })
+      .attr('opacity', 1);
 
     this.radialG.selectAll('.before-death')
-                .transition()
-                .duration(250)
-                .attr('stroke', '#A5F0D6')
-                .attr('opacity', 1);
+      .transition()
+      .duration(250)
+      .attr('stroke', '#A5F0D6')
+      .attr('opacity', 1);
   }
 
   /**
@@ -802,36 +826,36 @@ export class TestComponent implements OnInit {
 
     // also highlight the people in the vis
     this.radialG.selectAll('.event') // after death / event line
-                .transition()
-                .duration(250)
-                .attr('stroke', (d: any) => {
-                  return d.startDate.isBetween(start, end, 'year') ? this.colors(d.color) : '#777777';
-                })
-                .attr('opacity', (d: any) => {
-                  return d.startDate.isBetween(start, end, 'year') ? 1 : .25;
-                });
+      .transition()
+      .duration(250)
+      .attr('stroke', (d: any) => {
+        return d.startDate.isBetween(start, end, 'year') ? this.colors(d.color) : '#777777';
+      })
+      .attr('opacity', (d: any) => {
+        return d.startDate.isBetween(start, end, 'year') ? 1 : .25;
+      });
 
     this.radialG.selectAll('.before-death')
-                .transition()
-                .duration(250)
-                .attr('stroke', (d: any) => {
-                  // find bday
-                  let bday = d.values.filter((dd: any) => { return dd.dateName === 'Birth'; })[0];
-                  if(bday && bday.startDate) {
-                    return bday.startDate.isBetween(start, end, 'year') ? '#A5F0D6' : '#777777';
-                  } else {
-                    return '#A5F0D6';
-                  }
-                })
-                .attr('opacity', (d: any) => {
-                  // find bday
-                  let bday = d.values.filter((dd: any) => { return dd.dateName === 'Birth'; })[0];
-                  if(bday && bday.startDate) {
-                    return bday.startDate.isBetween(start, end, 'year') ? 1 : .25;
-                  } else {
-                    return 1;
-                  }
-                });
+      .transition()
+      .duration(250)
+      .attr('stroke', (d: any) => {
+        // find bday
+        let bday = d.values.filter((dd: any) => { return dd.dateName === 'Birth'; })[0];
+        if (bday && bday.startDate) {
+          return bday.startDate.isBetween(start, end, 'year') ? '#A5F0D6' : '#777777';
+        } else {
+          return '#A5F0D6';
+        }
+      })
+      .attr('opacity', (d: any) => {
+        // find bday
+        let bday = d.values.filter((dd: any) => { return dd.dateName === 'Birth'; })[0];
+        if (bday && bday.startDate) {
+          return bday.startDate.isBetween(start, end, 'year') ? 1 : .25;
+        } else {
+          return 1;
+        }
+      });
   }
 
   /**
@@ -940,27 +964,36 @@ export class TestComponent implements OnInit {
       });
   }
 
-  // /**
-  //  * Mouseover handler for the circle axis grid
-  //  * @param year the year that is being mouseovered
-  //  */
-  // gridMouseover(year: Date): void {
-  //   this.radialG.append('circle')
-  //     .attr('class', 'circle-axis-tooltip')
-  //     .attr('cx', 0)
-  //     .attr('cy', 0)
-  //     .attr('r', this.rScale(year))
-  //     .attr('stroke', '#828282')
-  //     .attr('stroke-width', '4')
-  //     .attr('fill', 'none')
-  // }
+  /**
+   * Mouseover handler for the circle axis grid
+   */
+  drawGridCircle(): void {
 
-  // /**
-  //  * Mouseout handle for the circle grid axis
-  //  */
-  // gridMouseout(): void {
-  //   this.radialG.select('.circle-axis-tooltip').remove();
-  // }
+    let mouseX = (d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2);
+    let mouseY = (d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2);
+
+    let radius = Math.ceil(Math.sqrt(mouseX * mouseX + mouseY * mouseY));
+    let date = this.rScale.invert(radius);
+
+
+    if (moment(date).isBefore(this.MIN_DATE)) date = this.MIN_DATE.toDate();
+    if (moment(date).isAfter(this.MAX_DATE)) date = this.MAX_DATE.toDate();
+
+    radius = this.rScale(date);
+
+    this.radialG.select('.circle-grid')
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('r', radius)
+      .attr('stroke-width', '2px')
+      .attr('stroke', '#777777')
+      .attr('fill', 'none')
+      .raise(); //bring it up
+
+    this.radialG.select('.text-inside')
+      .attr('opacity', 1)
+      .text(`${moment(date).year()}`);
+  }
 
 
   /**
@@ -1003,100 +1036,6 @@ export class TestComponent implements OnInit {
     let temporalData = d3.timeYear.range(this.MIN_DATE.toDate(), this.MAX_DATE.toDate(), 10);
     temporalData.push(moment('01-01-1945').toDate());
 
-    let textInside = this.radialG
-      .append('text')
-      .attr('class', 'text-inside')
-      .attr('text-anchor', 'middle')
-      .attr('opacity', 0)
-      .attr('x', 0)
-      .attr('y', 0)
-      .attr('dy', '.4em')
-      .style('font-size', '25px')
-      .text('');
-
-    /*******************
-    * D3 ENTER + MERGE STEP *
-    *******************/
-    // let afterDeathLines = this.radialG.selectAll('.after-death').data(dataByPerson);
-    // afterDeathLines
-    //   .enter()
-    //   .append('line')
-    //   .attr('class', 'after-death')
-    //   .attr('x1', (d: any, i: number, n: any) => {
-    //     let x1 = d3.select(n[i]).attr('x1');
-    //     return x1 ? x1 : 0;
-    //   })
-    //   .attr('x2', (d: any, i: number, n: any) => {
-    //     let x2 = d3.select(n[i]).attr('x2');
-    //     return x2 ? x2 : 0;
-    //   })
-    //   .attr('y1', (d: any, i: number, n: any) => {
-    //     let y1 = d3.select(n[i]).attr('y1');
-    //     return y1 ? y1 : 0;
-    //   })
-    //   .attr('y2', (d: any, i: number, n: any) => {
-    //     let y2 = d3.select(n[i]).attr('y2');
-    //     return y2 ? y2 : 0;
-    //   })
-    //   .merge(afterDeathLines)
-    //   .transition().duration(750)
-    //   .attr('stroke-dasharray', '2,2')
-    //   .attr('stroke', '#efefef')
-    //   .attr('stroke-width', '2')
-    //   // .attr('stroke-linecap', 'round')
-    //   // .attr('stroke-opacity', 0.5)
-    //   .attr('x1', (d: any, i: number) => {
-    //     return this.getXCoordinates(this.MIN_DATE.toDate(), i * this.theta);
-    //   })
-    //   .attr('x2', (d: any, i: number) => {
-    //     return this.getXCoordinates(this.MAX_DATE.toDate(), i * this.theta);
-    //   })
-    //   .attr('y1', (d: any, i: number) => {
-    //     return this.getYCoordinates(this.MIN_DATE.toDate(), i * this.theta);
-    //   })
-    //   .attr('y2', (d: any, i: number) => {
-    //     return this.getYCoordinates(this.MAX_DATE.toDate(), i * this.theta);
-    //   });
-
-    // TODO: Improve this by creating a mouseover/mouseout handler
-    // that creates one element on demaind regardless where the users cursor is
-    // and displays date in the center of the circle
-    // instead of trying to mouseover the grid lines
-    // let circleAxis = this.radialG.selectAll('.circle-axis').data(temporalData);
-    // circleAxis
-    //   .enter()
-    //   .append('circle')
-    //   .attr('class', 'circle-axis')
-    //   .attr('data-year', (d: any) => { return moment(d).year(); })
-    //   .attr('cx', 0)
-    //   .attr('cy', 0)
-    //   .attr('r', 0)
-    //   .attr('fill', 'none')
-    //   .attr('stroke-width', 0)
-    //   .attr('stroke', '#fff')
-    //   .on('mouseover', (d: any, i: number, n: any) => {
-    //     this.gridMouseover(d);
-    //     textInside
-    //       .attr('opacity', 1)
-    //       .text(moment(d).year());
-    //   })
-    //   .on('mouseout', (d: any, i: number, n: any) => {
-    //     this.gridMouseout();
-    //     textInside
-    //       .attr('opacity', 0)
-    //       .text('');
-    //     // this.g.select('.circle-axis[data-year="1945"]').attr('stroke', '#828282').attr('stroke-width', 4);
-    //   })
-    //   .merge(circleAxis)
-    //   .transition().duration(750)
-    //   .attr('stroke-dasharray', '2,2')
-    //   .attr('stroke', (d: any) => {
-    //     return moment(d).isSame(moment('1945'), 'year') ? '#828282' : '#efefef';
-    //   })
-    //   .attr('stroke-width', '2')
-    //   .attr('cx', 0)
-    //   .attr('cy', 0)
-    //   .attr('r', (d: any) => { return Math.abs(this.rScale(d)); });
 
     let beforeDeathLines = this.radialG.selectAll('.before-death').data(dataByPerson);
     beforeDeathLines
@@ -1252,7 +1191,7 @@ export class TestComponent implements OnInit {
         this.tooltip.nativeElement.style.display = 'none';
         this.tooltip.nativeElement.style.opacity = '0';
       })
-      .on('click', (d: any) => { 
+      .on('click', (d: any) => {
         this.displayPersonDetails(d.key);
       })
       .merge(categoricalBars)
@@ -1264,19 +1203,6 @@ export class TestComponent implements OnInit {
         return this.categoricalColors((person as any).category);
       });
 
-    // add radial brush
-    this.radialG.append('path').attr('class', 'radial-brush');
-
-    /*******************
-      * D3 EXIT STEP *
-    *******************/
-    // circleAxis.exit()
-    //   .transition().duration(750)
-    //   .attr('cx', 0)
-    //   .attr('cy', 0)
-    //   .attr('r', 0)
-    //   .remove();
-
     beforeDeathLines.exit()
       .transition().duration(750)
       .attr('x1', 0)
@@ -1285,21 +1211,6 @@ export class TestComponent implements OnInit {
       .attr('y2', 0)
       .attr('stroke', (d: any) => { return '#ffffff'; })//this.colors(d.key); })
       .remove();
-
-    // afterDeathLines.exit()
-    //   .transition().duration(750)
-    //   .attr('x1', 0)
-    //   .attr('x2', 0)
-    //   .attr('y1', 0)
-    //   .attr('y2', 0)
-    //   .attr('stroke', (d: any) => { return '#ffffff'; })//this.colors(d.key); })
-    //   .remove();
-
-    // reorderingHooks.exit()
-    //   .transition().duration(750)
-    //   .attr('cx', 0)
-    //   .attr('cy', 0)
-    //   .remove();
 
     categoricalBars.exit()
       .transition().duration(750)
