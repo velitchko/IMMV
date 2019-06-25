@@ -386,9 +386,16 @@ export class TestComponent implements OnInit {
         return a[1] - b[1];
       }).map((d: any) => { return d[0]; });
 
+    let update = {
+      order: true
+    };
+
+    // if a grouping is selected preserve it
+    if(this.currentGrouping !== 'None') update['group'] = true;
+
     this.renderRadial(this.data.sort((a: any, b: any) => {
       return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
-    }), { order: true });
+    }), update);
   }
 
   /**
