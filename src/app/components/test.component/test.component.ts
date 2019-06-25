@@ -205,6 +205,7 @@ export class TestComponent implements OnInit {
    * @param closed - boolean indicating if a person is selected or de-selected
    */
   spinTo(closed: boolean = false): void {
+    this.toggleMouseBehavior();
     if (closed) {
       // rotate back by -Math.PI
       this.timelineSVG
@@ -336,31 +337,36 @@ export class TestComponent implements OnInit {
 
       return cat;
     } else if(groupingScheme === 'Exiled') {
-      let cat = person.functions.map((f: any) => { console.log(f); return f.dateName; }).includes('Exil') ? 'Exiled' : 'Not-Exiled';
+      let cat = person.functions.map((f: any) => { return f.dateName; }).includes('Exil') ? 'Exiled' : 'Not-Exiled';
       return cat;
     } else if(groupingScheme === 'Born after 1945') {
       let bday: moment.Moment;
-      person.dates.forEach((d: any) => {
-        if(d.dateName === 'Birth') { 
-          bday = moment(d.date);
-          return;
+      
+      for(let i = 0; i < person.dates.length; i++) {
+        let date = person.dates[i];
+
+        if(date.dateName === 'Birth') {
+          bday = moment(date.date);
+          return bday.isSameOrAfter('1945', 'year') ? 'Born after 1945' : 'Born before 1945';
         }
-      });
-      if(!bday) { 
-        console.log(person); 
-        return 'Born after 1945';
       }
-      return bday.isSameOrAfter(1945, 'year') ? 'Born after 1945' : 'Born before 1945';
+      if(!bday) { 
+        return '?';
+      }
     } else if(groupingScheme === 'Died before 1938') {
       let dday: moment.Moment;
-      person.dates.forEach((d: any) => {
-        if(d.dateName === 'Death') dday = moment(d.date);
-      });
-      if(!dday) { 
-        console.log(person); 
-        return 'Died after 1938';
+
+      for(let i = 0; i < person.dates.length; i++) {
+        let date = person.dates[i];
+
+        if(date.dateName === 'Death') {
+          dday = moment(date.date);
+          return dday.isSameOrBefore('1938', 'year') ? 'Died before 1938' : 'Died after 1938';
+        }
       }
-      return dday.isSameOrBefore(1938, 'year') ? 'Died before 1938' : 'Died after 1938';
+      if(!dday) { 
+        return '?';
+      }
     }
     // return this.categoricalArray[Math.floor(Math.random() * 3)];
   }
@@ -616,7 +622,6 @@ export class TestComponent implements OnInit {
     this.personSelected = true;
     this.selectedPerson = this.people.find((p: PersonOrganization) => { return p.name === name; });
     this.spinTo(); // notify that we have opened the side panel
-
   }
 
   /**
@@ -688,6 +693,14 @@ export class TestComponent implements OnInit {
 
     // add radial brush
     this.radialG.append('path').attr('class', 'radial-brush');
+
+    this.radialG.append('circle')
+                .attr('cx', 0)
+                .attr('cy', 0)
+                .attr('r', () => { return this.rScale(moment('1945').toDate()); })
+                .attr('stroke', '#777777')
+                .attr('stroke-width', '4px')
+                .attr('fill', 'none');
   }
 
   /**
