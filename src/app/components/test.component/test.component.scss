@@ -40,6 +40,24 @@ $timeline-width: 100px;
     overflow-x: hidden;
 }
 
+#count-tooltip {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 150px;
+    height: 50px;
+    opacity: 0;
+    z-index: 1050;
+    transition: all .25s ease-in-out;
+    // border: 1px solid #777777;
+    background-color: white;
+    border-radius: 5px;
+    padding: .5em;
+}
+::ng-deep #count-tooltip > p {
+    margin: 0;
+}
+
 .filter-radio-group {
     display: flex;
     flex-direction: column;
