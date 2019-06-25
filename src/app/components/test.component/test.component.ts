@@ -149,7 +149,7 @@ export class TestComponent implements OnInit {
 
     this.currentOrder = 'Birth';
 
-    this.grouping = new Array<string>('None', 'Role', 'Gender');
+    this.grouping = new Array<string>('None', 'Role', 'Exiled', 'Born after 1945', 'Died before 1938');
     this.currentGrouping = 'None';
 
     this.currentlySelectedEvents = new Array<any>();
@@ -307,37 +307,61 @@ export class TestComponent implements OnInit {
   /**
    * Retrieve the persons category
    * @param person person/organization object
+   * @param groupingScheme defines the current grouping
    */
-  getCategory(person: PersonOrganization): string {
+  getCategory(person: PersonOrganization, groupingScheme: string): string {
     let cat = '';
 
-    // Musician, Performer, Vocalist - 1 Cat
-    // Author - 1 cat
-    // Composer - 1 cat
-    // Conductor - 1 cat
-    // Mixed - 1 cat
-    let fallsIntoCat = 0;
+    if(groupingScheme === 'Role' || groupingScheme === 'None') { // default
+      let fallsIntoCat = 0;
 
-    if (person.roles.includes('Musician') || person.roles.includes('Performer') || person.roles.includes('Vocalist')) {
-      cat = 'Musician';
-      fallsIntoCat++;
-    }
-    if (person.roles.includes('Author')) {
-      cat = 'Author';
-      fallsIntoCat++;
-    }
-    if (person.roles.includes('Composer')) {
-      cat = 'Composer'
-      fallsIntoCat++;
-    }
-    if (person.roles.includes('Conductor')) {
-      cat = 'Conductor';
-      fallsIntoCat++;
-    }
+      if (person.roles.includes('Musician') || person.roles.includes('Performer') || person.roles.includes('Vocalist')) {
+        cat = 'Musician';
+        fallsIntoCat++;
+      }
+      if (person.roles.includes('Author')) {
+        cat = 'Author';
+        fallsIntoCat++;
+      }
+      if (person.roles.includes('Composer')) {
+        cat = 'Composer'
+        fallsIntoCat++;
+      }
+      if (person.roles.includes('Conductor')) {
+        cat = 'Conductor';
+        fallsIntoCat++;
+      }
 
-    if (fallsIntoCat > 1) return 'Mixed';
+      if (fallsIntoCat > 1) return 'Mixed';
 
-    return cat;
+      return cat;
+    } else if(groupingScheme === 'Exiled') {
+      let cat = person.functions.map((f: any) => { console.log(f); return f.dateName; }).includes('Exil') ? 'Exiled' : 'Not-Exiled';
+      return cat;
+    } else if(groupingScheme === 'Born after 1945') {
+      let bday: moment.Moment;
+      person.dates.forEach((d: any) => {
+        if(d.dateName === 'Birth') { 
+          bday = moment(d.date);
+          return;
+        }
+      });
+      if(!bday) { 
+        console.log(person); 
+        return 'Born after 1945';
+      }
+      return bday.isSameOrAfter(1945, 'year') ? 'Born after 1945' : 'Born before 1945';
+    } else if(groupingScheme === 'Died before 1938') {
+      let dday: moment.Moment;
+      person.dates.forEach((d: any) => {
+        if(d.dateName === 'Death') dday = moment(d.date);
+      });
+      if(!dday) { 
+        console.log(person); 
+        return 'Died after 1938';
+      }
+      return dday.isSameOrBefore(1938, 'year') ? 'Died before 1938' : 'Died after 1938';
+    }
     // return this.categoricalArray[Math.floor(Math.random() * 3)];
   }
 
@@ -406,6 +430,13 @@ export class TestComponent implements OnInit {
    * If 'None' is selected revert to default ordering
    */
   updateGroup(): void {
+    // update the categorical attribute of people
+    // used by the categoricalArc in the renderRadial() function
+    this.people.forEach((p: PersonOrganization) => {
+      (p as any).category = this.getCategory(p, this.currentGrouping);
+    });
+
+    // this.people.forEach((p: PersonOrganization) => { console.log((p as any).category); });
     if (this.currentGrouping === 'None') {
       this.updateOrder();
       return;
@@ -436,7 +467,7 @@ export class TestComponent implements OnInit {
         person.roles.forEach((r: any) => {
           roles.add(r);
         });
-        person.category = this.getCategory(person);
+        person.category = this.getCategory(person, this.currentGrouping);
         themePromiseEventArray.push(
           this.db.getEventsByPersonOrganization(person)
             .then((eventsByPerson: Array<Event>) => {
@@ -453,7 +484,6 @@ export class TestComponent implements OnInit {
               };
             })
         );
-
       });
 
       Promise.all(themePromiseEventArray).then((peopleEvents: Array<any>) => {
@@ -982,7 +1012,7 @@ export class TestComponent implements OnInit {
    * Mouseover handler for the circle axis grid
    */
   drawGridCircle(): void {
-
+    if(!this.mouseBehavior) return;
     let mouseX = (d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2);
     let mouseY = (d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2);
 
@@ -1032,8 +1062,8 @@ export class TestComponent implements OnInit {
         let personA = this.people.find((p: PersonOrganization) => { return p.name === a.key; });
         let personB = this.people.find((p: PersonOrganization) => { return p.name === b.key; });
 
-        let catA = this.getCategory(personA);
-        let catB = this.getCategory(personB);
+        let catA = this.getCategory(personA, this.currentGrouping);
+        let catB = this.getCategory(personB, this.currentGrouping);
         return catA.localeCompare(catB);
       });
     }
