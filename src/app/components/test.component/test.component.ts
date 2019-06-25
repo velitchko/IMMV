@@ -67,6 +67,7 @@ export class TestComponent implements OnInit {
   // internal data structures
   orderingMap: Map<string, Map<string, any>>;
   peopleAngles: Map<string, number>;
+  mouseBehavior: boolean;
 
   margin = {                                 // margin config for the svg's
     top: 50,
@@ -110,6 +111,7 @@ export class TestComponent implements OnInit {
    */
   constructor(private db: DatabaseService, @Inject('WINDOW') private window: any, @Inject(PLATFORM_ID) private _platformId: Object) {
     this.personSelected = false;
+    this.mouseBehavior = true;
 
     this.peopleCtrl = new FormControl;
     this.filteredPeople = this.peopleCtrl.valueChanges
@@ -731,6 +733,11 @@ export class TestComponent implements OnInit {
     this.currentlySelectedPeople = new Array<any>();
   }
 
+  toggleMouseBehavior(): void {
+    this.mouseBehavior = !this.mouseBehavior;
+    this.radialG.select('.circle-grid').attr('opacity', () => { return this.mouseBehavior ? 1 : 0; });
+    this.radialG.select('.text-inside').attr('opacity', () => { return this.mouseBehavior ? 1 : 0; });
+  }
 
   /**
    * Drag start event handler
