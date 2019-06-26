@@ -40,7 +40,8 @@ export class TestComponent implements OnInit {
   timelineSVG: any;                            // timeline svg holder
   timeChartSVG: any;                           // timeline chart
   brushSVG: any;                               // brush svg holder
-  chartBrush: d3.BrushBehavior<any>;               // d3 brush for the chart
+  chartBrush: d3.BrushBehavior<any>;           // d3 brush for the chart
+  legendSVG: any;                              // legend for the categorical values
   radialG: any;                                // radial group wrapper
   chartG: any;                                 // timeline group wrapper
   xScale: d3.ScaleTime<number, number>;        // timeline extent
@@ -140,8 +141,9 @@ export class TestComponent implements OnInit {
       .range(['red', 'blue', '#4F8874', 'purple', '#47DBA7']); // old none blue - #027cef
 
     this.categoricalColors = d3.scaleOrdinal()
-      .domain(['Musician', 'Composer', 'Conductor', 'Author', 'Mixed'])
-      .range(['#F286D2', '#36b3d0', '#FFE18D', '#ff0000', '#efefef']);
+        .range(d3.schemeSet2);
+      // .domain(['Musician', 'Composer', 'Conductor', 'Author', 'Mixed'])
+      // .range(['#F286D2', '#36b3d0', '#FFE18D', '#ff0000', '#efefef']);
 
     this.eventTypes = new Array<string>('street', 'exhibition', 'prize', 'all');
 
@@ -700,6 +702,9 @@ export class TestComponent implements OnInit {
       this.drawGridCircle();
     });
 
+    this.legendSVG = this.radialG.append('g')
+                                 .attr('class', 'legend');
+
     // add radial brush
     this.radialG.append('path').attr('class', 'radial-brush');
 
@@ -1090,7 +1095,6 @@ export class TestComponent implements OnInit {
    * - Events - lines / circles plotted on the timelines with the class '.event'
    */
   renderRadial(data: Array<any>, update?: any): void {
-
     let personNameArray = new Set<string>();
     let dataByPerson = d3.nest()
       .key((d: any) => {
@@ -1103,7 +1107,6 @@ export class TestComponent implements OnInit {
       dataByPerson.sort((a: any, b: any) => {
         let personA = this.people.find((p: PersonOrganization) => { return p.name === a.key; });
         let personB = this.people.find((p: PersonOrganization) => { return p.name === b.key; });
-
         let catA = this.getCategory(personA, this.currentGrouping);
         let catB = this.getCategory(personB, this.currentGrouping);
         return catA.localeCompare(catB);
@@ -1246,7 +1249,7 @@ export class TestComponent implements OnInit {
       .attr('y1', (d: any, i: number) => { return this.getYCoordinates(d.startDate.toDate(), this.peopleAngles.get(d.person)); })
       .attr('y2', (d: any, i: number) => { return this.getYCoordinates(d.endDate.toDate(), this.peopleAngles.get(d.person)); });
 
-
+    let categories = new Set<string>();
     let categoricalArc = d3.arc();
     categoricalArc
       .innerRadius(() => { return this.rScale.range()[1] + 5; })
@@ -1286,8 +1289,66 @@ export class TestComponent implements OnInit {
       .attr('stroke', '#828282')
       .attr('fill', (d: any) => {
         let person = this.people.find((p: any) => { return p.name === d.key; });
+        categories.add((person as any).category);
         return this.categoricalColors((person as any).category);
       });
+      // Legend
+      let legendDots = this.legendSVG.selectAll('.dots').data([... categories].sort());
+      legendDots.enter()
+                .append('rect')
+                .attr('class', 'dots')
+                // .transition()
+                // .duration(250)
+                .merge(legendDots)
+                .attr('x', -500)
+                .attr('y', (d: any, i: any) => {
+                  return 340 + i*25;
+                })
+                .attr('width', 14)
+                .attr('height', 14)
+                // .attr('r', 7)
+                .attr('fill', (d: any) => { return this.categoricalColors(d); });
+      
+      let peopleByCategory = d3.nest()
+                                .key((d: any) => {
+                                  let person = this.people.find((p: PersonOrganization) => {
+                                    return p.name === d.person;
+                                  })
+                                  return this.getCategory(person, this.currentGrouping);
+                                })
+                                .entries(data);
+      let legendLabels = this.legendSVG.selectAll('.labels').data([... categories].sort());
+      legendLabels.enter()
+                    .append('text')
+                    .attr('class', 'labels')
+                    // .transition()
+                    // .duration(250)
+                    .merge(legendLabels)
+                    .attr('x', -480)
+                    .attr('y', (d: any, i: any) => {
+                      return 350 + i*25;
+                    })
+                    .attr('fill', (d: any) => { return this.categoricalColors(d); })
+                    .text((d: any) => {
+                      let total = dataByPerson.length;
+                      let people = new Set<string>();
+                      peopleByCategory.forEach((pbc: any) => {
+                        if(pbc.key === d) {
+                          pbc.values.forEach((v: any) => {
+                            people.add(v.person);
+                          })
+                        }
+                      });
+                      
+                      let ofType = people.size;
+                      let percent = Math.ceil(ofType/total*100);
+                      return `${d} (${percent}%)`; 
+                    })
+                    .attr('text-anchor', 'left')
+                    .attr('alignment-baseline', 'middle');
+
+    legendDots.exit().remove();
+    legendLabels.exit().remove();
 
     beforeDeathLines.exit()
       .transition().duration(750)
@@ -1547,7 +1608,8 @@ export class TestComponent implements OnInit {
             .style('bottom', `calc(${this.timelineChart.nativeElement.clientHeight}px + 5px)`) // 20px from tl
             .style('opacity', 1)
             .html(
-              `<p style="color: ${this.colors('exhibition')}">Exhibitions ${exhibitionCount}</p>
+              `<h4>Count for ${this.displayDate(this.currentlySelectedMinDate)} - ${this.displayDate(this.currentlySelectedMaxDate)}</h4>
+              <p style="color: ${this.colors('exhibition')}">Exhibitions ${exhibitionCount}</p>
               <p style="color: ${this.colors('street')}">Street-namings ${streetCount}</p>
               <p style="color: ${this.colors('prize')}">Prizes ${prizeCount}</p>
               `
