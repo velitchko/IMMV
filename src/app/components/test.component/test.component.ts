@@ -795,13 +795,13 @@ export class TestComponent implements OnInit {
   }
 
   showBrush(): void {
-    d3.select('.selection').style('opacity', 1);
-    d3.select('.radial-brush').style('opacity', 1);
+    d3.select('.selection').style('opacity', 1).raise();
+    d3.select('.radial-brush').style('opacity', 1).raise();
   }
 
   hideBrush(): void {
-    d3.select('.selection').style('opacity', 0);
-    d3.select('.radial-brush').style('opacity', 0);
+    d3.select('.selection').style('opacity', 0).lower();
+    d3.select('.radial-brush').style('opacity', 0).lower();
   }
 
   toggleBrushBehavior(): void {
