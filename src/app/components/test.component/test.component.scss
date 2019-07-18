@@ -1,4 +1,4 @@
-$timeline-width: 100px;
+$timeline-height: 200px;
 
 .container {
     position: absolute;
@@ -66,14 +66,14 @@ $timeline-width: 100px;
 
 #timeline-radial {
     width: 100%;
-    height: calc(100% - #{$timeline-width});
+    height: calc(100% - #{$timeline-height});
     position: relative;
     overflow: hidden;
 }
 
 #timeline-chart {
     width: 100%;
-    height: $timeline-width;
+    height: $timeline-height;
     position: absolute;
     bottom: 0em;
     overflow: hidden;
@@ -86,9 +86,13 @@ $timeline-width: 100px;
     padding-left: .5em;
     padding-right: .5em;
     background-color: white;
-    max-height: calc(100% - #{$timeline-width});
+    max-height: calc(100% - #{$timeline-height});
     overflow-y: scroll;
-    width: calc(4*#{$timeline-width});
+    width: calc(4*#{$timeline-height});
+}
+
+.dots {
+    cursor: pointer;
 }
 
 #options {

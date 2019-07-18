@@ -67,8 +67,8 @@ export class TestComponent implements OnInit {
   // internal data structures
   orderingMap: Map<string, Map<string, any>>;
   peopleAngles: Map<string, number>;
-  
-  
+
+
 
   countByYear: Array<any>;
 
@@ -92,7 +92,7 @@ export class TestComponent implements OnInit {
   // Frontend
   mouseBehavior: boolean;
 
-  brushBehavior: boolean; 
+  brushBehavior: boolean;
 
   eventTypes: Array<string>;
 
@@ -141,9 +141,9 @@ export class TestComponent implements OnInit {
       .range(['red', 'blue', '#4F8874', 'purple', '#47DBA7']); // old none blue - #027cef
 
     this.categoricalColors = d3.scaleOrdinal()
-        .range(d3.schemeSet2);
-      // .domain(['Musician', 'Composer', 'Conductor', 'Author', 'Mixed'])
-      // .range(['#F286D2', '#36b3d0', '#FFE18D', '#ff0000', '#efefef']);
+      .range(d3.schemeSet2);
+    // .domain(['Musician', 'Composer', 'Conductor', 'Author', 'Mixed'])
+    // .range(['#F286D2', '#36b3d0', '#FFE18D', '#ff0000', '#efefef']);
 
     this.eventTypes = new Array<string>('street', 'exhibition', 'prize', 'all');
 
@@ -324,7 +324,7 @@ export class TestComponent implements OnInit {
   getCategory(person: PersonOrganization, groupingScheme: string): string {
     let cat = '';
 
-    if(groupingScheme === 'Role' || groupingScheme === 'None') { // default
+    if (groupingScheme === 'Role' || groupingScheme === 'None') { // default
       let fallsIntoCat = 0;
 
       if (person.roles.includes('Musician') || person.roles.includes('Performer') || person.roles.includes('Vocalist')) {
@@ -347,35 +347,35 @@ export class TestComponent implements OnInit {
       if (fallsIntoCat > 1) return 'Mixed';
 
       return cat;
-    } else if(groupingScheme === 'Exiled') {
+    } else if (groupingScheme === 'Exiled') {
       let cat = person.functions.map((f: any) => { return f.dateName; }).includes('Exil') ? 'Exiled' : 'Not-Exiled';
       return cat;
-    } else if(groupingScheme === 'Born after 1945') {
+    } else if (groupingScheme === 'Born after 1945') {
       let bday: moment.Moment;
-      
-      for(let i = 0; i < person.dates.length; i++) {
+
+      for (let i = 0; i < person.dates.length; i++) {
         let date = person.dates[i];
 
-        if(date.dateName === 'Birth') {
+        if (date.dateName === 'Birth') {
           bday = moment(date.date);
           return bday.isSameOrAfter('1945', 'year') ? 'Born after 1945' : 'Born before 1945';
         }
       }
-      if(!bday) { 
+      if (!bday) {
         return '?';
       }
-    } else if(groupingScheme === 'Died before 1938') {
+    } else if (groupingScheme === 'Died before 1938') {
       let dday: moment.Moment;
 
-      for(let i = 0; i < person.dates.length; i++) {
+      for (let i = 0; i < person.dates.length; i++) {
         let date = person.dates[i];
 
-        if(date.dateName === 'Death') {
+        if (date.dateName === 'Death') {
           dday = moment(date.date);
           return dday.isSameOrBefore('1938', 'year') ? 'Died before 1938' : 'Died after 1938';
         }
       }
-      if(!dday) { 
+      if (!dday) {
         return '?';
       }
     }
@@ -434,7 +434,7 @@ export class TestComponent implements OnInit {
     };
 
     // if a grouping is selected preserve it
-    if(this.currentGrouping !== 'None') update['group'] = true;
+    if (this.currentGrouping !== 'None') update['group'] = true;
 
     this.renderRadial(this.data.sort((a: any, b: any) => {
       return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
@@ -453,7 +453,6 @@ export class TestComponent implements OnInit {
       (p as any).category = this.getCategory(p, this.currentGrouping);
     });
 
-    // this.people.forEach((p: PersonOrganization) => { console.log((p as any).category); });
     if (this.currentGrouping === 'None') {
       this.updateOrder();
       return;
@@ -566,7 +565,10 @@ export class TestComponent implements OnInit {
         // create timeline
         this.createTimeline();
         // populate timeline(s)
-        this.data = this.data.sort((a: any, b: any) => {
+        //TODO: Improve dataset to filter more people
+        this.data = this.data.filter((d: any) => {
+          return d.startDate.isAfter(this.MIN_DATE);
+        }).sort((a: any, b: any) => {
           return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
         });
 
@@ -589,6 +591,9 @@ export class TestComponent implements OnInit {
 
     // our temporal range based on the data
     this.MIN_DATE = d3.min(this.data.map((d: any) => { return moment(d.startDate, ['YYYY-MM-DD',]); }));
+    console.log(this.MIN_DATE);
+    this.MIN_DATE = moment('1938-01-01', 'YYYY-MM-DD');
+    console.log(this.MIN_DATE);
     this.MAX_DATE = moment(); // d3.max(this.data.map((d: any) => { return moment(d.endDate, ['YYYY-MM-DD']); })); 
 
     this.xScale = d3.scaleTime()
@@ -651,14 +656,12 @@ export class TestComponent implements OnInit {
    */
   createTimeline(): void {
     // get the x,y scales so we can draw things
-
     this.timelineSVG = d3.select(this.timelineRadial.nativeElement)
       .append('svg')
       .attr('width', this.WIDTH)
       .attr('height', this.HEIGHT);
 
     // .attr('viewBox', `${-this.WIDTH / 2} ${-this.HEIGHT / 2} ${this.WIDTH} ${this.HEIGHT}`)
-
     this.WIDTH = this.WIDTH - (this.margin.left + this.margin.right);
     this.HEIGHT = this.HEIGHT - (this.margin.top + this.margin.bottom);
     // group for data
@@ -679,7 +682,8 @@ export class TestComponent implements OnInit {
     this.timeChartSVG = d3.select(this.timelineChart.nativeElement)
       .append('svg')
       .attr('width', this.timelineChart.nativeElement.clientWidth)
-      .attr('height', 200); // 200px
+      .attr('height', 200) // 200px
+      .attr('fill', 'transparent');
 
     this.radialG.append('circle')
       .attr('class', 'circle-grid')
@@ -703,18 +707,18 @@ export class TestComponent implements OnInit {
     });
 
     this.legendSVG = this.radialG.append('g')
-                                 .attr('class', 'legend');
+      .attr('class', 'legend');
 
     // add radial brush
     this.radialG.append('path').attr('class', 'radial-brush');
 
     this.radialG.append('circle')
-                .attr('cx', 0)
-                .attr('cy', 0)
-                .attr('r', () => { return this.rScale(moment('1945').toDate()); })
-                .attr('stroke', '#777777')
-                .attr('stroke-width', '4px')
-                .attr('fill', 'none');
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('r', () => { return Math.abs(this.rScale(moment('1945').toDate())); })
+      .attr('stroke', '#777777')
+      .attr('stroke-width', '4px')
+      .attr('fill', 'none');
   }
 
   /**
@@ -823,11 +827,13 @@ export class TestComponent implements OnInit {
     let mouseClickX = (d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2);
     let mouseClickY = (d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2);
 
-    let sqrt = Math.ceil(Math.sqrt(mouseClickX * mouseClickX + mouseClickY * mouseClickY));
+    let sqrt = Math.ceil(Math.sqrt(mouseClickX * mouseClickX +
+       mouseClickY * mouseClickY));
 
     let date = moment(this.rScale.invert(sqrt));
 
     if (date.isBefore(this.MIN_DATE)) sqrt = this.rScale(this.MIN_DATE);
+    if (date.isAfter(this.MAX_DATE)) sqrt = this.rScale(this.MAX_DATE);
     this.dragStartPoint = sqrt;
   }
 
@@ -1059,7 +1065,7 @@ export class TestComponent implements OnInit {
    * Mouseover handler for the circle axis grid
    */
   drawGridCircle(): void {
-    if(!this.mouseBehavior) return;
+    if (!this.mouseBehavior) return;
     let mouseX = (d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2);
     let mouseY = (d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2);
 
@@ -1124,6 +1130,33 @@ export class TestComponent implements OnInit {
 
     let temporalData = d3.timeYear.range(this.MIN_DATE.toDate(), this.MAX_DATE.toDate(), 10);
     temporalData.push(moment('01-01-1945').toDate());
+
+    let gridLines = this.radialG.selectAll('.grid-lines').data(dataByPerson);
+
+    gridLines
+      .enter()
+      .append('line')
+      .attr('class', 'grid-line')
+      .attr('stroke', '#e3e3e3')
+      .attr('stroke-width', 1)
+      .attr('x1', 0)
+      .attr('x2', 0)
+      .attr('y1', 0)
+      .attr('y2', 0)
+      .merge(gridLines)
+      .transition().duration(250)
+      .attr('x1', (d: any, i: number) => {
+        return this.getXCoordinates(this.MIN_DATE.toDate(), i * this.theta);
+      })
+      .attr('x2', (d: any, i: number) => {
+        return this.getXCoordinates(this.MAX_DATE.toDate(), i * this.theta);
+      })
+      .attr('y1', (d: any, i: number) => {
+        return this.getYCoordinates(this.MIN_DATE.toDate(), i * this.theta);
+      })
+      .attr('y2', (d: any, i: number) => {
+        return this.getYCoordinates(this.MAX_DATE.toDate(), i * this.theta);
+      })
 
 
     let beforeDeathLines = this.radialG.selectAll('.before-death').data(dataByPerson);
@@ -1292,63 +1325,73 @@ export class TestComponent implements OnInit {
         categories.add((person as any).category);
         return this.categoricalColors((person as any).category);
       });
-      // Legend
-      let legendDots = this.legendSVG.selectAll('.dots').data([... categories].sort());
-      legendDots.enter()
-                .append('rect')
-                .attr('class', 'dots')
-                // .transition()
-                // .duration(250)
-                .merge(legendDots)
-                .attr('x', -500)
-                .attr('y', (d: any, i: any) => {
-                  return 340 + i*25;
-                })
-                .attr('width', 14)
-                .attr('height', 14)
-                // .attr('r', 7)
-                .attr('fill', (d: any) => { return this.categoricalColors(d); });
-      
-      let peopleByCategory = d3.nest()
-                                .key((d: any) => {
-                                  let person = this.people.find((p: PersonOrganization) => {
-                                    return p.name === d.person;
-                                  })
-                                  return this.getCategory(person, this.currentGrouping);
-                                })
-                                .entries(data);
-      let legendLabels = this.legendSVG.selectAll('.labels').data([... categories].sort());
-      legendLabels.enter()
-                    .append('text')
-                    .attr('class', 'labels')
-                    // .transition()
-                    // .duration(250)
-                    .merge(legendLabels)
-                    .attr('x', -480)
-                    .attr('y', (d: any, i: any) => {
-                      return 350 + i*25;
-                    })
-                    .attr('fill', (d: any) => { return this.categoricalColors(d); })
-                    .text((d: any) => {
-                      let total = dataByPerson.length;
-                      let people = new Set<string>();
-                      peopleByCategory.forEach((pbc: any) => {
-                        if(pbc.key === d) {
-                          pbc.values.forEach((v: any) => {
-                            people.add(v.person);
-                          })
-                        }
-                      });
-                      
-                      let ofType = people.size;
-                      let percent = Math.ceil(ofType/total*100);
-                      return `${d} (${percent}%)`; 
-                    })
-                    .attr('text-anchor', 'left')
-                    .attr('alignment-baseline', 'middle');
+    // Legend
+    let legendDots = this.legendSVG.selectAll('.dots').data([...categories].sort());
+    legendDots.enter()
+      .append('rect')
+      .attr('class', 'dots')
+      // .transition()
+      // .duration(250)
+      .merge(legendDots)
+      .attr('x', -500)
+      .attr('y', (d: any, i: any) => {
+        return 340 + i * 25;
+      })
+      .attr('width', 14)
+      .attr('height', 14)
+      // .attr('r', 7)
+      .attr('fill', (d: any) => { return this.categoricalColors(d); });
+
+    let peopleByCategory = d3.nest()
+      .key((d: any) => {
+        let person = this.people.find((p: PersonOrganization) => {
+          return p.name === d.person;
+        })
+        return this.getCategory(person, this.currentGrouping);
+      })
+      .entries(data);
+
+    let legendLabels = this.legendSVG.selectAll('.labels').data([...categories].sort());
+    legendLabels.enter()
+      .append('text')
+      .attr('class', 'labels')
+      // .transition()
+      // .duration(250)
+      .merge(legendLabels)
+      .attr('x', -480)
+      .attr('y', (d: any, i: any) => {
+        return 350 + i * 25;
+      })
+      .attr('fill', (d: any) => { return this.categoricalColors(d); })
+      .text((d: any) => {
+        let total = dataByPerson.length;
+        let people = new Set<string>();
+        peopleByCategory.forEach((pbc: any) => {
+          if (pbc.key === d) {
+            pbc.values.forEach((v: any) => {
+              people.add(v.person);
+            })
+          }
+        });
+
+        let ofType = people.size;
+        let percent = Math.ceil(ofType / total * 100);
+        return `${d} (${percent}%)`;
+      })
+      .attr('text-anchor', 'left')
+      .attr('alignment-baseline', 'middle');
 
     legendDots.exit().remove();
     legendLabels.exit().remove();
+
+    gridLines.exit()
+      .transition().duration(750)
+      .attr('x1', 0)
+      .attr('x2', 0)
+      .attr('y1', 0)
+      .attr('y2', 0)
+      .attr('stroke', (d: any) => { return '#ffffff'; })//this.colors(d.key); })
+      .remove();
 
     beforeDeathLines.exit()
       .transition().duration(750)
@@ -1374,7 +1417,7 @@ export class TestComponent implements OnInit {
       .remove();
 
     // brush above things
-    d3.select('.radial-brush').raise();
+    d3.select('.radial-brush').raise();``
   }
 
   /**
@@ -1382,7 +1425,15 @@ export class TestComponent implements OnInit {
    * @param data the dataset 
    */
   renderChart(data: Array<any>): void {
+    let radius = 5;
+    let timelineHeight = 200;
     //'street', 'exhibition', 'exile', 'prize', 'none'
+    let filteredData = data.sort((a: any, b: any) => {
+      return a.startDate - b.startDate;
+    }).filter((d: any) => { 
+      return d.dateName !== 'Birth' && d.dateName !== 'Death'
+    });
+
     this.countByYear = d3.nest<any, any>()
       .key((d: any) => {
         return moment(d.startDate).year().toString();
@@ -1397,17 +1448,7 @@ export class TestComponent implements OnInit {
           none: s.filter((ss: any) => { return ss.color === 'none' }).length,
         };
       })
-      .entries(data);
-
-    let lineGraph = d3.line<{ date: Date, count: number }>()
-      .defined((d: any) => { return d.date; })
-      .x((d: any) => {
-        return this.xChartScale(d.date);
-      })
-      .y((d: any) => {
-        return this.yChartScale(d.count);
-      })
-      .curve(d3.curveMonotoneX);
+      .entries(filteredData)
 
     this.xChartScale = d3.scaleTime().range([0, this.timelineChart.nativeElement.clientWidth]).domain([this.MIN_DATE, this.MAX_DATE]);
     this.yChartScale = d3.scaleLinear().range([this.timelineChart.nativeElement.clientHeight, 0]).domain([0, 20]).nice();
@@ -1427,7 +1468,7 @@ export class TestComponent implements OnInit {
     this.chartG = this.timeChartSVG
       .append('g')
       .attr('width', 1920)
-      .attr('height', 100)
+      .attr('height', timelineHeight)
       .call(xAxis);
 
     // set data attribute so we can select via css
@@ -1438,79 +1479,77 @@ export class TestComponent implements OnInit {
     this.chartG.select('.tick[data-year="1945"] > line').attr('stroke-width', '3px').attr('stroke', '#828282').attr('stroke-dasharray', '0,0');
     // position text
     this.chartG.selectAll('.tick text').attr('y', 10).attr('dy', 0);
-
-    let exhibitionData = this.countByYear.map((d: any) => {
-      return {
-        date: moment(d.key).toDate(),
-        count: d.value['exhibition']
-      }
-    });
-
-    let streetData = this.countByYear.map((d: any) => {
-      return {
-        date: moment(d.key).toDate(),
-        count: d.value['street']
-      }
-    });
-
-    let prizeData = this.countByYear.map((d: any) => {
-      return {
-        date: moment(d.key).toDate(),
-        count: d.value['prize']
-      }
-    });
-
-    this.chartG.append('g').attr('class', 'exhibition');
-    this.chartG.append('g').attr('class', 'street');
-    this.chartG.append('g').attr('class', 'prize');
-
-    let exhibitions = d3.select('.exhibition');
-    exhibitions
-      .append('path')
-      .data(exhibitionData)
-      .attr('class', 'exhibition-line')
-      // .attr('d', null)
-      // .merge(exhibitions)
-      // .transition().duration(250)
-      .attr('d', () => { return lineGraph(exhibitionData); })
-      .attr('fill', 'none')
-      .attr('stroke', <string>this.colors('exhibition'))
-      .attr('stroke-width', '2px');
-
-
-    let streets = d3.select('.street');
-    streets
-      .append('path')
-      .data(streetData)
-      .attr('class', 'street-line')
-      // .attr('d', null)
-      // .merge(exhibitions)
-      // .transition().duration(250)
-      .attr('d', () => { return lineGraph(streetData); })
-      .attr('fill', 'none')
-      .attr('stroke', <string>this.colors('street'))
-      .attr('stroke-width', '2px');
-
-    let prizes = d3.select('.prize');
-    prizes
-      .append('path')
-      .data(prizeData)
-      .attr('class', 'prize-line')
-      // .attr('d', null)
-      // .merge(exhibitions)
-      // .transition().duration(250)
-      .attr('d', () => { return lineGraph(prizeData); })
-      .attr('fill', 'none')
-      .attr('stroke', <string>this.colors('prize'))
-      .attr('stroke-width', '2px');
+    
+    this.chartG.select('.domain').remove(); // black line ontop of timeline
 
     // brush
     this.chartBrush = d3.brushX()
       .extent([[0, 0], [this.xChartScale.range()[1], 200]]) // 0,0 - width, height
       .on('end', this.brushing.bind(this));
+
     this.chartG.append('g')
-      .attr('class', 'brush')
-      .call(this.chartBrush);
+    .attr('class', 'brush')
+    .call(this.chartBrush);
+
+    
+
+    let dots = this.chartG.selectAll('.dots').data(filteredData);
+    let currentYear = 0;
+    let offset = 0;
+    
+    // Sort the items based on their categorical attribute and in time
+    dots.enter()
+      .append('circle')
+      .attr('class', (d: any) => { 
+        if(d.color === 'none') console.log(d); // TODO: should probably discuss which events are to be shown and how we can categorize them
+        return `dots ${d.color}`; })
+      .attr('cx', 0)
+      .attr('cy',0)
+      .attr('r', radius)
+      .attr('fill', '#000')
+      .on('mouseover', (d: any, i: number, n: any) => { 
+        // FIXME: Can't mouseover the dots - probably brush intercepting events
+        this.tooltip.nativeElement.style.display = 'block';
+        this.tooltip.nativeElement.style.opacity = '1';
+        this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
+        this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
+        this.tooltip.nativeElement.innerHTML = `
+        <h3>${d.person} - ${d.dateName}</h3>
+        <p>${moment(d.startDate).format('DD/MM/YYYY')} - ${moment(d.endDate).format('DD/MM/YYYY')}</p>
+        <p>Category ${d.color}</p>
+        `;
+      })
+      .on('mouseout', (d: any, i: number, n: any) => { 
+        this.tooltip.nativeElement.style.display = 'none';
+        this.tooltip.nativeElement.style.opacity = '0';
+      })
+      .merge(dots)
+      .transition().duration(250)
+      .attr('cx', (d: any, i: number) => {
+        return this.xChartScale(moment(`01/01/${d.startDate.year()}`, 'DD/MM/YYYY').toDate());
+      })
+      .attr('cy', (d: any, i: number) => {
+        if(!currentYear) currentYear = d.startDate.year();
+        
+        // reset idx if current year changes
+        if(currentYear !== d.startDate.year()) {
+          offset = 0;
+          currentYear = d.startDate.year();
+        }
+        let yPos = timelineHeight - (offset*2*radius + radius); // height - yPos (offset + rad/2)
+        offset++;
+        return yPos;
+      })
+      .attr('fill', (d: any) => {
+        return this.getColorForType(d.color);
+      });
+
+    dots.exit()
+      .transition().duration(250)
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('fill', '#000')
+      .remove();
 
     d3.select('.selection').attr('fill', '#4286f4').attr('fill-opacity', .15).attr('stroke', '#fff').attr('stroke-opacity', 1);
   }
@@ -1559,7 +1598,6 @@ export class TestComponent implements OnInit {
     d3.select('.brush').call(this.chartBrush.move, [startX, endX]);
   }
 
- 
   chartBrushing(): void {
     if (!d3.event.selection) return;
     let start = d3.event.selection[0];
@@ -1591,29 +1629,31 @@ export class TestComponent implements OnInit {
     let streetCount = 0;
     let prizeCount = 0;
     this.countByYear.forEach((c: any) => {
-      if(moment(c.key).isBetween(this.currentlySelectedMinDate, this.currentlySelectedMaxDate, 'year')) {
+      if (moment(c.key).isBetween(this.currentlySelectedMinDate, this.currentlySelectedMaxDate, 'year')) {
         exhibitionCount += c.value['exhibition'];
         streetCount += c.value['street'];
         prizeCount += c.value['prize'];
       }
     })
-    
-    // update radial selection
-    let width = end-start;
-    let tooltipBBox = (d3.select('#count-tooltip').node() as any).getBoundingClientRect();
-    
 
+    // update radial selection
+    let width = end - start;
+    let tooltipBBox = (d3.select('#count-tooltip').node() as any).getBoundingClientRect();
+
+    let leftPos = start + width / 2 - tooltipBBox.width / 2;
+    leftPos = leftPos < 0 ? 5 : leftPos; // check left
+    leftPos = leftPos > this.timelineChart.nativeElement.clientWidth ? this.timelineChart.nativeElement.clientWidth - width : leftPos; // check right
     d3.select('#count-tooltip')
-            .style('left', `${start + width/2 - tooltipBBox.width/2}px`)
-            .style('bottom', `calc(${this.timelineChart.nativeElement.clientHeight}px + 5px)`) // 20px from tl
-            .style('opacity', 1)
-            .html(
-              `<h4>Count for ${this.displayDate(this.currentlySelectedMinDate)} - ${this.displayDate(this.currentlySelectedMaxDate)}</h4>
+      .style('left', `${leftPos}px`)
+      .style('bottom', `calc(${this.timelineChart.nativeElement.clientHeight}px + 5px)`) // 20px from tl
+      .style('opacity', 1)
+      .html(
+        `<h4>Count for ${this.displayDate(this.currentlySelectedMinDate)} - ${this.displayDate(this.currentlySelectedMaxDate)}</h4>
               <p style="color: ${this.colors('exhibition')}">Exhibitions ${exhibitionCount}</p>
               <p style="color: ${this.colors('street')}">Street-namings ${streetCount}</p>
               <p style="color: ${this.colors('prize')}">Prizes ${prizeCount}</p>
               `
-            );
+      );
 
     this.drawDonut(this.rScale(startDate), this.rScale(endDate));
   }
