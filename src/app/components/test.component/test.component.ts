@@ -1326,6 +1326,37 @@ export class TestComponent implements OnInit {
         categories.add((person as any).category);
         return this.categoricalColors((person as any).category);
       });
+
+      let peopleNames = this.radialG.selectAll('.person-name').data(dataByPerson);
+
+      peopleNames.
+        enter()
+        .append('text')
+        .attr('class', 'person-name')
+        .attr('x', 0)
+        .attr('y', 0)
+        .merge(peopleNames)
+        .transition().duration(750)
+        .text((d: any) => { return d.key; })
+        .attr('transform', (d: any, i: number) => { 
+          return `rotate(${90})`; // TODO: Fix text rotation around circle
+        })
+        .attr('x', (d: any, i: number) => {
+          
+          return this.getXCoordinates(moment('01/01/2030', 'DD/MM/YYYY').toDate(), i * this.theta);
+        })
+        .attr('y', (d: any, i: number) => {
+          return this.getYCoordinates(moment('01/01/2030', 'DD/MM/YYYY').toDate(), i * this.theta);
+        })
+        .style('text-anchor', (d: any, i: number) => { 
+          return (i*this.theta > Math.PI/2  && i*this.theta < 1.5 * Math.PI) ? 'end' : 'start'; 
+        })
+        .attr('transform-origin', (d: any, i: number) => {
+
+        })
+        .attr('color', '#d7d7d7');
+
+
     // Legend
     let legendDots = this.legendSVG.selectAll('.dots').data([...categories].sort());
     legendDots.enter()
@@ -1357,7 +1388,7 @@ export class TestComponent implements OnInit {
       .append('text')
       .attr('class', 'labels')
       // .transition()
-      // .duration(250)
+      // .duration(250) 
       .merge(legendLabels)
       .attr('x', -480)
       .attr('y', (d: any, i: any) => {
@@ -1406,6 +1437,10 @@ export class TestComponent implements OnInit {
     categoricalBars.exit()
       .transition().duration(750)
       .attr('fill', '#000')
+      .remove();
+
+    peopleNames.exit()
+      .transition().duration(750)
       .remove();
 
     eventLines.exit()
