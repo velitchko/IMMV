@@ -9,7 +9,8 @@ import * as d3 from 'd3';
 import * as moment from 'moment';
 import { FormControl } from '@angular/forms';
 import { Observable } from 'rxjs';
-import { map, startWith } from 'rxjs/operators';
+import { map, startWith, filter } from 'rxjs/operators';
+import { values } from 'd3';
 
 @Component({
   selector: 'app-test',
@@ -591,9 +592,9 @@ export class TestComponent implements OnInit {
 
     // our temporal range based on the data
     this.MIN_DATE = d3.min(this.data.map((d: any) => { return moment(d.startDate, ['YYYY-MM-DD',]); }));
-    console.log(this.MIN_DATE);
+    // console.log(this.MIN_DATE);
     this.MIN_DATE = moment('1938-01-01', 'YYYY-MM-DD');
-    console.log(this.MIN_DATE);
+    // console.log(this.MIN_DATE);
     this.MAX_DATE = moment(); // d3.max(this.data.map((d: any) => { return moment(d.endDate, ['YYYY-MM-DD']); })); 
 
     this.xScale = d3.scaleTime()
@@ -654,7 +655,6 @@ export class TestComponent implements OnInit {
    * Creates d3 zoom behavior 
    * Creates d3 brush behavior
    */
-  // Test
   createTimeline(): void {
     // get the x,y scales so we can draw things
     this.timelineSVG = d3.select(this.timelineRadial.nativeElement)
@@ -829,7 +829,7 @@ export class TestComponent implements OnInit {
     let mouseClickY = (d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2);
 
     let sqrt = Math.ceil(Math.sqrt(mouseClickX * mouseClickX +
-       mouseClickY * mouseClickY));
+      mouseClickY * mouseClickY));
 
     let date = moment(this.rScale.invert(sqrt));
 
@@ -1418,7 +1418,7 @@ export class TestComponent implements OnInit {
       .remove();
 
     // brush above things
-    d3.select('.radial-brush').raise();``
+    d3.select('.radial-brush').raise(); ``
   }
 
   /**
@@ -1429,11 +1429,21 @@ export class TestComponent implements OnInit {
     let radius = 5;
     let timelineHeight = 200;
     //'street', 'exhibition', 'exile', 'prize', 'none'
-    let filteredData = data.sort((a: any, b: any) => {
-      return a.startDate - b.startDate;
-    }).filter((d: any) => { 
-      return d.dateName !== 'Birth' && d.dateName !== 'Death'
-    });
+
+    // sort by year and then by color (event type)
+    let filteredData = new Array<any>();
+
+    d3.nest<any, any>()
+      .key((d: any) => { return moment(d.startDate).year().toString(); })
+      .sortKeys(d3.ascending)
+      .sortValues((a: any, b: any) => { return a.color.localeCompare(b.color); })
+      .entries(data)
+      .forEach((d: any) => {
+        d.values.forEach((v: any) => {
+          filteredData.push(v);
+        });
+      });
+
 
     this.countByYear = d3.nest<any, any>()
       .key((d: any) => {
@@ -1451,7 +1461,9 @@ export class TestComponent implements OnInit {
       })
       .entries(filteredData)
 
-    this.xChartScale = d3.scaleTime().range([0, this.timelineChart.nativeElement.clientWidth]).domain([this.MIN_DATE, this.MAX_DATE]);
+
+    // 2 * radius margin left and right on X
+    this.xChartScale = d3.scaleTime().range([radius * 2, (this.timelineChart.nativeElement.clientWidth - radius * 2)]).domain([this.MIN_DATE, this.MAX_DATE]);
     this.yChartScale = d3.scaleLinear().range([this.timelineChart.nativeElement.clientHeight, 0]).domain([0, 20]).nice();
     // special year
     let tickAmount = this.MAX_DATE.diff(this.MIN_DATE, 'years') / 10;
@@ -1480,7 +1492,7 @@ export class TestComponent implements OnInit {
     this.chartG.select('.tick[data-year="1945"] > line').attr('stroke-width', '3px').attr('stroke', '#828282').attr('stroke-dasharray', '0,0');
     // position text
     this.chartG.selectAll('.tick text').attr('y', 10).attr('dy', 0);
-    
+
     this.chartG.select('.domain').remove(); // black line ontop of timeline
 
     // brush
@@ -1489,38 +1501,45 @@ export class TestComponent implements OnInit {
       .on('end', this.brushing.bind(this));
 
     this.chartG.append('g')
-    .attr('class', 'brush')
-    .call(this.chartBrush);
+      .attr('class', 'brush')
+      .call(this.chartBrush);
 
-    
+
 
     let dots = this.chartG.selectAll('.dots').data(filteredData);
     let currentYear = 0;
     let offset = 0;
-    
+
     // Sort the items based on their categorical attribute and in time
     dots.enter()
       .append('circle')
-      .attr('class', (d: any) => { 
-        if(d.color === 'none') console.log(d); // TODO: should probably discuss which events are to be shown and how we can categorize them
-        return `dots ${d.color}`; })
+      .attr('class', (d: any) => {
+        // if(d.color === 'none') console.log(d); // TODO: should probably discuss which events are to be shown and how we can categorize them
+        return `dots ${d.color}`;
+      })
       .attr('cx', 0)
-      .attr('cy',0)
+      .attr('cy', 0)
       .attr('r', radius)
       .attr('fill', '#000')
-      .on('mouseover', (d: any, i: number, n: any) => { 
-        // FIXME: Can't mouseover the dots - probably brush intercepting events
+      .on('mouseover', (d: any, i: number, n: any) => {
         this.tooltip.nativeElement.style.display = 'block';
         this.tooltip.nativeElement.style.opacity = '1';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
         this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
+        // clamp tt to bottom - dont render outside of view
+        let top = this.tooltip.nativeElement.offsetTop;
+        let tooltipBBox = (d3.select('#tooltip').node() as any).getBoundingClientRect();
+        if (top + tooltipBBox.height > this.window.innerHeight) {
+          top -= tooltipBBox.height;
+          this.tooltip.nativeElement.style.top = `${top}px`;
+        }
         this.tooltip.nativeElement.innerHTML = `
         <h3>${d.person} - ${d.dateName}</h3>
         <p>${moment(d.startDate).format('DD/MM/YYYY')} - ${moment(d.endDate).format('DD/MM/YYYY')}</p>
         <p>Category ${d.color}</p>
         `;
       })
-      .on('mouseout', (d: any, i: number, n: any) => { 
+      .on('mouseout', (d: any, i: number, n: any) => {
         this.tooltip.nativeElement.style.display = 'none';
         this.tooltip.nativeElement.style.opacity = '0';
       })
@@ -1530,14 +1549,14 @@ export class TestComponent implements OnInit {
         return this.xChartScale(moment(`01/01/${d.startDate.year()}`, 'DD/MM/YYYY').toDate());
       })
       .attr('cy', (d: any, i: number) => {
-        if(!currentYear) currentYear = d.startDate.year();
-        
+        if (!currentYear) currentYear = d.startDate.year();
+
         // reset idx if current year changes
-        if(currentYear !== d.startDate.year()) {
+        if (currentYear !== d.startDate.year()) {
           offset = 0;
           currentYear = d.startDate.year();
         }
-        let yPos = timelineHeight - (offset*2*radius + radius); // height - yPos (offset + rad/2)
+        let yPos = timelineHeight - (offset * 2 * radius + radius); // height - yPos (offset + rad/2)
         offset++;
         return yPos;
       })
