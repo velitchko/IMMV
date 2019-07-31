@@ -654,6 +654,7 @@ export class TestComponent implements OnInit {
    * Creates d3 zoom behavior 
    * Creates d3 brush behavior
    */
+  // Test
   createTimeline(): void {
     // get the x,y scales so we can draw things
     this.timelineSVG = d3.select(this.timelineRadial.nativeElement)
