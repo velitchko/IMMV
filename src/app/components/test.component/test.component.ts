@@ -659,6 +659,7 @@ export class TestComponent implements OnInit {
     // get the x,y scales so we can draw things
     this.timelineSVG = d3.select(this.timelineRadial.nativeElement)
       .append('svg')
+      .style('overflow', 'visible')
       .attr('width', this.WIDTH)
       .attr('height', this.HEIGHT);
 
@@ -708,7 +709,8 @@ export class TestComponent implements OnInit {
     });
 
     this.legendSVG = this.radialG.append('g')
-      .attr('class', 'legend');
+      .attr('class', 'legend')
+      .attr('transform', 'translate(20, 20)');
 
     // add radial brush
     this.radialG.append('path').attr('class', 'radial-brush');
@@ -1360,9 +1362,9 @@ export class TestComponent implements OnInit {
       // .transition()
       // .duration(250)
       .merge(legendDots)
-      .attr('x', -500)
+      .attr('x', -700)
       .attr('y', (d: any, i: any) => {
-        return 340 + i * 25;
+        return i * 25;
       })
       .attr('width', 14)
       .attr('height', 14)
@@ -1385,9 +1387,9 @@ export class TestComponent implements OnInit {
       // .transition()
       // .duration(250) 
       .merge(legendLabels)
-      .attr('x', -480)
+      .attr('x', -670)
       .attr('y', (d: any, i: any) => {
-        return 350 + i * 25;
+        return 8 + i * 25;
       })
       .attr('fill', (d: any) => { return this.categoricalColors(d); })
       .text((d: any) => {
@@ -1448,7 +1450,7 @@ export class TestComponent implements OnInit {
       .remove();
 
     // brush above things
-    d3.select('.radial-brush').raise(); ``
+    d3.select('.radial-brush').raise(); 
   }
 
   /**
