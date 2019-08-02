@@ -68,7 +68,7 @@ $timeline-height: 200px;
     width: 100%;
     height: calc(100% - #{$timeline-height});
     position: relative;
-    overflow: hidden;
+    // overflow: hidden;
 }
 
 #timeline-chart {
@@ -88,7 +88,7 @@ $timeline-height: 200px;
     background-color: white;
     max-height: calc(100% - #{$timeline-height});
     overflow-y: scroll;
-    width: calc(4*#{$timeline-height});
+    width: 400px;
 }
 
 .dots {
