@@ -1333,26 +1333,21 @@ export class TestComponent implements OnInit {
         enter()
         .append('text')
         .attr('class', 'person-name')
-        .attr('x', 0)
-        .attr('y', 0)
         .merge(peopleNames)
         .transition().duration(750)
         .text((d: any) => { return d.key; })
+        .style('font-size', '12px')
         .attr('transform', (d: any, i: number) => { 
-          return `rotate(${90})`; // TODO: Fix text rotation around circle
-        })
-        .attr('x', (d: any, i: number) => {
-          
-          return this.getXCoordinates(moment('01/01/2030', 'DD/MM/YYYY').toDate(), i * this.theta);
-        })
-        .attr('y', (d: any, i: number) => {
-          return this.getYCoordinates(moment('01/01/2030', 'DD/MM/YYYY').toDate(), i * this.theta);
+          let rotate = (this.theta * i * 180 / Math.PI);
+          let today = moment();
+          let radius = this.rScale(today.add(8, 'years').toDate()); // 8 year offset for text from outer circle
+          let flip = (rotate > 90 && rotate < 270) ? 180 : 0; 
+          let offset = (rotate > 90 && rotate < 270) ? -1 : .5; // correct offset
+          return `rotate(${rotate + offset}) translate(${radius}) rotate(${flip})`;
         })
         .style('text-anchor', (d: any, i: number) => { 
-          return (i*this.theta > Math.PI/2  && i*this.theta < 1.5 * Math.PI) ? 'end' : 'start'; 
-        })
-        .attr('transform-origin', (d: any, i: number) => {
-
+          let rotate = (this.theta * i * 180 / Math.PI);
+          return (rotate > 90 && rotate < 270) ? 'end' : 'start'; 
         })
         .attr('color', '#d7d7d7');
 
