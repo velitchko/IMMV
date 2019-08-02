@@ -1048,6 +1048,18 @@ export class TestComponent implements OnInit {
       .attr('opacity', (d: any) => {
         d.hidden = false;
         return 1; 
+      })
+      .attr('transform', (d: any, i: number) => { 
+        let rotate = (this.theta * i * 180 / Math.PI);
+        let today = moment();
+        let radius = this.rScale(today.add(8, 'years').toDate()); // 8 year offset for text from outer circle
+        let flip = (rotate > 90 && rotate < 270) ? 180 : 0; 
+        let offset = (rotate > 90 && rotate < 270) ? -1 : .5; // correct offset
+        return `rotate(${rotate + offset}) translate(${radius}) rotate(${flip})`;
+      })
+      .style('text-anchor', (d: any, i: number) => { 
+        let rotate = (this.theta * i * 180 / Math.PI);
+        return (rotate > 90 && rotate < 270) ? 'end' : 'start'; 
       });
 
     let dots = this.legendSVG.selectAll('.dots');
@@ -1098,7 +1110,18 @@ export class TestComponent implements OnInit {
     let peopleNames = this.radialG.selectAll('.person-name');
     peopleNames
       .transition().duration(750)
-      .attr('opacity', (d: any) => { return d.key !== name ? 0 : 1; });
+      .attr('opacity', (d: any) => { return d.key !== name ? 0 : 1; })
+      .attr('transform', (d: any, i: number) => { 
+        let rotate = (this.theta * i * 180 / Math.PI);
+        let today = moment();
+        let radius = this.rScale(today.add(8, 'years').toDate()); // 8 year offset for text from outer circle
+        let flip = 180;  // reverse flip
+        let offset = -.5; // reverse offset
+        return `rotate(${rotate + offset}) translate(${radius}) rotate(${flip})`;
+      })
+      .style('text-anchor', (d: any, i: number) => { 
+        return 'end'; // reverse anchor
+      });
 
     let dots = this.legendSVG.selectAll('.dots');
     dots
