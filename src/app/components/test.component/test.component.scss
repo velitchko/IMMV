@@ -79,6 +79,11 @@ $timeline-height: 200px;
     overflow: hidden;
 }
 
+::ng-deep .category,
+::ng-deep .dots  {
+    cursor: pointer;
+}
+
 #people {
     position: absolute;
     top: 0em;
@@ -91,9 +96,6 @@ $timeline-height: 200px;
     width: 400px;
 }
 
-.dots {
-    cursor: pointer;
-}
 
 #options {
     position: absolute;
@@ -147,6 +149,7 @@ $timeline-height: 200px;
     position: absolute;
     top: 0px;
     left: 0px;
+    min-width: 250px;
     width: auto;
     height: auto;
     background: white;

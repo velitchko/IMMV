@@ -1029,10 +1029,39 @@ export class TestComponent implements OnInit {
     let eventLines = this.radialG.selectAll('.event')
     eventLines
       .transition().duration(750)
-      .attr('stroke-opacity', 1);
+      .attr('stroke-opacity', (d: any) => {
+        d.hidden = false;
+        return 1; 
+      });
 
     let categoricalBars = this.radialG.selectAll('.category');
     categoricalBars
+      .transition().duration(750)
+      .attr('opacity', (d: any) => {
+        d.hidden = false;
+        return 1; 
+      });
+
+    let peopleNames = this.radialG.selectAll('.person-name');
+    peopleNames
+      .transition().duration(750)
+      .attr('opacity', (d: any) => {
+        d.hidden = false;
+        return 1; 
+      });
+
+    let dots = this.legendSVG.selectAll('.dots');
+    dots
+      .transition().duration(750)
+      .attr('opacity', 1);
+
+    let labels = this.legendSVG.selectAll('.labels');
+    labels
+      .transition().duration(750)
+      .attr('opacity', 1);
+
+    let gridLines = this.radialG.selectAll('.grid-line');
+    gridLines
       .transition().duration(750)
       .attr('opacity', 1);
   }
@@ -1046,6 +1075,7 @@ export class TestComponent implements OnInit {
     beforeDeathLines
       .transition().duration(750)
       .attr('stroke-opacity', (d: any) => {
+        d.hidden = d.key !== name ? true : false;
         return d.key !== name ? 0 : 1;
       });
 
@@ -1053,6 +1083,7 @@ export class TestComponent implements OnInit {
     eventLines
       .transition().duration(750)
       .attr('stroke-opacity', (d: any) => {
+        d.hidden = d.person !== name ? true : false;
         return d.person !== name ? 0 : 1;
       });
 
@@ -1060,8 +1091,30 @@ export class TestComponent implements OnInit {
     categoricalBars
       .transition().duration(750)
       .attr('opacity', (d: any) => {
+        d.hidden = d.key !== name ? true : false;
         return d.key !== name ? 0 : 1;
       });
+
+    let peopleNames = this.radialG.selectAll('.person-name');
+    peopleNames
+      .transition().duration(750)
+      .attr('opacity', (d: any) => { return d.key !== name ? 0 : 1; });
+
+    let dots = this.legendSVG.selectAll('.dots');
+    dots
+      .transition().duration(750)
+      .attr('opacity', 0);
+
+    let labels = this.legendSVG.selectAll('.labels');
+    labels
+      .transition().duration(750)
+      .attr('opacity', 0);
+
+    let gridLines = this.radialG.selectAll('.grid-line');
+    gridLines
+      .transition().duration(750)
+      .attr('opacity', 0);
+      // TODO: Highlight events in timeline 
   }
 
   /**
@@ -1134,7 +1187,7 @@ export class TestComponent implements OnInit {
     let temporalData = d3.timeYear.range(this.MIN_DATE.toDate(), this.MAX_DATE.toDate(), 10);
     temporalData.push(moment('01-01-1945').toDate());
 
-    let gridLines = this.radialG.selectAll('.grid-lines').data(dataByPerson);
+    let gridLines = this.radialG.selectAll('.grid-line').data(dataByPerson);
 
     gridLines
       .enter()
@@ -1186,6 +1239,7 @@ export class TestComponent implements OnInit {
         return y2 ? y2 : 0;
       })
       .on('mouseover', (d: any) => {
+        if(d.hidden) return;
         let birthDate = d.values.find((dd: any) => { return dd.dateName === 'Birth'; });
         let deathDate = d.values.find((dd: any) => { return dd.dateName === 'Death'; });
         if (birthDate) birthDate = birthDate.startDate;
@@ -1258,6 +1312,7 @@ export class TestComponent implements OnInit {
         return y2 ? y2 : 0;
       })
       .on('mouseover', (d: any) => {
+        if(d.hidden) return;
         this.tooltip.nativeElement.style.display = 'block';
         this.tooltip.nativeElement.style.opacity = '1';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
@@ -1302,6 +1357,7 @@ export class TestComponent implements OnInit {
       .attr('class', 'category')
       .attr('d', categoricalArc)
       .on('mouseover', (d: any) => {
+        if(d.hidden) return;
         let person = this.people.find((p: PersonOrganization) => { return p.name === d.key; })
         this.tooltip.nativeElement.style.display = 'block';
         this.tooltip.nativeElement.style.opacity = '1';
@@ -1519,7 +1575,7 @@ export class TestComponent implements OnInit {
     // set data attribute so we can select via css
     this.chartG.selectAll('.tick').attr('data-year', (d: any) => { return moment(d).year(); });
     // style axis ticks
-    this.chartG.selectAll('.tick line').attr('stroke', '#efefef').attr('stroke-dasharray', '2,2');
+    this.chartG.selectAll('.tick line').attr('stroke', '#e3e3e3').attr('stroke-width', '1px'); //.attr('stroke-dasharray', '2,2');
     // special stroke for special year
     this.chartG.select('.tick[data-year="1945"] > line').attr('stroke-width', '3px').attr('stroke', '#828282').attr('stroke-dasharray', '0,0');
     // position text
@@ -1554,6 +1610,7 @@ export class TestComponent implements OnInit {
       .attr('r', radius)
       .attr('fill', '#000')
       .on('mouseover', (d: any, i: number, n: any) => {
+        if(d.hidden) return;
         this.tooltip.nativeElement.style.display = 'block';
         this.tooltip.nativeElement.style.opacity = '1';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
@@ -1564,6 +1621,12 @@ export class TestComponent implements OnInit {
         if (top + tooltipBBox.height > this.window.innerHeight) {
           top -= tooltipBBox.height;
           this.tooltip.nativeElement.style.top = `${top}px`;
+        }
+        // clamp it to right
+        let left = this.tooltip.nativeElement.offsetLeft;
+        if(left + tooltipBBox.width > this.window.innerWidth) {
+          left -= tooltipBBox.width;
+          this.tooltip.nativeElement.style.left = `${left}px`;
         }
         this.tooltip.nativeElement.innerHTML = `
         <h3>${d.person} - ${d.dateName}</h3>
