@@ -1264,7 +1264,7 @@ export class TestComponent implements OnInit {
         return y2 ? y2 : 0;
       })
       .on('mouseover', (d: any) => {
-        if(d.hidden) return;
+        if (d.hidden) return;
         let birthDate = d.values.find((dd: any) => { return dd.dateName === 'Birth'; });
         let deathDate = d.values.find((dd: any) => { return dd.dateName === 'Death'; });
         if (birthDate) birthDate = birthDate.startDate;
@@ -1282,6 +1282,7 @@ export class TestComponent implements OnInit {
       .on('mouseout', () => {
         this.tooltip.nativeElement.style.opacity = '0';
         this.tooltip.nativeElement.style.display = 'none';
+        this.tooltip.nativeElement.innerHTML = '';
       })
       .merge(beforeDeathLines)
       .transition().duration(750)
@@ -1635,9 +1636,9 @@ export class TestComponent implements OnInit {
       .attr('r', radius)
       .attr('fill', '#000')
       .on('mouseover', (d: any, i: number, n: any) => {
-        if(d.hidden) return;
+        if (d.hidden) return;
+
         this.tooltip.nativeElement.style.display = 'block';
-        this.tooltip.nativeElement.style.opacity = '1';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
         this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
         // clamp tt to bottom - dont render outside of view
