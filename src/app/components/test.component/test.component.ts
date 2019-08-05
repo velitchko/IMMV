@@ -219,12 +219,14 @@ export class TestComponent implements OnInit {
   spinTo(closed: boolean = false): void {
     this.toggleMouseBehavior();
     if (closed) {
+      if (!this.mouseBehavior) this.toggleMouseBehavior(); // turn back on if closing
       // rotate back by -Math.PI
       this.timelineSVG
         .transition().duration(750)
         .attr('transform', 'rotate(0)');
       this.unhighlightPerson();
     } else {
+      if (this.mouseBehavior) this.toggleMouseBehavior(); // turn off if true
       // rotate to Math.PI
       let currentAngle = this.peopleAngles.get(this.selectedPerson.name) * (180 / Math.PI); // to degrees
       this.timelineSVG
