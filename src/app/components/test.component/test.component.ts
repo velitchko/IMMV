@@ -1358,7 +1358,7 @@ export class TestComponent implements OnInit {
       .attr('stroke-opacity', (d: any) => {
         return d.hidden ? 0 : 1;
       })
-      .attr('stroke-width', 8)
+      .attr('stroke-width', '8px')
       .attr('stroke', (d: any) => { return this.colors(d.color); })
       // .attr('stroke', (d: any) => { return '#A5D5E6' })
       .attr('x1', (d: any, i: number) => { return this.getXCoordinates(d.startDate.toDate(), this.peopleAngles.get(d.person)); })
@@ -1420,7 +1420,7 @@ export class TestComponent implements OnInit {
         .merge(peopleNames)
         .transition().duration(750)
         .text((d: any) => { return d.key; })
-        .style('font-size', '12px')
+      .style('font-size', '11px')
         .attr('transform', (d: any, i: number) => { 
           let rotate = (this.theta * i * 180 / Math.PI);
           let today = moment();
