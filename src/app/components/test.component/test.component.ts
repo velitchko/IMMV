@@ -1345,10 +1345,12 @@ export class TestComponent implements OnInit {
               <h4>${d.dateName}</h4>
               <p>${moment(d.startDate).format('DD/MM/YYYY')} ${d.startDate.diff(d.endDate, 'days') > 2 ? `- ${moment(d.endDate).format('DD/MM/YYYY')}` : ''}</p>
             `;
+
+        this.handleMouseover(d.dateName, d.personID, d.person, true); // from rad
       })
-      .on('mouseout', () => {
+      .on('mouseout', (d: any, i: number, n: any) => {
         this.tooltip.nativeElement.style.display = 'none';
-        this.tooltip.nativeElement.style.opacity = '0';
+        this.handleMouseout();
       })
       .merge(eventLines)
       .transition().duration(750)
@@ -1531,6 +1533,76 @@ export class TestComponent implements OnInit {
     d3.select('.radial-brush').raise(); 
   }
 
+  handleMouseout(): void {
+    if (this.radialG) {
+      this.radialG.selectAll('.person-name')
+        .attr('opacity', 1);
+
+      this.radialG.selectAll('.before-death')
+        .attr('stroke', '#A5F0D6')
+        .attr('opacity', 1);
+
+      this.radialG.selectAll('.category')
+        .attr('opacity', 1)
+
+      this.radialG.selectAll('.event')
+        .transition().duration(250)
+        .attr('stroke-width', '8px')
+        .attr('stroke', (d: any) => { return this.colors(d.color); });
+    }
+
+    if (this.chartG) {
+      this.chartG.selectAll('.dots')
+        .transition().duration(250)
+        .attr('r', 4)
+        .attr('fill', (d: any) => { return this.colors(d.color); })
+        .attr('opacity', 1);
+    }
+  }
+
+  handleMouseover(dateName: string, personID: string, personName: string, rad: boolean): void {
+    if (this.radialG && !rad) {
+      this.radialG.selectAll('.person-name')
+        .attr('opacity', (d: any) => { return personName === d.key ? 1 : 0; });
+
+      this.radialG.selectAll('.before-death')
+        .attr('stroke', (d: any) => {
+          return d.key === personName ? '#A5F0D6' : '#e7e7e7';
+        })
+        .attr('opacity', (d: any) => {
+          return d.key === personName ? 1 : .5;
+        });
+
+      this.radialG.selectAll('.category')
+        .attr('opacity', (d: any) => {
+          return d.key === personName ? 1 : .5;
+        })
+
+      this.radialG.selectAll('.event')
+        .transition().duration(250)
+        .attr('stroke-width', (d: any) => {
+          return d.dateName === dateName && d.personID === personID ? '10px' : '8px';
+        })
+        .attr('stroke', (d: any) => {
+          return d.dateName === dateName && d.personID === personID ? '#ffff00' : '#e7e7e7';
+        });
+    }
+
+    if (this.chartG && rad) {
+      this.chartG.selectAll('.dots')
+        .transition().duration(250)
+        .attr('r', (d: any) => {
+          return d.dateName === dateName && d.personID === personID ? 8 : 4;
+        })
+        .attr('fill', (d: any) => {
+          return d.dateName === dateName && d.personID === personID ? '#ffff00' : '#e7e7e7';
+        })
+        .attr('opacity', (d: any) => {
+          return d.dateName === dateName && d.personID === personID ? 1 : .5;
+        });
+    }
+  }
+
   /**
    * Renders a timeline chart of event types (count) over time
    * @param data the dataset 
@@ -1655,10 +1727,11 @@ export class TestComponent implements OnInit {
         <p>${moment(d.startDate).format('DD/MM/YYYY')} - ${moment(d.endDate).format('DD/MM/YYYY')}</p>
         <p>Category ${d.color}</p>
         `;
+        this.handleMouseover(d.dateName, d.personID, d.person, false);
       })
       .on('mouseout', (d: any, i: number, n: any) => {
         this.tooltip.nativeElement.style.display = 'none';
-        this.tooltip.nativeElement.style.opacity = '0';
+        this.handleMouseout();
       })
       .merge(dots)
       .transition().duration(250)
