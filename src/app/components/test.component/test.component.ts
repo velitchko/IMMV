@@ -1531,13 +1531,16 @@ export class TestComponent implements OnInit {
   handleMouseout(): void {
     if (this.radialG) {
       this.radialG.selectAll('.person-name')
+        .transition().duration(250)
         .attr('opacity', 1);
 
       this.radialG.selectAll('.before-death')
+      .transition().duration(250)
         .attr('stroke', '#A5F0D6')
         .attr('opacity', 1);
 
       this.radialG.selectAll('.category')
+      .transition().duration(250)
         .attr('opacity', 1)
 
       this.radialG.selectAll('.event')
