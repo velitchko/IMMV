@@ -1335,10 +1335,9 @@ export class TestComponent implements OnInit {
         let y2 = d3.select(n[i]).attr('y2');
         return y2 ? y2 : 0;
       })
-      .on('mouseover', (d: any) => {
-        if(d.hidden) return;
+      .on('mouseover', (d: any, i: number, n: any) => {
+        if (d.hidden) return;
         this.tooltip.nativeElement.style.display = 'block';
-        this.tooltip.nativeElement.style.opacity = '1';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
         this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
         this.tooltip.nativeElement.innerHTML = `
