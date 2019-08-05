@@ -1316,7 +1316,7 @@ export class TestComponent implements OnInit {
       .append('line')
       .attr('class', 'event')
       .attr('stroke', '#cbeabb')
-      .attr('stroke-width', 2)
+      .attr('stroke-width', '2px')
       .attr('stroke-linecap', 'round')
       .attr('stroke-opacity', 1)
       .attr('x1', (d: any, i: number, n: any) => {
