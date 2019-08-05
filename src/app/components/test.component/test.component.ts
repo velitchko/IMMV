@@ -1383,10 +1383,9 @@ export class TestComponent implements OnInit {
       .attr('class', 'category')
       .attr('d', categoricalArc)
       .on('mouseover', (d: any) => {
-        if(d.hidden) return;
+        if (d.hidden) return;
         let person = this.people.find((p: PersonOrganization) => { return p.name === d.key; })
         this.tooltip.nativeElement.style.display = 'block';
-        this.tooltip.nativeElement.style.opacity = '1';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
         this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
         this.tooltip.nativeElement.innerHTML = `
@@ -1396,7 +1395,6 @@ export class TestComponent implements OnInit {
       })
       .on('mouseout', () => {
         this.tooltip.nativeElement.style.display = 'none';
-        this.tooltip.nativeElement.style.opacity = '0';
       })
       .on('click', (d: any) => {
         this.displayPersonDetails(d.key);
