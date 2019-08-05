@@ -1843,7 +1843,9 @@ export class TestComponent implements OnInit {
         streetCount += c.value['street'];
         prizeCount += c.value['prize'];
       }
-    })
+    });
+    // TODO: Provide additional stats about the selection
+    // i.e., exiled vs non-exiled distribution
 
     // update radial selection
     let width = end - start;
