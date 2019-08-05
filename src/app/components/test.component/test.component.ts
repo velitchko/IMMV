@@ -217,7 +217,6 @@ export class TestComponent implements OnInit {
    * @param closed - boolean indicating if a person is selected or de-selected
    */
   spinTo(closed: boolean = false): void {
-    this.toggleMouseBehavior();
     if (closed) {
       if (!this.mouseBehavior) this.toggleMouseBehavior(); // turn back on if closing
       // rotate back by -Math.PI
