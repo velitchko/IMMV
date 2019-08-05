@@ -1651,7 +1651,7 @@ export class TestComponent implements OnInit {
         }
         // clamp it to right
         let left = this.tooltip.nativeElement.offsetLeft;
-        if(left + tooltipBBox.width > this.window.innerWidth) {
+        if (left + tooltipBBox.width > this.window.innerWidth) {
           left -= tooltipBBox.width;
           this.tooltip.nativeElement.style.left = `${left}px`;
         }
