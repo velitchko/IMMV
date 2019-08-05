@@ -1271,7 +1271,6 @@ export class TestComponent implements OnInit {
         if (deathDate) deathDate = deathDate.startDate;
         let age = Math.abs((birthDate ? birthDate : moment()).diff(deathDate ? deathDate : moment(), 'years'));
         this.tooltip.nativeElement.style.display = 'block';
-        this.tooltip.nativeElement.style.opacity = '1';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
         this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
         this.tooltip.nativeElement.innerHTML = `
@@ -1280,7 +1279,6 @@ export class TestComponent implements OnInit {
             `;
       })
       .on('mouseout', () => {
-        this.tooltip.nativeElement.style.opacity = '0';
         this.tooltip.nativeElement.style.display = 'none';
         this.tooltip.nativeElement.innerHTML = '';
       })
