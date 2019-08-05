@@ -1054,7 +1054,7 @@ export class TestComponent implements OnInit {
       .attr('transform', (d: any, i: number) => { 
         let rotate = (this.theta * i * 180 / Math.PI);
         let today = moment();
-        let radius = this.rScale(today.add(8, 'years').toDate()); // 8 year offset for text from outer circle
+        let radius = this.rScale(today.add(25, 'years').toDate()); // 8 year offset for text from outer circle
         let flip = (rotate > 90 && rotate < 270) ? 180 : 0; 
         let offset = (rotate > 90 && rotate < 270) ? -1 : .5; // correct offset
         return `rotate(${rotate + offset}) translate(${radius}) rotate(${flip})`;
@@ -1116,7 +1116,7 @@ export class TestComponent implements OnInit {
       .attr('transform', (d: any, i: number) => { 
         let rotate = (this.theta * i * 180 / Math.PI);
         let today = moment();
-        let radius = this.rScale(today.add(8, 'years').toDate()); // 8 year offset for text from outer circle
+        let radius = this.rScale(today.add(25, 'years').toDate()); // 8 year offset for text from outer circle
         let flip = 180;  // reverse flip
         let offset = -.5; // reverse offset
         return `rotate(${rotate + offset}) translate(${radius}) rotate(${flip})`;
@@ -1424,7 +1424,8 @@ export class TestComponent implements OnInit {
         .attr('transform', (d: any, i: number) => { 
           let rotate = (this.theta * i * 180 / Math.PI);
           let today = moment();
-          let radius = this.rScale(today.add(8, 'years').toDate()); // 8 year offset for text from outer circle
+        let radius = this.rScale(today.add(25, 'years').toDate()); // 8 year offset for text from outer circle
+        // TODO: consider using a number as an offset instead of years (years are variable we need a fixed offset)
           let flip = (rotate > 90 && rotate < 270) ? 180 : 0; 
           let offset = (rotate > 90 && rotate < 270) ? -1 : .5; // correct offset
           return `rotate(${rotate + offset}) translate(${radius}) rotate(${flip})`;
