@@ -1607,7 +1607,7 @@ export class TestComponent implements OnInit {
    * @param data the dataset 
    */
   renderChart(data: Array<any>): void {
-    let radius = 5;
+    let radius = 4;
     let timelineHeight = 200;
     //'street', 'exhibition', 'exile', 'prize', 'none'
 
