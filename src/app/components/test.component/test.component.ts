@@ -568,9 +568,7 @@ export class TestComponent implements OnInit {
         this.createTimeline();
         // populate timeline(s)
         //TODO: Improve dataset to filter more people
-        this.data = this.data.filter((d: any) => {
-          return d.startDate.isAfter(this.MIN_DATE);
-        }).sort((a: any, b: any) => {
+        this.data = this.data.sort((a: any, b: any) => {
           return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
         });
 
@@ -593,9 +591,7 @@ export class TestComponent implements OnInit {
 
     // our temporal range based on the data
     this.MIN_DATE = d3.min(this.data.map((d: any) => { return moment(d.startDate, ['YYYY-MM-DD',]); }));
-    // console.log(this.MIN_DATE);
-    this.MIN_DATE = moment('1938-01-01', 'YYYY-MM-DD');
-    // console.log(this.MIN_DATE);
+    // this.MIN_DATE = moment('1938-01-01', 'YYYY-MM-DD');
     this.MAX_DATE = moment(); // d3.max(this.data.map((d: any) => { return moment(d.endDate, ['YYYY-MM-DD']); })); 
 
     this.xScale = d3.scaleTime()
