@@ -1629,7 +1629,7 @@ export class TestComponent implements OnInit {
       .entries(data)
       .forEach((d: any) => {
         d.values.forEach((v: any) => {
-          filteredData.push(v);
+          if(v.color !== 'none') filteredData.push(v);
         });
       });
 
