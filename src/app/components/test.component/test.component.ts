@@ -244,6 +244,7 @@ export class TestComponent implements OnInit {
    */
   filterEventsByType(type?: string): void {
     if (!type) type = 'all';
+
     this.radialG.selectAll('.event')
       .transition()
       .duration(250)
@@ -252,23 +253,31 @@ export class TestComponent implements OnInit {
         return (d.color !== type && d.color !== 'none') ? 0 : 1;
       });
 
-    let show = this.eventTypes.filter((t: string) => { return t !== 'all'; });
-    show.forEach((type: string) => {
-      this.chartG.select(`.${type}`)
+    this.chartG.selectAll('.dots')
         .transition()
         .duration(250)
-        .attr('opacity', 1);
+        .attr('opacity', (d: any) => {
+          if(type === 'all') return 1;
+          return (d.color !== type && d.color !== 'none') ? 0 : 1;
     });
+    // not needed
+    // let show = this.eventTypes.filter((t: string) => { return t !== 'all'; });
+    // show.forEach((type: string) => {
+    //   this.chartG.select(`.${type}`)
+    //     .transition()
+    //     .duration(250)
+    //     .attr('opacity', 1);
+    // });
 
-    if (type !== 'all') {
-      let hide = this.eventTypes.filter((t: string) => { return (t !== type) && (t !== 'all'); });
-      hide.forEach((type: string) => {
-        this.chartG.select(`.${type}`)
-          .transition()
-          .duration(250)
-          .attr('opacity', 0);
-      });
-    }
+    // if (type !== 'all') {
+    //   let hide = this.eventTypes.filter((t: string) => { return (t !== type) && (t !== 'all'); });
+    //   hide.forEach((type: string) => {
+    //     this.chartG.select(`.${type}`)
+    //       .transition()
+    //       .duration(250)
+    //       .attr('opacity', 0);
+    //   });
+    // }
   }
 
   /**
