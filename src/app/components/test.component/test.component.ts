@@ -4,13 +4,14 @@ import { PersonOrganization } from '../../models/person.organization';
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { Event } from '../../models/event';
-import { environment } from '../../../environments/environment';
 import * as d3 from 'd3';
 import * as moment from 'moment';
 import { FormControl } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { map, startWith, filter } from 'rxjs/operators';
-import { values } from 'd3';
+import { environment } from '../../../environments/environment';
+import { ActivatedRoute } from "@angular/router";
+import { PARAMETERS } from '@angular/core/src/util/decorators';
 
 @Component({
   selector: 'app-test',
@@ -69,8 +70,6 @@ export class TestComponent implements OnInit {
   orderingMap: Map<string, Map<string, any>>;
   peopleAngles: Map<string, number>;
 
-
-
   countByYear: Array<any>;
 
   margin = {                                 // margin config for the svg's
@@ -112,13 +111,17 @@ export class TestComponent implements OnInit {
   peopleCtrl: FormControl;
   filteredPeople: Observable<Array<PersonOrganization>>;
 
+  preset: string;
+
 
   /**
    * @param db DatabaseService - the service we use to perform database queries and get requests
    * @param window (JS) Window object - Leaflet needs this and we provide it (check app.module.ts)
    * @param _platformId Object determining if we are on the server or browser side
    */
-  constructor(private db: DatabaseService, @Inject('WINDOW') private window: any, @Inject(PLATFORM_ID) private _platformId: Object) {
+  constructor(private db: DatabaseService, @Inject('WINDOW') private window: any, @Inject(PLATFORM_ID) private _platformId: Object, private route: ActivatedRoute) {
+    this.preset = this.route.snapshot.paramMap.get('preset');
+
     this.personSelected = false;
 
     this.mouseBehavior = true;
@@ -128,7 +131,9 @@ export class TestComponent implements OnInit {
     this.filteredPeople = this.peopleCtrl.valueChanges
       .pipe(
         startWith(''),
-        map(person => person ? this.filterPeople(person) : this.people.slice())
+        map((person: string) => {
+          return person ? this.filterPeople(person) : this.people.slice()}
+          )
       );
 
     this.people = new Array<PersonOrganization>();
@@ -576,12 +581,57 @@ export class TestComponent implements OnInit {
         this.data = this.data.sort((a: any, b: any) => {
           return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
         });
-
+        window.addEventListener('resize', this.onResize.bind(this));
+        // TODO: change to button or keybind copy event is weird
+        document.addEventListener('copy', ($event: any) => {
+          let item = {
+            selectedPerson: this.selectedPerson,
+            currentOrder: this.currentOrder,
+            currentGrouping: this.currentGrouping,
+            currentlySelectedMinDate: this.currentlySelectedMinDate,
+            currentlySelectedMaxDate: this.currentlySelectedMaxDate,
+            mouseBehavior: this.mouseBehavior,
+            brushBehavior: this.brushBehavior,
+            // showList: this.sh
+          };
+          this.db.saveSnapshot(JSON.stringify(item)).then((response: any) => {
+            $event.clipboardData.setData('text/plain', `${environment.API_URL}snapshots/${response._id}`);
+            //TODO: modal / popup with url
+          });
+          $event.preventDefault();
+        });
 
         this.renderRadial(this.data);
         this.renderChart(this.data);
+        if(this.preset) {
+          this.db.getSnapshot(this.preset).then((success: any) => {
+            // TODO: set variables form snapshot here
+            // iterate JSON and set properties\
+            let params = JSON.parse(success.parameters);
+            for(let p in params) {
+              console.log(p, params[p]);
+              this[p] = params[p];
+            }
+          });
+          console.log(this.personSelected);
+          console.log(this.currentOrder);
+          console.log(this.currentGrouping)
+          console.log(this.currentlySelectedMinDate);
+          console.log(this.currentlySelectedMaxDate);
+          console.log(this.mouseBehavior);
+          console.log(this.brushBehavior);
+        }
       });
     });
+  }
+
+  encode(parameters: any): string {
+    return '';
+  }
+
+  onResize(): void {
+      console.log('resized');
+      //TODO: implement
   }
 
   /**
