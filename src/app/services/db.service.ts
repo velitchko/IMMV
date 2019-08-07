@@ -407,6 +407,7 @@ export class DatabaseService {
         personOrganization.author = json.author;
         personOrganization.objectType = json.objectType;
         personOrganization.dates = json.dates;
+        personOrganization.names = json.names;
         if (json.objectType === 'Person') {
             personOrganization.bio = json.bio;
             personOrganization.roles = json.roles;
@@ -435,6 +436,7 @@ export class DatabaseService {
         personOrganization.author = json.author;
         personOrganization.objectType = json.objectType;
         personOrganization.dates = json.dates;
+        personOrganization.names = json.names;
         if (json.objectType === 'Person') {
             personOrganization.bio = json.bio;
             personOrganization.roles = json.roles;
