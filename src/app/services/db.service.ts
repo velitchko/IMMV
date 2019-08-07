@@ -861,6 +861,40 @@ export class DatabaseService {
     }
 
     /**
+     * Save snapshots (states of vis)
+     * @param snapshot - stringified JSON 
+     * 
+     */
+    async saveSnapshot(snapshot: string): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            this.http.post(environment.API_URL + 'snapshots', { parameters: snapshot }).subscribe((success: any) => {
+                if(success.message === 'OK') {
+                    resolve(success.results);
+                } else {
+                    reject('ERROR ' + success.message);
+                }
+            })
+        }); 
+    }
+
+    /**
+     * Get snapshot from db based on id
+     * @param snapshotID: string 
+     */
+    async getSnapshot(snapshotID: string): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            this.http.get(environment.API_URL + `snapshots/${snapshotID}`).subscribe((success: any) => {
+                if(success.message === 'OK') {
+                    resolve(success.results)
+                } else {
+                    reject('ERROR ' + success.message);
+                }
+            });
+        });
+    }
+
+
+    /**
      * Reverse lookup events by historic event association
      * @param loc theme thats being reverse queried
      * @returns Promise<any> - promise that resolves with an array events (of Event class type)
