@@ -515,7 +515,6 @@ export class TestComponent implements OnInit {
 
       Promise.all(themePromiseEventArray).then((peopleEvents: Array<any>) => {
         // populate map
-        let eventCounter = 0;
         peopleEvents.forEach((personEvents: any) => {
           let person = personEvents.person;
           // person.category = this.getRandomCategory();
@@ -534,7 +533,6 @@ export class TestComponent implements OnInit {
               // dataPoint.category = this.getRandomCategory();
               dataPoint.color = this.getEventType(func.dateName ? func.dateName : '');
               this.data.push(dataPoint);
-              eventCounter++;
             });
 
             // other dates
@@ -555,11 +553,9 @@ export class TestComponent implements OnInit {
               // dataPoint.category = this.getRandomCategory();
               dataPoint.color = this.getEventType(date.dateName ? date.dateName : '');
               this.data.push(dataPoint);
-              eventCounter++;
             });
           }
           this.addEventsToPerson(person, events);
-          eventCounter += events.length;
         });
 
         this.orderingMap.get('First Post-death Event').forEach((value: any, key: string) => {
