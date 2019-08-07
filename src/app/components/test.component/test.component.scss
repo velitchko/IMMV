@@ -79,6 +79,13 @@ $timeline-height: 200px;
     overflow: hidden;
 }
 
+::ng-deep .aka {
+    color: gray;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+}
+
 ::ng-deep .category,
 ::ng-deep .dots  {
     cursor: pointer;
