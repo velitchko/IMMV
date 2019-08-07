@@ -1274,11 +1274,18 @@ export class TestComponent implements OnInit {
         if (birthDate) birthDate = birthDate.startDate;
         if (deathDate) deathDate = deathDate.startDate;
         let age = Math.abs((birthDate ? birthDate : moment()).diff(deathDate ? deathDate : moment(), 'years'));
+        let person = this.people.find((p: PersonOrganization) => { return p.name === d.key; });
+        let artistName = '';
+        person.names.forEach((name: any) => {
+          if(name.nameType === 'Showbiz Name') artistName = name.name;
+        });
+
         this.tooltip.nativeElement.style.display = 'block';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
         this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
         this.tooltip.nativeElement.innerHTML = `
-              <h3>${d.key} (${age})</h3>
+              <h3>${artistName !== '' ? artistName : d.key} (${age})</h3>
+              ${artistName !== '' ? `<span class="aka">a.k.a. ${d.key}</span>` : ''}
               <p>Born: ${moment(birthDate).format('DD/MM/YYYY')} ${deathDate ? ` - Died: ${moment(deathDate).format('DD/MM/YYYY')}` : ''}</p>
             `;
       })
@@ -1344,8 +1351,14 @@ export class TestComponent implements OnInit {
         this.tooltip.nativeElement.style.display = 'block';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
         this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
+        let person = this.people.find((p: PersonOrganization) => { return p.name === d.person; });
+        let artistName = '';
+        person.names.forEach((name: any) => {
+          if(name.nameType === 'Showbiz Name') artistName = name.name;
+        });
         this.tooltip.nativeElement.innerHTML = `
-              <h3>${d.person}</h3>
+              <h3>${artistName !== '' ? artistName : d.person}</h3>
+              ${artistName !== '' ? `<span class="aka">a.k.a. ${person.name}</span>` : ''}
               <h4>${d.dateName}</h4>
               <p>${moment(d.startDate).format('DD/MM/YYYY')} ${d.startDate.diff(d.endDate, 'days') > 2 ? `- ${moment(d.endDate).format('DD/MM/YYYY')}` : ''}</p>
             `;
@@ -1388,11 +1401,16 @@ export class TestComponent implements OnInit {
       .on('mouseover', (d: any) => {
         if (d.hidden) return;
         let person = this.people.find((p: PersonOrganization) => { return p.name === d.key; })
+        let artistName = '';
+        person.names.forEach((name: any) => {
+          if(name.nameType === 'Showbiz Name') artistName = name.name;
+        });
         this.tooltip.nativeElement.style.display = 'block';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
         this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
         this.tooltip.nativeElement.innerHTML = `
-        <h3>${person.name}</h3>
+        <h3>${artistName !== '' ? artistName : person.name}</h3>
+        ${artistName !== '' ? `<span class="aka">a.k.a. ${d.key}</span>` : ''}
         <p>Category ${(person as any).category}</p>
         `;
       })
@@ -1420,7 +1438,14 @@ export class TestComponent implements OnInit {
         .attr('class', 'person-name')
         .merge(peopleNames)
         .transition().duration(750)
-        .text((d: any) => { return d.key; })
+      .text((d: any) => { 
+        let person = this.people.find((p: any) => { return p.name === d.key; });
+        let artistName = '';
+        person.names.forEach((name: any) => {
+          if(name.nameType === 'Showbiz Name') artistName = name.name;
+        })
+        return artistName !== '' ? artistName : d.key; 
+      })
       .style('font-size', '11px')
         .attr('transform', (d: any, i: number) => { 
           let rotate = (this.theta * i * 180 / Math.PI);
@@ -1729,8 +1754,13 @@ export class TestComponent implements OnInit {
           left -= tooltipBBox.width;
           this.tooltip.nativeElement.style.left = `${left}px`;
         }
+        let person = this.people.find((p: PersonOrganization) => { return p.name === d.person; });
+        let artistName = '';
+        person.names.forEach((name: any) => {
+          if(name.nameType === 'Showbiz Name') artistName = name.name;
+        });
         this.tooltip.nativeElement.innerHTML = `
-        <h3>${d.person} - ${d.dateName}</h3>
+        <h3>${artistName !== '' ? artistName : d.person} - ${d.dateName}</h3>
         <p>${moment(d.startDate).format('DD/MM/YYYY')} - ${moment(d.endDate).format('DD/MM/YYYY')}</p>
         <p>Category ${d.color}</p>
         `;
