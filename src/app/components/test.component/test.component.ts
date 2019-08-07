@@ -208,7 +208,7 @@ export class TestComponent implements OnInit {
     let nameVal = personName.trim().toLowerCase();
 
     return this.people.filter((person: PersonOrganization) => {
-      return person.name.trim().toLowerCase().indexOf(nameVal) === 0;
+      return person.name.trim().toLowerCase().includes(nameVal) || person.names.map((n: any) => { return n.name.trim().toLowerCase(); }).includes(nameVal);
     });
   }
 
