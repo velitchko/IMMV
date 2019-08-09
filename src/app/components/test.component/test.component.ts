@@ -143,15 +143,15 @@ export class TestComponent implements OnInit {
     this.exiledFilter = false;
 
     this.colors = d3.scaleOrdinal()
-      .domain(['street', 'exhibition', 'exile', 'prize', 'none'])
-      .range(['red', 'blue', '#4F8874', 'purple', '#47DBA7']); // old none blue - #027cef
+      .domain(['street', 'exhibition', 'exile',  'prize', 'none', 'memorial', 'conference', 'anniversary'])
+      .range(['red', 'blue', '#4F8874', 'purple', '#47DBA7', '#ff6bb5' , '#ffa500' , '#0dff00']); // old none blue - #027cef
 
     this.categoricalColors = d3.scaleOrdinal()
-      .range(d3.schemeSet2);
+      .range(['#040404', '#494949', '#a7a7a7', '#d8d8d7']);//(d3.schemeSet2);
     // .domain(['Musician', 'Composer', 'Conductor', 'Author', 'Mixed'])
     // .range(['#F286D2', '#36b3d0', '#FFE18D', '#ff0000', '#efefef']);
 
-    this.eventTypes = new Array<string>('street', 'exhibition', 'prize', 'all');
+    this.eventTypes = new Array<string>('street', 'exhibition', 'prize', 'memorial', 'anniversary', 'conference', 'all');
 
     this.peopleAngles = new Map<string, number>();
     // meta map
@@ -290,10 +290,13 @@ export class TestComponent implements OnInit {
    * @param eventName name of the event
    */
   getEventType(eventName: string): string {
-    let name = eventName.toLowerCase();
+    let name = eventName.trim().toLowerCase();
     let cat = 'none';
+    if (name.includes('gedenk') || name.includes('denkmal') || name.includes('nachlass') || name.includes('büste')) cat = 'memorial';
     if (name.includes('benannt') || name.includes('benennung')) cat = 'street';
-    if (name.includes('ehrenring') || name.includes('bürger') || name.includes('preis der stadt wien')) cat = 'prize';
+    if (name.includes('verleihung') || name.includes('verliehen') || name.includes('preis') || name.includes('bürger') || name.includes('ehrenmedaille')) cat = 'prize';
+    if(name.includes('symposium') || name.includes('konferenz')) cat = 'conference';
+    if(name.includes('todestag') || name.includes('geburtstag')) cat = 'anniversary';
     if (name.includes('ausstellung')) cat = 'exhibition';
     if (eventName.includes('exil')) cat = 'exile';
 
@@ -1008,6 +1011,15 @@ export class TestComponent implements OnInit {
           return 1;
         }
       });
+
+      this.chartG.selectAll('.dots')
+        .transition()
+        .duration(250)
+        .attr('fill', (d: any) => {
+          return d.startDate.isBetween(start, end, 'year') ? this.colors(d.color) : '#777777';
+        }).attr('opacity', (d: any) => {
+          return d.startDate.isBetween(start, end, 'year') ? 1 : .25;
+        });
   }
 
   /**
@@ -1469,7 +1481,7 @@ export class TestComponent implements OnInit {
       .merge(categoricalBars)
       .transition().duration(750)
       .attr('d', categoricalArc)
-      .attr('stroke', '#828282')
+      .attr('stroke', '#7b7b7b')
       .attr('fill', (d: any) => {
         let person = this.people.find((p: any) => { return p.name === d.key; });
         categories.add((person as any).category);
@@ -1611,37 +1623,37 @@ export class TestComponent implements OnInit {
   handleMouseout(): void {
     if (this.radialG) {
       this.radialG.selectAll('.person-name')
-        .transition().duration(250)
-        .attr('opacity', 1);
+        // .transition().duration(250)
+        .attr('opacity', (d: any) => { return d.hidden ? 0 : 1});
 
       this.radialG.selectAll('.before-death')
-      .transition().duration(250)
+      // .transition().duration(250)
         .attr('stroke', '#A5F0D6')
-        .attr('opacity', 1);
+        .attr('opacity', (d: any) => { return d.hidden ? 0 : 1});
 
       this.radialG.selectAll('.category')
-      .transition().duration(250)
-        .attr('opacity', 1)
+      // .transition().duration(250)
+      .attr('opacity', (d: any) => { return d.hidden ? 0 : 1});
 
       this.radialG.selectAll('.event')
-        .transition().duration(250)
+        // .transition().duration(250)
         .attr('stroke-width', '8px')
         .attr('stroke', (d: any) => { return this.colors(d.color); });
     }
 
     if (this.chartG) {
       this.chartG.selectAll('.dots')
-        .transition().duration(250)
+        // .transition().duration(250)
         .attr('r', 4)
         .attr('fill', (d: any) => { return this.colors(d.color); })
-        .attr('opacity', 1);
+        .attr('opacity', (d: any) => { return d.hidden ? 0 : 1});
     }
   }
 
   handleMouseover(dateName: string, personID: string, personName: string, rad: boolean): void {
     if (this.radialG && !rad) {
       this.radialG.selectAll('.person-name')
-        .attr('opacity', (d: any) => { return personName === d.key ? 1 : 0; });
+        .attr('opacity', (d: any) => { return personName.localeCompare(d.key) ? 1 : 0; });
 
       this.radialG.selectAll('.before-death')
         .attr('stroke', (d: any) => {
@@ -1657,7 +1669,7 @@ export class TestComponent implements OnInit {
         })
 
       this.radialG.selectAll('.event')
-        .transition().duration(250)
+        // .transition().duration(250)
         .attr('stroke-width', (d: any) => {
           return d.dateName === dateName && d.personID === personID ? '10px' : '8px';
         })
@@ -1668,7 +1680,7 @@ export class TestComponent implements OnInit {
 
     if (this.chartG && rad) {
       this.chartG.selectAll('.dots')
-        .transition().duration(250)
+        // .transition().duration(250)
         .attr('r', (d: any) => {
           return d.dateName === dateName && d.personID === personID ? 8 : 4;
         })
@@ -1716,6 +1728,9 @@ export class TestComponent implements OnInit {
           exhibition: s.filter((ss: any) => { return ss.color === 'exhibition' }).length,
           prize: s.filter((ss: any) => { return ss.color === 'prize' }).length,
           exile: s.filter((ss: any) => { return ss.color === 'exile' }).length,
+          anniversary: s.filter((ss: any) => { return ss.color === 'anniversary' }).length,
+          conference: s.filter((ss: any) => { return ss.color === 'conference' }).length,
+          memorial: s.filter((ss: any) => { return ss.color === 'memorial' }).length,
           none: s.filter((ss: any) => { return ss.color === 'none' }).length,
         };
       })
