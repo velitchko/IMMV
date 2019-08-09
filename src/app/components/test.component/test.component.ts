@@ -13,6 +13,9 @@ import { environment } from '../../../environments/environment';
 import { ActivatedRoute } from "@angular/router";
 import { PARAMETERS } from '@angular/core/src/util/decorators';
 
+// Endpoint for current vis
+const _VIS: string = 'test';
+
 @Component({
   selector: 'app-test',
   templateUrl: './test.component.html',
