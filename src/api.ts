@@ -10,6 +10,7 @@ let LocationSchema = require('./database/schemas/location');
 let ThemeSchema = require('./database/schemas/theme');
 let PersonOrganizationSchema = require('./database/schemas/personorganization');
 let SourceSchema = require('./database/schemas/source');
+let SnapshotSchema = require('./database/schemas/snapshots');
 
 const DATABASE_COLLECTION = 'immv2';
 
