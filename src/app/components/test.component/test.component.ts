@@ -598,10 +598,6 @@ export class TestComponent implements OnInit {
       });
   }
 
-  encode(parameters: any): string {
-    return '';
-  }
-
   onResize(): void {
       console.log('resized');
       //TODO: implement
