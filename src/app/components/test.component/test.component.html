@@ -63,6 +63,12 @@
                         </mat-option>
                     </mat-autocomplete>
                 </mat-form-field>
+                <mat-form-field>
+                    <button mat-button matPrefix mat-icon-button (click)="saveConfig($event)">
+                        <mat-icon>code</mat-icon>
+                    </button>
+                    <input matInput type="text" id="config-url" placeholder="Config URL" #configInput>
+                </mat-form-field>
             </div>
         </div>
         <div id="wrapper">
