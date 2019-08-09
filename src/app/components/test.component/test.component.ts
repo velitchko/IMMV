@@ -29,6 +29,7 @@ export class TestComponent implements OnInit {
   @ViewChild('brushHolder') brushContainer: ElementRef;
   @ViewChild('mapHolder') mapContainer: ElementRef;
   @ViewChild('tooltip') tooltip: ElementRef;
+  @ViewChild('configInput') configInput: ElementRef;
   // display range
   currentlySelectedMinDate: Date;           // currently displayed min date (selection)
   currentlySelectedMaxDate: Date;           // currently displayed max date (selection)
