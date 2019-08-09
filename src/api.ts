@@ -282,6 +282,19 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
     });
   });
 
+  api.post('/api/v1/snapshots', (req: express.Request, res: express.Response) => {
+    let snapshot = new SnapshotSchema();
+    console.log('saving snapshot');
+    console.log(req.body.parameters)
+    snapshot.parameters = req.body.parameters;
+
+    snapshot.save((err: Error, savedSnapshot: any) => {
+      if(!err) {
+        res.status(200).json({ 'message' : 'OK', results: savedSnapshot});
+      }
+    });
+  });
+
   /**
    * QUERY EVENTS BY RELATIONS (REVERSE LOOKUP)
    */
@@ -343,6 +356,19 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
       res.status(200).sendFile(path.resolve(`${UPLOAD_DIR_PATH}/${req.params.id}`));
     } else {
       res.status(404).json({ "message": `${req.params.id} does not exist.` });
+    }
+  });
+
+  // GET Snapshots
+  api.get('/api/v1/snapshots/:id', (req: express.Request, res: express.Response) => {
+    if(req.params.id) {
+      SnapshotSchema.findOne({ _id: req.params.id}, (err: Error, snapshot: any) => {
+        if(err) console.log(err);
+
+        res.status(200).json({ "message" : "OK", results: snapshot});
+      })
+    } else {
+
     }
   });
 
