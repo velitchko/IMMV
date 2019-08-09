@@ -584,48 +584,14 @@ export class TestComponent implements OnInit {
         this.data = this.data.sort((a: any, b: any) => {
           return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
         });
-        window.addEventListener('resize', this.onResize.bind(this));
-        // TODO: change to button or keybind copy event is weird
-        document.addEventListener('copy', ($event: any) => {
-          let item = {
-            selectedPerson: this.selectedPerson,
-            currentOrder: this.currentOrder,
-            currentGrouping: this.currentGrouping,
-            currentlySelectedMinDate: this.currentlySelectedMinDate,
-            currentlySelectedMaxDate: this.currentlySelectedMaxDate,
-            mouseBehavior: this.mouseBehavior,
-            brushBehavior: this.brushBehavior,
-            // showList: this.sh
-          };
-          this.db.saveSnapshot(JSON.stringify(item)).then((response: any) => {
-            $event.clipboardData.setData('text/plain', `${environment.API_URL}snapshots/${response._id}`);
-            //TODO: modal / popup with url
-          });
-          $event.preventDefault();
-        });
+        document.addEventListener('resize', this.onResize.bind(this));
 
         this.renderRadial(this.data);
         this.renderChart(this.data);
-        if(this.preset) {
-          this.db.getSnapshot(this.preset).then((success: any) => {
-            // TODO: set variables form snapshot here
-            // iterate JSON and set properties\
-            let params = JSON.parse(success.parameters);
-            for(let p in params) {
-              console.log(p, params[p]);
-              this[p] = params[p];
-            }
+
+        if(this.preset) this.updateConfig();
           });
-          console.log(this.personSelected);
-          console.log(this.currentOrder);
-          console.log(this.currentGrouping)
-          console.log(this.currentlySelectedMinDate);
-          console.log(this.currentlySelectedMaxDate);
-          console.log(this.mouseBehavior);
-          console.log(this.brushBehavior);
-        }
       });
-    });
   }
 
   encode(parameters: any): string {
@@ -635,6 +601,20 @@ export class TestComponent implements OnInit {
   onResize(): void {
       console.log('resized');
       //TODO: implement
+  }
+
+  updateConfig(): void {
+    // TODO: parse preset and update vis
+  }
+
+  copyToClipBoard(item: string): void {
+    document.addEventListener('copy',  ($event: any) => {
+      $event.clipboardData.setData('text/plain', item);
+      $event.preventDefault();
+      document.removeEventListener('copy', null);
+    });
+
+    document.execCommand('copy');
   }
 
   /**
@@ -666,6 +646,25 @@ export class TestComponent implements OnInit {
 
     this.angleScale = d3.scaleLinear().range([0, 360]); // circle 0-360 degrees
   }
+
+  saveConfig($event): void {
+    let item = {
+      selectedPerson: this.selectedPerson,
+      currentOrder: this.currentOrder,
+      currentGrouping: this.currentGrouping,
+      currentlySelectedMinDate: this.currentlySelectedMinDate,
+      currentlySelectedMaxDate: this.currentlySelectedMaxDate,
+      mouseBehavior: this.mouseBehavior,
+      brushBehavior: this.brushBehavior,
+      // showList: this.sh
+    };
+    this.db.saveSnapshot(JSON.stringify(item)).then((response: any) => {
+      let url =  `${environment.APP_URL}${_VIS}/${response._id}`;
+      this.configInput.nativeElement.value = url;
+      this.copyToClipBoard(url);
+    });
+  }
+
 
   /**
    * Returns the x-coordinate based on the date (radius) and angle (theta)
