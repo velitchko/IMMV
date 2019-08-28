@@ -23,7 +23,8 @@ import { SearchComponent } from './components/search/search.component';
 import { ThemeComponent } from './components/themes/themes.component';
 import { TimelineComponent } from './components/timeline/timeline.component';
 import { PeopleTimelineComponent } from './components/people-timeline/people-timeline.component';
-import { TestComponent } from './components/test.component/test.component';
+import { RadialTimelineComponent } from './components/radial.timeline.component/radial.timeline.component';
+import { BiographicalComponent } from './components/biographical.component/biographical.component';
 // Services
 import { EventService } from './services/event.service';
 import { LocationService } from './services/location.service';
@@ -93,7 +94,8 @@ export const APP_ID = 'my-app';
     ThemeComponent,
     TimelineComponent,
     PeopleTimelineComponent,
-    TestComponent,
+    RadialTimelineComponent,
+    BiographicalComponent,
     MapValuesPipe,
     SafeHtmlPipe,
     SafeResourcePipe

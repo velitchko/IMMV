@@ -27,10 +27,10 @@ export class DashboardComponent implements OnInit {
     if(this.isBrowser) {
       this.window.addEventListener('resize', this.onResize());
     }
-    this.ss.getSource('5bc86b6ce8a0d9011630e271').then((success) => {
-      this.source = success;
-      this.sourceLoaded = true;
-    })
+    // this.ss.getSource('5bc86b6ce8a0d9011630e271').then((success) => {
+    //   this.source = success;
+    //   this.sourceLoaded = true;
+    // });
   }
 
   ngOnInit() {
