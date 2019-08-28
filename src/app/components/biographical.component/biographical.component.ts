@@ -11,18 +11,17 @@ import { Observable } from 'rxjs';
 import { map, startWith, filter } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { ActivatedRoute } from "@angular/router";
-import { PARAMETERS } from '@angular/core/src/util/decorators';
 
 // Endpoint for current vis
-const _VIS: string = 'test';
+const _VIS: string = 'biographical';
 
 @Component({
-  selector: 'app-test',
-  templateUrl: './test.component.html',
-  styleUrls: ['./test.component.scss']
+  selector: 'app-biographical',
+  templateUrl: './biographical.component.html',
+  styleUrls: ['./biographical.component.scss']
 })
 
-export class TestComponent implements OnInit {
+export class BiographicalComponent implements OnInit {
   // HTML 
   @ViewChild('timelineRadial') timelineRadial: ElementRef;
   @ViewChild('timelineChart') timelineChart: ElementRef;
@@ -585,6 +584,9 @@ export class TestComponent implements OnInit {
         this.createTimeline();
         // populate timeline(s)
         //TODO: Improve dataset to filter more people
+        this.data.forEach((d: any) => {
+          console.log(`${d.dateName};${d.startDate.toDate()};${d.endDate.toDate()};${d.person};${d.color}`);
+        })
         this.data = this.data.sort((a: any, b: any) => {
           return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
         });
@@ -628,7 +630,10 @@ export class TestComponent implements OnInit {
     this.HEIGHT = height ? height : this.timelineRadial.nativeElement.clientHeight;
 
     // our temporal range based on the data
-    this.MIN_DATE = d3.min(this.data.map((d: any) => { return moment(d.startDate, ['YYYY-MM-DD',]); }));
+    
+    this.MIN_DATE = d3.min(this.data.map((d: any) => { 
+      return moment(d.startDate, ['YYYY-MM-DD',]); 
+    }));
     // this.MIN_DATE = moment('1938-01-01', 'YYYY-MM-DD');
     this.MAX_DATE = moment(); // d3.max(this.data.map((d: any) => { return moment(d.endDate, ['YYYY-MM-DD']); })); 
 
@@ -664,6 +669,7 @@ export class TestComponent implements OnInit {
       this.copyToClipBoard(url);
     });
   }
+
 
 
   /**
@@ -1935,11 +1941,17 @@ export class TestComponent implements OnInit {
     let exhibitionCount = 0;
     let streetCount = 0;
     let prizeCount = 0;
+    let memorialCount = 0;
+    let anniversaryCount = 0;
+    let conferenceCount = 0;
     this.countByYear.forEach((c: any) => {
       if (moment(c.key).isBetween(this.currentlySelectedMinDate, this.currentlySelectedMaxDate, 'year')) {
         exhibitionCount += c.value['exhibition'];
         streetCount += c.value['street'];
         prizeCount += c.value['prize'];
+        memorialCount += c.value['memorial'];
+        anniversaryCount += c.value['anniversary'];
+        conferenceCount += c.value['conference'];
       }
     });
     // TODO: Provide additional stats about the selection
@@ -1961,6 +1973,9 @@ export class TestComponent implements OnInit {
               <p style="color: ${this.colors('exhibition')}">Exhibitions ${exhibitionCount}</p>
               <p style="color: ${this.colors('street')}">Street-namings ${streetCount}</p>
               <p style="color: ${this.colors('prize')}">Prizes ${prizeCount}</p>
+              <p style="color: ${this.colors('memorial')}">Prizes ${memorialCount}</p>
+              <p style="color: ${this.colors('anniversary')}">Prizes ${anniversaryCount}</p>
+              <p style="color: ${this.colors('conference')}">Prizes ${conferenceCount}</p>
               `
       );
 
