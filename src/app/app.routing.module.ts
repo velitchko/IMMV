@@ -7,7 +7,7 @@ import { MusicMapComponent }    from './components/music-map/music-map.component
 import { PersonOrganizationComponent } from './components/personorganization/personorganization.component';
 import { PeopleTimelineComponent } from './components/people-timeline/people-timeline.component';
 import { RadialTimelineComponent } from './components/radial.timeline.component/radial.timeline.component';
-import { TestComponent } from './components/test.component/test.component';
+import { BiographicalComponent } from './components/biographical.component/biographical.component';
 
 const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent },
@@ -15,8 +15,8 @@ const routes: Routes = [
   { path: 'people', component: PersonOrganizationComponent },
   { path: 'themes', component: ThemeComponent },
   { path: 'radial', component: RadialTimelineComponent },
-  { path: 'test/:preset', component: TestComponent },
-  { path: 'test', component: TestComponent },
+  { path: 'biographical/:preset', component: BiographicalComponent },
+  { path: 'biographical', component: BiographicalComponent },
   { path: 'chrono', component: PeopleTimelineComponent },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
   { path: '**', redirectTo: '/dashboard'},
