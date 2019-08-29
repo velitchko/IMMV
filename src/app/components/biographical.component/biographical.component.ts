@@ -328,6 +328,7 @@ export class BiographicalComponent implements OnInit {
 
       let dataPoint: any = {};
       dataPoint.person = person.name;
+      dataPoint.dateID = event.objectId;
       dataPoint.personID = person.objectId;
       dataPoint.startDate = moment(event.startDate);
       dataPoint.endDate = event.endDate ? moment(event.endDate) : moment(event.startDate);
@@ -538,6 +539,7 @@ export class BiographicalComponent implements OnInit {
               dataPoint.startDate = moment(func.startDate);
               dataPoint.endDate = func.endDate ? moment(func.endDate) : moment(func.startdate);
               dataPoint.person = person.name;
+              dataPoint.dateID = func._id;
               dataPoint.personCategory = person.category;
               dataPoint.dateName = func.dateName;
               dataPoint.personID = person.objectId;
@@ -557,6 +559,7 @@ export class BiographicalComponent implements OnInit {
               let dataPoint: any = {};
               dataPoint.startDate = moment(date.date);
               dataPoint.endDate = moment(date.date);
+              dataPoint.dateID = date._id;
               dataPoint.dateName = date.dateName;
               dataPoint.person = person.name;
               dataPoint.personCategory = person.category;
@@ -584,9 +587,7 @@ export class BiographicalComponent implements OnInit {
         this.createTimeline();
         // populate timeline(s)
         //TODO: Improve dataset to filter more people
-        this.data.forEach((d: any) => {
-          console.log(`${d.dateName};${d.startDate.toDate()};${d.endDate.toDate()};${d.person};${d.color}`);
-        })
+        
         this.data = this.data.sort((a: any, b: any) => {
           return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
         });
@@ -1393,6 +1394,9 @@ export class BiographicalComponent implements OnInit {
       .attr('stroke-width', '2px')
       .attr('stroke-linecap', 'round')
       .attr('stroke-opacity', 1)
+      .attr('data-dateid', (d: any) => {
+        return d.dateID;
+      })
       .attr('x1', (d: any, i: number, n: any) => {
         let x1 = d3.select(n[i]).attr('x1');
         return x1 ? x1 : 0;
@@ -1655,7 +1659,7 @@ export class BiographicalComponent implements OnInit {
     }
   }
 
-  handleMouseover(dateName: string, personID: string, personName: string, rad: boolean): void {
+  handleMouseover(dateName: string, dateID: string, personID: string, personName: string, rad: boolean): void {
     if (this.radialG && !rad) {
       this.radialG.selectAll('.person-name')
         .attr('opacity', (d: any) => { return personName.localeCompare(d.key) ? 1 : 0; });
@@ -1679,8 +1683,9 @@ export class BiographicalComponent implements OnInit {
           return d.dateName === dateName && d.personID === personID ? '10px' : '8px';
         })
         .attr('stroke', (d: any) => {
-          return d.dateName === dateName && d.personID === personID ? '#ffff00' : '#e7e7e7';
+          return d.dateName === dateName && d.personID === personID ? this.colors(d.color) : '#e7e7e7';
         });
+      this.radialG.select(`.event[data-dateid="${dateID}"]`).raise(); // raise selection
     }
 
     if (this.chartG && rad) {
@@ -1690,7 +1695,7 @@ export class BiographicalComponent implements OnInit {
           return d.dateName === dateName && d.personID === personID ? 8 : 4;
         })
         .attr('fill', (d: any) => {
-          return d.dateName === dateName && d.personID === personID ? '#ffff00' : '#e7e7e7';
+          return d.dateName === dateName && d.personID === personID ? this.colors(d.color) : '#e7e7e7';
         })
         .attr('opacity', (d: any) => {
           return d.dateName === dateName && d.personID === personID ? 1 : .5;
@@ -1830,7 +1835,7 @@ export class BiographicalComponent implements OnInit {
         <p>${moment(d.startDate).format('DD/MM/YYYY')} - ${moment(d.endDate).format('DD/MM/YYYY')}</p>
         <p>Category ${d.color}</p>
         `;
-        this.handleMouseover(d.dateName, d.personID, d.person, false);
+        this.handleMouseover(d.dateName, d.dateID, d.personID, d.person, false);
       })
       .on('mouseout', (d: any, i: number, n: any) => {
         this.tooltip.nativeElement.style.display = 'none';
