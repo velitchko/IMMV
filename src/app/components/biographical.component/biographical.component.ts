@@ -653,7 +653,7 @@ export class BiographicalComponent implements OnInit {
     this.angleScale = d3.scaleLinear().range([0, 360]); // circle 0-360 degrees
   }
 
-  saveConfig($event): void {
+  saveConfig($event: any): void {
     let item = {
       selectedPerson: this.selectedPerson,
       currentOrder: this.currentOrder,
