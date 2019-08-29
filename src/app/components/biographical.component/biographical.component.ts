@@ -1978,9 +1978,9 @@ export class BiographicalComponent implements OnInit {
               <p style="color: ${this.colors('exhibition')}">Exhibitions ${exhibitionCount}</p>
               <p style="color: ${this.colors('street')}">Street-namings ${streetCount}</p>
               <p style="color: ${this.colors('prize')}">Prizes ${prizeCount}</p>
-              <p style="color: ${this.colors('memorial')}">Prizes ${memorialCount}</p>
-              <p style="color: ${this.colors('anniversary')}">Prizes ${anniversaryCount}</p>
-              <p style="color: ${this.colors('conference')}">Prizes ${conferenceCount}</p>
+              <p style="color: ${this.colors('memorial')}">Memorials ${memorialCount}</p>
+              <p style="color: ${this.colors('anniversary')}">Anniversaries ${anniversaryCount}</p>
+              <p style="color: ${this.colors('conference')}">Conferences ${conferenceCount}</p>
               `
       );
 
