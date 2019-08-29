@@ -1427,10 +1427,9 @@ export class BiographicalComponent implements OnInit {
               <h3>${artistName !== '' ? artistName : d.person}</h3>
               ${artistName !== '' ? `<span class="aka">a.k.a. ${person.name}</span>` : ''}
               <h4>${d.dateName}</h4>
-              <p>${moment(d.startDate).format('DD/MM/YYYY')} ${d.startDate.diff(d.endDate, 'days') > 2 ? `- ${moment(d.endDate).format('DD/MM/YYYY')}` : ''}</p>
+              <p>${moment(d.startDate).format('DD/MM/YYYY')} ${moment(d.endDate).diff(moment(d.startDate), 'days') > 2 ? `- ${moment(d.endDate).format('DD/MM/YYYY')}` : ''}</p>
             `;
-
-        this.handleMouseover(d.dateName, d.personID, d.person, true); // from rad
+        this.handleMouseover(d.dateName, d.dateID, d.personID, d.person, true); // from rad
       })
       .on('mouseout', (d: any, i: number, n: any) => {
         this.tooltip.nativeElement.style.display = 'none';
