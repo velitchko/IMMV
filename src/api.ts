@@ -310,6 +310,41 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
     });
   });
 
+  api.post('/api/v1/getEventsByLocations', (req: express.Request, res: express.Response) => {
+    // get all locations
+    // get locations by theme id? 'key-location' theme
+    // let themeId = req.body.theme; 
+    // let lQuery = { }
+    LocationSchema.find({}, (err: Error, locations: Array<any>) => {
+      if(err) {
+        console.log(err);
+        res.status(500).json({ "message": "ERROR", "error": err });
+      }
+
+      let promiseArr = new Array<Promise<any>>();
+      locations.forEach((l: any) => {
+        let query = { locations: { $elemMatch: { location: l._id } } };
+        promiseArr.push(new Promise<any>((resolve, reject) => {
+          EventSchema.find(query, (err: Error, events: Array<any>) => {
+            if(err) {
+              console.log(err);
+              reject(err)
+            }
+            resolve({
+              location: l,
+              events: events
+            });
+          });
+        }));
+      });
+
+      Promise.all(promiseArr).then((results: any) => {
+        // only return locations with events
+        res.status(200).json({ "message": "OK", results: results.filter((r: any) => { return r.events.length > 0; }) });
+      });
+    });
+  });
+
   api.post('/api/v1/getPeopleByTheme', (req: express.Request, res: express.Response) => {
     let themeId = req.body.theme;
 
