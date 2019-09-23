@@ -68,6 +68,7 @@ $timeline-height: 200px;
     width: 100%;
     height: calc(100% - #{$timeline-height});
     position: relative;
+    top: -1em;
     // overflow: hidden;
 }
 
@@ -111,6 +112,9 @@ $timeline-height: 200px;
     z-index: 1000;
     width: auto;
     max-width: 350px;
+}
+.no-margin {
+    margin: 0 !important;
 }
 
 #brush-holder {
