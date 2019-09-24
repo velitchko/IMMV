@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { BehaviorSubject } from 'rxjs';
 import { Event } from '../models/event';
 import { HistoricEvent } from '../models/historic.event';
 import { PersonOrganization } from '../models/person.organization';
@@ -46,6 +45,29 @@ export class DatabaseService {
             default:
                 break; // nothing found error or null return? TODO
         }
+    }
+
+    // Gets PDF as image (converted server side image path(s) returned from request)
+    // ready to embed in [src]
+    getPDFAsImage(path: string, page: number = null): Promise<any> {
+        let promise = new Promise<any>((resolve, reject) => {
+            let body = {
+                path: path,
+                page: page
+            };
+
+            this.http.post(`${environment.API_URL}`, { body: body })
+                .subscribe((response: any) => {
+                    if(response.message === "OK") {
+                        resolve(response.results);
+                    }
+                    if(response.message === "ERROR") {
+                        reject(response.error);
+                    }
+                });
+        });
+
+        return promise;
     }
 
     private populateRelationships(id: string, relationship: string, endPoint: string, role?: string): Promise<any> {
@@ -997,6 +1019,29 @@ export class DatabaseService {
                     return;
                 }
             });
+        });
+
+        return promise;
+    }
+
+    getEventsByLocations(): Promise<any> {
+        // TODO: if locations will be connected by theme somehow 
+        // add theme: themeId to the body of the post request
+        let promise = new Promise<any>((resolve, reject) => {
+            this.http.post(environment.API_URL + 'getEventsByLocations', {})
+                .subscribe((success: any) => {
+                    if(success.message === 'OK') {
+                        // TODO: parse entries in success.results as either location or event
+                        // maybe getAsSimpleEvent / getAsSimpleLocation
+                        resolve(success.results);
+                        return;
+                    } 
+                    
+                    if(success.error === "ERROR") {
+                        reject(success.error);
+                        return;
+                    }
+                });
         });
 
         return promise;
