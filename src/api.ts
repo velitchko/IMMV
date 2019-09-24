@@ -3,7 +3,6 @@ import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import * as mongoose from 'mongoose';
 import * as path from 'path';
-
 let EventSchema = require('./database/schemas/event');
 let HistoricEventSchema = require('./database/schemas/historicevent');
 let LocationSchema = require('./database/schemas/location');
@@ -14,6 +13,9 @@ let SnapshotSchema = require('./database/schemas/snapshots');
 
 const DATABASE_COLLECTION = 'immv2';
 
+// README: PDFImage requires imagemagick ghostscript poppler-utils to be installed
+const PDFImage = require('pdf-image').PDFImage;
+
 
 export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   const api = express();
@@ -21,7 +23,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   mongoose.set('useNewUrlParser', true);
   mongoose.set('useCreateIndex', true);
   mongoose.connect(`mongodb://localhost/${DATABASE_COLLECTION}`, (err: Error) => {
-    if (err) { 
+    if (err) {
       console.log(err);
       return;
     }
@@ -290,8 +292,8 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
     snapshot.parameters = req.body.parameters;
 
     snapshot.save((err: Error, savedSnapshot: any) => {
-      if(!err) {
-        res.status(200).json({ 'message' : 'OK', results: savedSnapshot});
+      if (!err) {
+        res.status(200).json({ 'message': 'OK', results: savedSnapshot });
       }
     });
   });
@@ -316,7 +318,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
     // let themeId = req.body.theme; 
     // let lQuery = { }
     LocationSchema.find({}, (err: Error, locations: Array<any>) => {
-      if(err) {
+      if (err) {
         console.log(err);
         res.status(500).json({ "message": "ERROR", "error": err });
       }
@@ -326,7 +328,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
         let query = { locations: { $elemMatch: { location: l._id } } };
         promiseArr.push(new Promise<any>((resolve, reject) => {
           EventSchema.find(query, (err: Error, events: Array<any>) => {
-            if(err) {
+            if (err) {
               console.log(err);
               reject(err)
             }
@@ -348,19 +350,19 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   api.post('/api/v1/getPeopleByTheme', (req: express.Request, res: express.Response) => {
     let themeId = req.body.theme;
 
-    let query = { themes : { $elemMatch: { theme: themeId }}};
+    let query = { themes: { $elemMatch: { theme: themeId } } };
     // get events by theme
     EventSchema.find(query, (err: Error, events: Array<any>) => {
-      if(err) {
+      if (err) {
         console.log(err);
-        res.status(500).json({ "message": "ERROR", "error": err});
+        res.status(500).json({ "message": "ERROR", "error": err });
       }
       // get people by events
       let people = new Set<string>();
       events.forEach((event: any) => {
         // conductor, musician, composer
         event.peopleOrganizations.forEach((person: any) => {
-          if(people.has(person.personOrganization.toString())) return;
+          if (people.has(person.personOrganization.toString())) return;
           people.add(person.personOrganization.toString());
         })
       });
@@ -372,12 +374,12 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
 
       // send response after promise array resolves
       // TODO: Parse and provide response in data format that D3 will understand
-      Promise.all(promiseArr).then((success: any) => { 
+      Promise.all(promiseArr).then((success: any) => {
         let results = new Array<any>();
 
         success.forEach((s: any) => {
-          if(!s) return;
-          if(s.objectType === 'Person' && (s.roles.includes('Composer') || s.roles.includes('Musician') || s.roles.includes('Conductor'))) {
+          if (!s) return;
+          if (s.objectType === 'Person' && (s.roles.includes('Composer') || s.roles.includes('Musician') || s.roles.includes('Conductor'))) {
             results.push(s);
           }
         });
@@ -389,19 +391,56 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   // GET uploaded files
   api.get('/api/v1/uploads/:id', (req: express.Request, res: express.Response) => {
     if (req.params.id) {
+      console.log(path.resolve(`${UPLOAD_DIR_PATH}/${req.params.id}`));
       res.status(200).sendFile(path.resolve(`${UPLOAD_DIR_PATH}/${req.params.id}`));
     } else {
       res.status(404).json({ "message": `${req.params.id} does not exist.` });
     }
   });
 
+  // Convert pdf to image and return paths
+  // TODO: replace immv_beta in the split with the correct directory
+  // TODO: test if the returned paths are correct
+  api.post('/api/v1/getAsImage', (req: express.Request, res: express.Response) => {
+    let filePath = req.body.path;
+    if (!filePath) {
+      res.status(500).json({ "message": "ERROR", "error": "No file path provided" });
+    }
+    let file = path.resolve(`${UPLOAD_DIR_PATH}/${filePath}`);
+
+    let pdfImage = new PDFImage(file);
+    if (req.body.page !== null && req.body.page !== undefined) {
+      let page = parseInt(req.body.page);
+      pdfImage.convertPage(page).then((image: any) => {
+        let result = `${path.resolve(image.split('/immv_beta/')[1])}`;
+        res.status(200).json({ "message": "OK", "results": result });
+      }).catch((err: Error) => {
+        console.log('ERROR');
+        console.log(err);
+        res.status(500).json({ "message": "ERROR", "error": err });
+      });
+    } else {
+      pdfImage.convertFile().then((images: any) => {
+        let result = new Array<string>();
+        images.forEach((p: string) => {
+          result.push(`${path.resolve(p.split('/immv_beta/')[1])}`);
+        });
+        res.status(200).json({ "message": "OK", "results": result });
+      }).catch((err: Error) => {
+        console.log('ERROR');
+        console.log(err);
+        res.status(500).json({ "message": "ERROR", "error": err });
+      });
+    }
+  });
+
   // GET Snapshots
   api.get('/api/v1/snapshots/:id', (req: express.Request, res: express.Response) => {
-    if(req.params.id) {
-      SnapshotSchema.findOne({ _id: req.params.id}, (err: Error, snapshot: any) => {
-        if(err) console.log(err);
+    if (req.params.id) {
+      SnapshotSchema.findOne({ _id: req.params.id }, (err: Error, snapshot: any) => {
+        if (err) console.log(err);
 
-        res.status(200).json({ "message" : "OK", results: snapshot});
+        res.status(200).json({ "message": "OK", results: snapshot });
       })
     } else {
 
