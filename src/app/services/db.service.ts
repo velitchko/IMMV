@@ -1033,7 +1033,15 @@ export class DatabaseService {
                     if(success.message === 'OK') {
                         // TODO: parse entries in success.results as either location or event
                         // maybe getAsSimpleEvent / getAsSimpleLocation
-                        resolve(success.results);
+                        let results = new Array<{location: Location, events: Array<Event>}>();
+                        success.results.forEach((result: any) => {
+                            let location = this.getAsSimpleLocation(result.location);
+                            let events = result.events.map((e: any) => {
+                                return this.getAsSimpleEvent(e);
+                            });
+                            results.push({ location: location, events: events });
+                        })
+                        resolve(results);
                         return;
                     } 
                     
