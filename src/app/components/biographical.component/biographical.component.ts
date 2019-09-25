@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, Inject, ElementRef, EventEmitter } from '@angular/core';
 import { DatabaseService } from '../../services/db.service';
 import { PersonOrganization } from '../../models/person.organization';
+import { Location } from '../../models/location';
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { Event } from '../../models/event';
@@ -86,7 +87,7 @@ export class BiographicalComponent implements OnInit {
   // ordering
 
   // Data
-  people: Array<PersonOrganization>;         // people/organizations array
+  people: Array<PersonOrganization & Location>;         // people/organizations array
   data: Array<any>;                          // data in d3-ish format
   filteredData: Array<any>;                  // filteredData in d3-ish format
 
@@ -109,11 +110,11 @@ export class BiographicalComponent implements OnInit {
   currentGrouping: string;
 
   personSelected: boolean;
-  selectedPerson: PersonOrganization;
+  selectedPerson: PersonOrganization & Location;
 
   // Autocomplete
   peopleCtrl: FormControl;
-  filteredPeople: Observable<Array<PersonOrganization>>;
+  filteredPeople: Observable<Array<PersonOrganization & Location>>;
 
   beingFiltered: boolean;
   currentFilter: string;
@@ -139,7 +140,7 @@ export class BiographicalComponent implements OnInit {
     this.showExiled = false;
     this.currentFilter = '';
 
-    this.peopleCtrl = new FormControl;
+    this.peopleCtrl = new FormControl();
     this.filteredPeople = this.peopleCtrl.valueChanges
       .pipe(
         startWith(''),
@@ -149,7 +150,7 @@ export class BiographicalComponent implements OnInit {
         )
       );
 
-    this.people = new Array<PersonOrganization>();
+    this.people = new Array<PersonOrganization & Location>();
     this.data = new Array<any>();
 
     this.theta = 0;
@@ -166,6 +167,8 @@ export class BiographicalComponent implements OnInit {
     this.eventTypes = new Array<string>('street', 'exhibition', 'prize', 'memorial', 'anniversary', 'conference', 'all');
 
     this.peopleAngles = new Map<string, number>();
+
+    // TODO: Generalize this
     // meta map
     this.orderingMap = new Map<string, Map<string, any>>();
     // create maps for orderings
@@ -175,7 +178,6 @@ export class BiographicalComponent implements OnInit {
     this.orderingMap.set('Honoring Time', new Map<string, moment.Moment>());
 
     this.ordering = Array.from(this.orderingMap.keys());
-
     this.currentOrder = 'Birth';
 
     this.grouping = new Array<string>('None', 'Role', 'Exiled', 'Born after 1945', 'Died before 1938');
@@ -197,7 +199,8 @@ export class BiographicalComponent implements OnInit {
    */
   ngOnInit(): void {
     if (this.isBrowser) {
-      this.prepareData();
+      // this.prepareData();
+      this.prepareLocationData();
     }
   }
 
@@ -221,10 +224,11 @@ export class BiographicalComponent implements OnInit {
    * Filters the data to find a person by name
    * @param personName the persons name
    */
-  filterPeople(personName: string): Array<PersonOrganization> {
+  filterPeople(personName: string): Array<PersonOrganization & Location> {
     let nameVal = personName.trim().toLowerCase();
 
-    return this.people.filter((person: PersonOrganization) => {
+    return this.people.filter((person: PersonOrganization & Location) => {
+
       return person.name.trim().toLowerCase().includes(nameVal) || person.names.map((n: any) => { return n.name.trim().toLowerCase(); }).includes(nameVal);
     });
   }
@@ -288,24 +292,6 @@ export class BiographicalComponent implements OnInit {
         if (type === 'all') return this.colors(d.color);
         return (d.color !== type && d.color !== 'none') ? '#e7e7e7' : this.colors(d.color);
       });
-    // not needed
-    // let show = this.eventTypes.filter((t: string) => { return t !== 'all'; });
-    // show.forEach((type: string) => {
-    //   this.chartG.select(`.${type}`)
-    //     .transition()
-    //     .duration(250)
-    //     .attr('opacity', 1);
-    // });
-
-    // if (type !== 'all') {
-    //   let hide = this.eventTypes.filter((t: string) => { return (t !== type) && (t !== 'all'); });
-    //   hide.forEach((type: string) => {
-    //     this.chartG.select(`.${type}`)
-    //       .transition()
-    //       .duration(250)
-    //       .attr('opacity', 0);
-    //   });
-    // }
   }
 
   /**
@@ -313,6 +299,7 @@ export class BiographicalComponent implements OnInit {
    * @param eventName name of the event
    */
   getEventType(eventName: string): string {
+    // TODO: Event types for Locations?
     let name = eventName.trim().toLowerCase();
     let cat = 'none';
     if (name.includes('gedenk') || name.includes('denkmal') || name.includes('nachlass') || name.includes('büste')) cat = 'memorial';
@@ -331,7 +318,7 @@ export class BiographicalComponent implements OnInit {
    * @param person person/organization object
    * @param events list of events related to the person/organization object
    */
-  addEventsToPerson(person: PersonOrganization, events: Array<Event>): void {
+  addEventsToPerson(person: PersonOrganization & Location, events: Array<Event>): void {
     let deathDate = person.dates.find((d: any) => { return d.dateName === 'Death' ? d : null });
     if (!deathDate) return;
 
@@ -364,63 +351,66 @@ export class BiographicalComponent implements OnInit {
    * @param person person/organization object
    * @param groupingScheme defines the current grouping
    */
-  getCategory(person: PersonOrganization, groupingScheme: string): string {
+  getCategory(person: (PersonOrganization & Location), groupingScheme: string): string {
     let cat = '';
+    if (person.roles) {
+      if (groupingScheme === 'Role' || groupingScheme === 'None') { // default
+        let fallsIntoCat = 0;
 
-    if (groupingScheme === 'Role' || groupingScheme === 'None') { // default
-      let fallsIntoCat = 0;
+        if (person.roles.includes('Musician') || person.roles.includes('Performer') || person.roles.includes('Vocalist')) {
+          cat = 'Musician';
+          fallsIntoCat++;
+        }
+        if (person.roles.includes('Author')) {
+          cat = 'Author';
+          fallsIntoCat++;
+        }
+        if (person.roles.includes('Composer')) {
+          cat = 'Composer'
+          fallsIntoCat++;
+        }
+        if (person.roles.includes('Conductor')) {
+          cat = 'Conductor';
+          fallsIntoCat++;
+        }
+        return cat;
+      } else if (groupingScheme === 'Exiled') {
+        let cat = person.functions.map((f: any) => { return f.dateName; }).includes('Exil') ? 'Exiled' : 'Not-Exiled';
+        return cat;
+      } else if (groupingScheme === 'Born after 1945') {
+        let bday: moment.Moment;
 
-      if (person.roles.includes('Musician') || person.roles.includes('Performer') || person.roles.includes('Vocalist')) {
-        cat = 'Musician';
-        fallsIntoCat++;
-      }
-      if (person.roles.includes('Author')) {
-        cat = 'Author';
-        fallsIntoCat++;
-      }
-      if (person.roles.includes('Composer')) {
-        cat = 'Composer'
-        fallsIntoCat++;
-      }
-      if (person.roles.includes('Conductor')) {
-        cat = 'Conductor';
-        fallsIntoCat++;
-      }
+        for (let i = 0; i < person.dates.length; i++) {
+          let date = person.dates[i];
 
-      if (fallsIntoCat > 1) return 'Mixed';
+          if (date.dateName === 'Birth') {
+            bday = moment(date.date);
+            return bday.isSameOrAfter('1945', 'year') ? 'Born after 1945' : 'Born before 1945';
+          }
+        }
+        if (!bday) {
+          return '?';
+        }
+      } else if (groupingScheme === 'Died before 1938') {
+        let dday: moment.Moment;
 
-      return cat;
-    } else if (groupingScheme === 'Exiled') {
-      let cat = person.functions.map((f: any) => { return f.dateName; }).includes('Exil') ? 'Exiled' : 'Not-Exiled';
-      return cat;
-    } else if (groupingScheme === 'Born after 1945') {
-      let bday: moment.Moment;
+        for (let i = 0; i < person.dates.length; i++) {
+          let date = person.dates[i];
 
-      for (let i = 0; i < person.dates.length; i++) {
-        let date = person.dates[i];
-
-        if (date.dateName === 'Birth') {
-          bday = moment(date.date);
-          return bday.isSameOrAfter('1945', 'year') ? 'Born after 1945' : 'Born before 1945';
+          if (date.dateName === 'Death') {
+            dday = moment(date.date);
+            return dday.isSameOrBefore('1938', 'year') ? 'Died before 1938' : 'Died after 1938';
+          }
+        }
+        if (!dday) {
+          return '?';
         }
       }
-      if (!bday) {
-        return '?';
-      }
-    } else if (groupingScheme === 'Died before 1938') {
-      let dday: moment.Moment;
+    } 
 
-      for (let i = 0; i < person.dates.length; i++) {
-        let date = person.dates[i];
-
-        if (date.dateName === 'Death') {
-          dday = moment(date.date);
-          return dday.isSameOrBefore('1938', 'year') ? 'Died before 1938' : 'Died after 1938';
-        }
-      }
-      if (!dday) {
-        return '?';
-      }
+    if(person.locationTypes) {
+      return person.locationTypes[0] ? person.locationTypes[0] : '?';
+      // TODO: Categories for locations????
     }
     // return this.categoricalArray[Math.floor(Math.random() * 3)];
   }
@@ -440,7 +430,7 @@ export class BiographicalComponent implements OnInit {
 
     let exiled = new Set<string>();
 
-    this.people.forEach((person: PersonOrganization) => {
+    this.people.forEach((person: PersonOrganization & Location) => {
       if (person.functions.map((f: any) => {
         if (!f.dateName) return; // someone forgot to add a date name
         return f.dateName.toLowerCase();
@@ -492,7 +482,7 @@ export class BiographicalComponent implements OnInit {
   updateGroup(): void {
     // update the categorical attribute of people
     // used by the categoricalArc in the renderRadial() function
-    this.people.forEach((p: PersonOrganization) => {
+    this.people.forEach((p: PersonOrganization & Location) => {
       (p as any).category = this.getCategory(p, this.currentGrouping);
     });
 
@@ -508,6 +498,56 @@ export class BiographicalComponent implements OnInit {
     this.renderRadial(this.data.sort((a: any, b: any) => {
       return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
     }), { order: true, group: true }); // full update (order needs to be true to update the personAngleMap)
+  }
+
+  prepareLocationData(): void {
+    let themeID = '';
+    this.db.getEventsByLocations().then((success: Array<{ location: Location, events: Array<Event> }>) => {
+      let locations: Array<PersonOrganization & Location> = success.map((s: { location: PersonOrganization & Location, events: Array<Event> }) => { return s.location; });
+      this.people = locations;
+      success.forEach((s: { location: Location, events: Array<Event> }) => {
+        (s.location as any).category = s.location.locationTypes[0] ? s.location.locationTypes[0] : '?'
+        console.log(s.location);
+        s.events.forEach((e: Event) => {
+          // add events to this.data as data points
+          // TODO: categorical attribute
+          // TODO: role attribute?
+          let dataPoint: any = {};
+          if (!e.startDate) return;
+          dataPoint.startDate = moment(e.startDate);
+          dataPoint.endDate = e.endDate ? moment(e.endDate) : moment(e.startDate);
+          dataPoint.person = s.location.name;
+          dataPoint.dateID = e.objectId;
+          dataPoint.personCategory = s.location.locationTypes[0] ? s.location.locationTypes[0] : '?';
+          dataPoint.dateName = e.name;
+          dataPoint.personID = s.location.objectId;
+          dataPoint.category = s.location.locationTypes[0] ? s.location.locationTypes[0] : 'none'; // TODO: should be event categorical type
+          dataPoint.color = dataPoint.category; // default: none // TODO: should be colorcoded according to the category
+          this.data.push(dataPoint);
+        });
+      });
+
+      this.calculateScales();
+      // create timeline
+      this.createTimeline();
+      console.log(this.orderingMap);
+      // populate timeline(s)
+      //TODO: Define ordering and grouping criteria for locations
+      let sortedMap = [...this.orderingMap.get(this.currentOrder).entries()]
+        .sort((a: any, b: any) => {
+          return a[1] - b[1];
+        }).map((d: any) => { return d[0]; });
+
+      this.data = this.data.sort((a: any, b: any) => {
+        return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
+      });
+      document.addEventListener('resize', this.onResize.bind(this));
+
+      this.renderRadial(this.data);
+      this.renderChart(this.data);
+
+      if (this.preset) this.updateConfig();
+    });
   }
 
   /**
@@ -559,7 +599,7 @@ export class BiographicalComponent implements OnInit {
               let dataPoint: any = {};
               if (!func.startDate) return;
               dataPoint.startDate = moment(func.startDate);
-              dataPoint.endDate = func.endDate ? moment(func.endDate) : moment(func.startdate);
+              dataPoint.endDate = func.endDate ? moment(func.endDate) : moment(func.startDate);
               dataPoint.person = person.name;
               dataPoint.dateID = func._id;
               dataPoint.personCategory = person.category;
@@ -719,7 +759,7 @@ export class BiographicalComponent implements OnInit {
    */
   displayPersonDetails(name: string): void {
     this.personSelected = true;
-    this.selectedPerson = this.people.find((p: PersonOrganization) => { return p.name === name; });
+    this.selectedPerson = this.people.find((p: PersonOrganization & Location) => { return p.name === name; });
     this.spinTo(); // notify that we have opened the side panel
   }
 
@@ -1336,8 +1376,8 @@ export class BiographicalComponent implements OnInit {
 
     if (update && update.group) {
       dataByPerson.sort((a: any, b: any) => {
-        let personA = this.people.find((p: PersonOrganization) => { return p.name === a.key; });
-        let personB = this.people.find((p: PersonOrganization) => { return p.name === b.key; });
+        let personA = this.people.find((p: PersonOrganization & Location) => { return p.name === a.key; });
+        let personB = this.people.find((p: PersonOrganization & Location) => { return p.name === b.key; });
         let catA = this.getCategory(personA, this.currentGrouping);
         let catB = this.getCategory(personB, this.currentGrouping);
         return catA.localeCompare(catB);
@@ -1416,7 +1456,7 @@ export class BiographicalComponent implements OnInit {
         if (birthDate) birthDate = birthDate.startDate;
         if (deathDate) deathDate = deathDate.startDate;
         let age = Math.abs((birthDate ? birthDate : moment()).diff(deathDate ? deathDate : moment(), 'years'));
-        let person = this.people.find((p: PersonOrganization) => { return p.name === d.key; });
+        let person = this.people.find((p: PersonOrganization & Location) => { return p.name === d.key; });
         let artistName = '';
         person.names.forEach((name: any) => {
           if (name.nameType === 'Showbiz Name') artistName = name.name;
@@ -1500,7 +1540,7 @@ export class BiographicalComponent implements OnInit {
         this.tooltip.nativeElement.style.display = 'block';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
         this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
-        let person = this.people.find((p: PersonOrganization) => { return p.name === d.person; });
+        let person = this.people.find((p: PersonOrganization & Location) => { return p.name === d.person; });
         let artistName = '';
         person.names.forEach((name: any) => {
           if (name.nameType === 'Showbiz Name') artistName = name.name;
@@ -1540,6 +1580,7 @@ export class BiographicalComponent implements OnInit {
       })
       .endAngle((d: any) => { return (this.peopleAngles.get(d.key) + Math.PI / 2) + this.theta / 2; });
 
+    console.log(dataByPerson);
     let categoricalBars = this.radialG.selectAll('.category').data(dataByPerson);
     categoricalBars
       .enter()
@@ -1548,7 +1589,7 @@ export class BiographicalComponent implements OnInit {
       .attr('d', categoricalArc)
       .on('mouseover', (d: any) => {
         if (d.hidden) return;
-        let person = this.people.find((p: PersonOrganization) => { return p.name === d.key; })
+        let person = this.people.find((p: PersonOrganization & Location) => { return p.name === d.key; })
         let artistName = '';
         person.names.forEach((name: any) => {
           if (name.nameType === 'Showbiz Name') artistName = name.name;
@@ -1574,7 +1615,9 @@ export class BiographicalComponent implements OnInit {
       .attr('stroke', '#7b7b7b')
       .attr('fill', (d: any) => {
         let person = this.people.find((p: any) => { return p.name === d.key; });
+        console.log(person);
         categories.add((person as any).category);
+        console.log(categories);
         return this.categoricalColors((person as any).category);
       });
 
@@ -1632,7 +1675,7 @@ export class BiographicalComponent implements OnInit {
 
     let peopleByCategory = d3.nest()
       .key((d: any) => {
-        let person = this.people.find((p: PersonOrganization) => {
+        let person = this.people.find((p: PersonOrganization & Location) => {
           return p.name === d.person;
         })
         return this.getCategory(person, this.currentGrouping);
@@ -1791,7 +1834,6 @@ export class BiographicalComponent implements OnInit {
       this.radialG.selectAll('.category')
         .transition().duration(250)
         .attr('opacity', (d: any) => {
-          console.log(d);
           return d.hidden ? 0 : 1
         });
 
@@ -1897,7 +1939,8 @@ export class BiographicalComponent implements OnInit {
         };
       })
       .entries(filteredData)
-
+    
+    console.log(filteredData);
 
     // 2 * radius margin left and right on X
     this.xChartScale = d3.scaleTime().range([radius * 2, (this.timelineChart.nativeElement.clientWidth - radius * 2)]).domain([moment('01-01-1930', 'DD-MM-YYYY'), this.MAX_DATE]);
@@ -1941,8 +1984,6 @@ export class BiographicalComponent implements OnInit {
       .attr('class', 'brush')
       .call(this.chartBrush);
 
-
-
     let dots = this.chartG.selectAll('.dots').data(filteredData);
     let currentYear = 0;
     let offset = 0;
@@ -1979,7 +2020,7 @@ export class BiographicalComponent implements OnInit {
           left -= tooltipBBox.width;
           this.tooltip.nativeElement.style.left = `${left}px`;
         }
-        let person = this.people.find((p: PersonOrganization) => { return p.name === d.person; });
+        let person = this.people.find((p: PersonOrganization & Location) => { return p.name === d.person; });
         let artistName = '';
         person.names.forEach((name: any) => {
           if (name.nameType === 'Showbiz Name') artistName = name.name;
