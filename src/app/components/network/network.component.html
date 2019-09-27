@@ -12,10 +12,10 @@
     <div class="controls">
         <div class="search">
             <mat-form-field>
-                <input matInput placeholder="Look for events..." [matAutocomplete]="auto" [formControl]="eventCtrl">
+                <input matInput placeholder="Search..." [matAutocomplete]="auto" [formControl]="searchCtrl">
                 <mat-autocomplete #auto="matAutocomplete">
                     <!-- Using onSelectionChange handles both selection, click, and using enter key-->
-                    <mat-option *ngFor="let e of filteredEvents | async" [value]="e.name" (onSelectionChange)="selectedItem(e)">
+                    <mat-option *ngFor="let e of filteredItems | async" [value]="e.name" (onSelectionChange)="selectedItem(e)">
                         {{e.name}}
                     </mat-option>
                 </mat-autocomplete> 
