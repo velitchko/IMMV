@@ -4,8 +4,8 @@ import { MatSnackBar } from '@angular/material';
 import { FormControl } from '@angular/forms';
 import { ColorService } from '../../services/color.service';
 import { DatabaseService } from '../../services/db.service';
-import { PersonOrganization } from '.././../models/person.organization';
-import { Event } from '.././../models/event';
+import { PersonOrganization } from '../../models/person.organization';
+import { Event } from '../../models/event';
 import { Observable } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 import { DataSet, Network, Timeline } from 'vis';
@@ -13,11 +13,11 @@ import * as moment from 'moment';
 import * as momentIterator from 'moment-iterator';
 
 @Component({
-  selector: 'app-personorganization',
-  templateUrl: './personorganization.component.html',
-  styleUrls: ['./personorganization.component.scss']
+  selector: 'app-network',
+  templateUrl: './network.component.html',
+  styleUrls: ['./network.component.scss']
 })
-export class PersonOrganizationComponent implements AfterViewInit {
+export class NetworkComponent implements AfterViewInit {
   @ViewChild('network') networkContainer: ElementRef;
   @ViewChild('timeline') timelineContainer: ElementRef;
 
@@ -98,10 +98,9 @@ export class PersonOrganizationComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.db.getAllEvents().then((success) => {
-      this.items = success;
-
-    });
+    // this.db.getAllEvents().then((success) => {
+    //   this.items = success;
+    // });
   }
 
   getCountPerYear(startDate: Date, endDate: Date): Map<string, number> {
