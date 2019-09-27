@@ -7,6 +7,8 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 This project uses [MongoDB](https://www.mongodb.com/) for the database.
 
+NodeJS is required to run the application [NodeJS](https://nodejs.org/en/)
+
 ## Demo
 Demo can be found online at [immv-app](http://immv-app.cvast.tuwien.ac.at)
 
