@@ -17,7 +17,7 @@ import { MapClusterTooltipComponent } from './components/map-cluster-tooltip/map
 import { MiniMapComponent } from './components/minimap/minimap.component';
 import { ModalDialogComponent } from './components/modal/modal.component';
 import { MusicMapComponent } from './components/music-map/music-map.component';
-import { PersonOrganizationComponent } from './components/personorganization/personorganization.component';
+import { NetworkComponent } from './components/network/network.component';
 import { PreviewComponent } from './components/preview-panel/preview-panel.component';
 import { SearchComponent } from './components/search/search.component';
 import { ThemeComponent } from './components/themes/themes.component';
@@ -87,7 +87,7 @@ export const APP_ID = 'my-app';
     MiniMapComponent,
     ModalDialogComponent, 
     MusicMapComponent,
-    PersonOrganizationComponent,
+    NetworkComponent,
     PreviewComponent,
     SearchComponent,
     ThemeComponent,
