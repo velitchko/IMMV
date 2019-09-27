@@ -1054,4 +1054,60 @@ export class DatabaseService {
 
         return promise;
     }
+
+    // Find any/all objects using full-text search 
+    findObjects(query: string): Promise<any> {
+        let promise = new Promise<any>((resolve, reject) => {
+            this.http.post(environment.API_URL + 'search', { query: query })
+                .subscribe((success: any) => {
+                    if(success.message === 'OK') {
+                        let results = new Array<Event | HistoricEvent | Location | PersonOrganization | Source | Theme>();
+                        success.results.forEach((s: any) => {
+                            switch(s.type) {
+                                case 'events': 
+                                    s.events.forEach((e: any) => {
+                                        results.push(this.getAsSimpleEvent(e));
+                                    });
+                                    break;
+                                case 'historicevents':
+                                    s.historicEvents.forEach((e: any) => {
+                                        results.push(this.getAsSimpleHistoricEvent(e));
+                                    });
+                                    break;
+                                case 'locations':
+                                    s.locations.forEach((e: any) => {
+                                        results.push(this.getAsSimpleLocation(e));
+                                    });
+                                    break;
+                                case 'themes':
+                                    s.themes.forEach((e: any) => {
+                                        results.push(this.getAsSimpleTheme(e));
+                                    });
+                                    break;
+                                case 'peopleorganizations':
+                                    s.peopleOrganizations.forEach((e: any) => {
+                                        results.push(this.getAsSimplePersonOrganization(e));
+                                    });
+                                    break;
+                                case 'sources':
+                                    s.sources.forEach((e: any) => {
+                                        results.push(this.getAsSimpleSource(e));
+                                    });
+                                    break;
+                                default: 
+                                    break;
+                            }
+                        })
+                        resolve(results);
+                    }
+
+                    if(success.message === 'ERROR') {
+                        console.log(success.error);
+                        reject();
+                    }
+                })
+        });
+
+        return promise;
+    }
 }
