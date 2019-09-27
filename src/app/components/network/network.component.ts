@@ -2,10 +2,13 @@ import { Component, OnInit, Inject, AfterViewInit, PLATFORM_ID, ViewChild, Eleme
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { MatSnackBar } from '@angular/material';
 import { FormControl } from '@angular/forms';
-import { ColorService } from '../../services/color.service';
 import { DatabaseService } from '../../services/db.service';
 import { PersonOrganization } from '../../models/person.organization';
+import { Location } from '../../models/location';
 import { Event } from '../../models/event';
+import { HistoricEvent } from '../../models/historic.event';
+import { Source } from '../../models/source';
+import { Theme } from '../../models/theme';
 import { Observable } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 import { DataSet, Network, Timeline } from 'vis';
@@ -21,7 +24,7 @@ export class NetworkComponent implements AfterViewInit {
   @ViewChild('network') networkContainer: ElementRef;
   @ViewChild('timeline') timelineContainer: ElementRef;
 
-  items: Array<Event>; // array to hold results from autocomplete
+  items: Array<Event & HistoricEvent & Location & PersonOrganization & Source & Theme>; // array to hold results from autocomplete
 
   isBrowser: boolean;
   pathSelection: boolean = false; // path selection mode
@@ -29,8 +32,8 @@ export class NetworkComponent implements AfterViewInit {
   pathSelected: boolean = false; // when a path has been selected
   mouseOver: boolean = false;
 
-  eventCtrl = new FormControl();
-  filteredEvents: Observable<Array<Event>>;
+  searchCtrl = new FormControl();
+  filteredItems: Observable<Array<Event & HistoricEvent & Location & PersonOrganization & Source & Theme>>;
   selectedNode: any;
 
   startDate: any;
@@ -79,7 +82,7 @@ export class NetworkComponent implements AfterViewInit {
 
     this.countByTypeAndYear = new Map<string, Map<string, number>>();
 
-    this.items = new Array<Event>();
+    this.items = new Array<Event & HistoricEvent & Location & PersonOrganization & Source & Theme>();
     this.selectedNodes = new Set<any>();
 
     this.networkInitialized = false;
@@ -90,7 +93,7 @@ export class NetworkComponent implements AfterViewInit {
     this.mouseOver = false;
 
     this.selectedNode = null;
-    this.filteredEvents = this.eventCtrl.valueChanges
+    this.filteredItems = this.searchCtrl.valueChanges
       .pipe(
         startWith(''),
         map(event => event ? this.filterEvents(event) : this.items.slice())
@@ -264,7 +267,7 @@ export class NetworkComponent implements AfterViewInit {
     });
   }
 
-  private filterEvents(value: string): Array<Event> {
+  private filterEvents(value: string): Array<Event & HistoricEvent & Location & PersonOrganization & Source & Theme> {
     const filterValue = value.toLowerCase();
     return this.items.filter(event => event.name.toLowerCase().indexOf(filterValue) === 0);
   }
@@ -379,7 +382,7 @@ export class NetworkComponent implements AfterViewInit {
     this.events.clear();
     this.startDate = '';
     this.endDate = '';
-    this.eventCtrl.setValue('');
+    this.searchCtrl.setValue('');
 
     this.pathSelection = false;
     this.typeSelected = false;
