@@ -14,10 +14,14 @@
             <mat-form-field>
                 <input matInput placeholder="Search..." [matAutocomplete]="auto" [formControl]="searchCtrl">
                 <mat-autocomplete #auto="matAutocomplete">
-                    <!-- Using onSelectionChange handles both selection, click, and using enter key-->
-                    <mat-option *ngFor="let e of filteredItems | async" [value]="e.name" (onSelectionChange)="selectedItem(e)">
-                        {{e.name}}
+                    <mat-option *ngIf="loadingResults" class="is-loading">
+                        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
                     </mat-option>
+                    <ng-container *ngIf="!loadingResults">
+                        <mat-option *ngFor="let e of filteredItems" [value]="e.name" (onSelectionChange)="selectedItem(e)">
+                            {{e.name}}
+                        </mat-option>
+                    </ng-container>
                 </mat-autocomplete> 
             </mat-form-field>
             <button mat-mini-fab (click)="resetVis()"><mat-icon>refresh</mat-icon></button>

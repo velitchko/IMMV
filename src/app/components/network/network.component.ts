@@ -10,10 +10,12 @@ import { HistoricEvent } from '../../models/historic.event';
 import { Source } from '../../models/source';
 import { Theme } from '../../models/theme';
 import { Observable } from 'rxjs';
-import { map, startWith } from 'rxjs/operators';
+import { switchMap, startWith, debounceTime, tap, finalize } from 'rxjs/operators';
+import { from } from 'rxjs';
 import { DataSet, Network, Timeline } from 'vis';
 import * as moment from 'moment';
 import * as momentIterator from 'moment-iterator';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-network',
@@ -33,7 +35,7 @@ export class NetworkComponent implements AfterViewInit {
   mouseOver: boolean = false;
 
   searchCtrl = new FormControl();
-  filteredItems: Observable<Array<Event & HistoricEvent & Location & PersonOrganization & Source & Theme>>;
+  filteredItems: Observable<any>;
   selectedNode: any;
 
   startDate: any;
@@ -53,10 +55,11 @@ export class NetworkComponent implements AfterViewInit {
 
   networkInitialized: boolean;
   timelineInitialized: boolean;
+  loadingResults: boolean;
 
   constructor(private db: DatabaseService,
     private snackBar: MatSnackBar,
-    @Inject(PLATFORM_ID) private _platformId: Object) {
+    @Inject(PLATFORM_ID) private _platformId: Object, private http: HttpClient) {
 
     this.isBrowser = isPlatformBrowser(this._platformId);
     
@@ -87,24 +90,33 @@ export class NetworkComponent implements AfterViewInit {
 
     this.networkInitialized = false;
     this.timelineInitialized = false;
+    this.loadingResults = false;
+
     this.pathSelection = false;
     this.pathSelected = false;
     this.typeSelected = false;
     this.mouseOver = false;
 
     this.selectedNode = null;
-    this.filteredItems = this.searchCtrl.valueChanges
+    
+    this.searchCtrl.valueChanges
       .pipe(
-        startWith(''),
-        map(event => event ? this.filterEvents(event) : this.items.slice())
-      );
+        debounceTime(300), // 300ms debounce
+        tap(() => { this.loadingResults = true; }),
+        switchMap(value => this.filterItems(value)
+          .pipe(
+            finalize(() => { 
+              this.loadingResults = false;
+            }),
+          )
+        )
+      ).subscribe(results => { 
+        this.filteredItems = results; 
+        this.loadingResults = false; 
+      });
   }
 
-  ngAfterViewInit(): void {
-    // this.db.getAllEvents().then((success) => {
-    //   this.items = success;
-    // });
-  }
+  ngAfterViewInit(): void {}
 
   getCountPerYear(startDate: Date, endDate: Date): Map<string, number> {
     let countPerYear = new Map<string, number>();
@@ -247,8 +259,9 @@ export class NetworkComponent implements AfterViewInit {
     this.clearHighlightedNodesLinks();
   }
   
-  selectedItem(event: Event): void {
-    this.db.getAsEvent(event).then((success) => {
+  selectedItem(item: Event | PersonOrganization | Location | Theme | Source | HistoricEvent): void {
+    // TODO: based on item type (event, location, etc) we need to call different db functions to get the object properly structured
+    this.db.getAsEvent(item).then((success) => {
       if (!this.networkInitialized) {
         this.setupData(success);
         this.initNetwork();
@@ -267,9 +280,10 @@ export class NetworkComponent implements AfterViewInit {
     });
   }
 
-  private filterEvents(value: string): Array<Event & HistoricEvent & Location & PersonOrganization & Source & Theme> {
+  filterItems(value: string): Observable<any> {
     const filterValue = value.toLowerCase();
-    return this.items.filter(event => event.name.toLowerCase().indexOf(filterValue) === 0);
+    // use from operator (rxjs) to convert promise to observable
+    return from(this.db.findObjects(filterValue));
   }
 
   getTotalRelationshipCount(object: any) {
