@@ -31,7 +31,6 @@ async function gendercode(name, person) {
     let uri = `${gender_api}?split=${encodedName}&key=${api_token}`;
     try {
         let result = await axios.get(uri);
-        console.log(result);
         return {
             person: person._id,
             gender: result.data.gender
@@ -55,9 +54,10 @@ function findPeople() {
         for(let i = 0; i < people.length; i++) {
             let person = people[i];
             throttle(async function() {
+                if(!person.gender) {
                 let genderForPerson = await gendercode(person.name, person);
                 if(genderForPerson) results.push(genderForPerson);
-                
+                }
                 queued -= 1;
                 progressBar.increment();
 
