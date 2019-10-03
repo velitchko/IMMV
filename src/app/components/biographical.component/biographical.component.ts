@@ -583,7 +583,6 @@ export class BiographicalComponent implements OnInit {
       this.calculateScales();
       // create timeline
       this.createTimeline();
-      console.log(this.orderingMap);
       // populate timeline(s)
       //TODO: Define ordering and grouping criteria for locations
       let sortedMap = [...this.orderingMap.get(this.currentOrder).entries()]
@@ -761,10 +760,6 @@ export class BiographicalComponent implements OnInit {
   onResize(): void {
     console.log('resized');
     //TODO: implement
-  }
-
-  updateConfig(): void {
-    // TODO: parse preset and update vis
   }
 
   copyToClipBoard(item: string): void {
@@ -1159,7 +1154,8 @@ export class BiographicalComponent implements OnInit {
       .reverse()
       .map((d: any) => { return { name: d.key, events: d.values.sort((a, b) => { return a.startDate - b.startDate; }) }; });
     // return events by people (people sorted by #events; events sorted chronologically)
-    this.currentlySelectedPeople = eventsByPeople;
+    // people sorted alphabetically by name now
+    this.currentlySelectedPeople = eventsByPeople.sort((a, b) => { return a.name.localeCompare(b.name); });
 
     let peopleNamesInRange = new Set<string>();
     // also highlight the people in the vis
@@ -1712,9 +1708,7 @@ export class BiographicalComponent implements OnInit {
       .attr('stroke', '#7b7b7b')
       .attr('fill', (d: any) => {
         let person = this.people.find((p: any) => { return p.name === d.key; });
-        console.log(person);
         categories.add((person as any).category);
-        console.log(categories);
         return this.categoricalColors((person as any).category);
       });
 
@@ -2037,7 +2031,7 @@ export class BiographicalComponent implements OnInit {
       })
       .entries(filteredData)
     
-    console.log(filteredData);
+    // console.log(filteredData);
 
     // 2 * radius margin left and right on X
     this.xChartScale = d3.scaleTime().range([radius * 2, (this.timelineChart.nativeElement.clientWidth - radius * 2)]).domain([moment('01-01-1930', 'DD-MM-YYYY'), this.MAX_DATE]);
