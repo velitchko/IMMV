@@ -120,7 +120,7 @@ export class BiographicalComponent implements OnInit {
   currentFilter: string;
 
   preset: string;
-
+  dataType: string;
 
   /**
    * @param db DatabaseService - the service we use to perform database queries and get requests
@@ -129,7 +129,7 @@ export class BiographicalComponent implements OnInit {
    */
   constructor(private db: DatabaseService, @Inject('WINDOW') private window: any, @Inject(PLATFORM_ID) private _platformId: Object, private route: ActivatedRoute) {
     this.preset = this.route.snapshot.paramMap.get('preset');
-
+    this.dataType = this.route.snapshot.queryParamMap.get('dataType');
     this.personSelected = false;
 
     this.showNames = false;
@@ -180,7 +180,7 @@ export class BiographicalComponent implements OnInit {
     this.ordering = Array.from(this.orderingMap.keys());
     this.currentOrder = 'Birth';
 
-    this.grouping = new Array<string>('None', 'Role', 'Exiled', 'Born after 1945', 'Died before 1938');
+    this.grouping = new Array<string>('None', 'Role', 'Exiled', 'Born after 1945', 'Died before 1938', 'Gender');
     this.currentGrouping = 'None';
 
     this.currentlySelectedEvents = new Array<any>();
@@ -199,9 +199,29 @@ export class BiographicalComponent implements OnInit {
    */
   ngOnInit(): void {
     if (this.isBrowser) {
-      // this.prepareData();
+      // get data based on data type (passed from URL ?dataType=<data-type> queryParam)
+      switch(this.dataType) {
+        case 'events': 
+          break;
+        case 'sources':
+          break;
+        case 'themes':
+          break;
+        case 'historicevents':
+          break;
+        case 'locations':
       this.prepareLocationData();
+          break;
+        case 'people': 
+          this.prepareData();
+          break;
+        default: 
+          this.dataType = 'people';
+          this.prepareData();
+          break;
+        
     }
+  }
   }
 
   /**
@@ -405,6 +425,8 @@ export class BiographicalComponent implements OnInit {
         if (!dday) {
           return '?';
         }
+      } else if (groupingScheme === 'Gender') {
+        return person.gender;
       }
     } 
 
@@ -543,10 +565,12 @@ export class BiographicalComponent implements OnInit {
       });
       document.addEventListener('resize', this.onResize.bind(this));
 
+      if(this.preset) {
+        this.updateConfig();
+      } else {
       this.renderRadial(this.data);
       this.renderChart(this.data);
-
-      if (this.preset) this.updateConfig();
+      }
     });
   }
 
@@ -557,7 +581,7 @@ export class BiographicalComponent implements OnInit {
    * - Formats data so we can use it easily with d3
    */
   prepareData(): void {
-    let themeID = '5be942be2447d22473b2e80c'; // austropop'5bc7216b69405101a3a789e9'; mdt'5be942be2447d22473b2e80c';
+    let themeID = '5be942be2447d22473b2e80c'; // festwochen'5d949c5334492200a542f2e3'; // 1. mai '5d94990f34492200a542f2da'// mdt '5be942be2447d22473b2e80c'; 
     this.db.getPeopleByTheme(themeID).then((success) => {
       this.people = success;
       let roles = new Set<string>();
@@ -654,11 +678,52 @@ export class BiographicalComponent implements OnInit {
         });
         document.addEventListener('resize', this.onResize.bind(this));
 
+
+          if(this.preset) {
+            this.updateConfig();
+          } else {
         this.renderRadial(this.data);
         this.renderChart(this.data);
-
-        if (this.preset) this.updateConfig();
+          }
       });
+    });
+  }
+
+  /**
+   * Get config from db setup parameters and update the visualization
+   */
+  updateConfig(): void {
+    this.db.getSnapshot(this.preset).then((success: any) => {
+      let parameters = JSON.parse(success.parameters);
+      this.selectedPerson = parameters.selectedPerson;
+      this.currentOrder = parameters.currentOrder;
+      this.currentGrouping = parameters.currentGrouping;
+      this.currentlySelectedMinDate = moment(parameters.currentlySelectedMinDate).toDate();
+      this.currentlySelectedMaxDate = moment(parameters.currentlySelectedMaxDate).toDate();
+      this.mouseBehavior = parameters.mouseBehavior;
+      this.brushBehavior = parameters.brushBehavior;
+      this.currentFilter = parameters.filter;
+      
+      let sortedMap = [...this.orderingMap.get(this.currentOrder).entries()]
+        .sort((a: any, b: any) => {
+          return a[1] - b[1];
+        }).map((d: any) => { return d[0]; });
+      this.data = this.data.sort((a: any, b: any) => {
+        return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
+      });
+      
+      this.renderRadial(this.data, { order: true, group: true });
+      this.renderChart(this.data);
+      // this.renderChart(this.data);
+      // filter
+      this.filterEventsByType(this.currentFilter);
+      // set chart brush
+      this.setChartBrush(this.currentlySelectedMinDate, this.currentlySelectedMaxDate);
+      // set rad brush
+      this.drawDonut(this.rScale(this.currentlySelectedMinDate), this.rScale(this.currentlySelectedMaxDate));
+      // set brush behavior
+      this.brushBehavior ? this.showBrush() : this.hideBrush();
+      if(this.selectedPerson) this.highlightPerson(this.selectedPerson.name)
     });
   }
 
@@ -723,12 +788,13 @@ export class BiographicalComponent implements OnInit {
       currentlySelectedMaxDate: this.currentlySelectedMaxDate,
       mouseBehavior: this.mouseBehavior,
       brushBehavior: this.brushBehavior,
+      filter: this.currentFilter
       // showList: this.sh
     };
     this.db.saveSnapshot(JSON.stringify(item)).then((response: any) => {
       let url = `${environment.APP_URL}${_VIS}/${response._id}`;
       this.configInput.nativeElement.value = url;
-      this.copyToClipBoard(url);
+      this.copyToClipBoard(`${url}?dataType=${this.dataType}`);
     });
   }
 
