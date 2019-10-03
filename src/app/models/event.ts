@@ -8,6 +8,7 @@ import { Relationship } from './relationship';
 export class Event extends Relationship {
   // GENERAL INFO
   objectId: string; // identifier from mongodb
+  objectType: string;
   status: string; // ONLINE / OFFLINE
   author: string; // person editing / creating this
   name: string;
@@ -70,7 +71,7 @@ export class Event extends Relationship {
 
   constructor(relationship?: string) {
     super(relationship);
-
+    this.objectType = 'Event';
     this.isMainEvent = true;
     this.geodata = new Geodata();
     this.medialCoverage = new Array<string>();

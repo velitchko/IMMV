@@ -3,6 +3,7 @@ import { PersonOrganization } from './person.organization';
 
 export class Source extends Relationship {
   objectId: string;
+  objectType: string;
   status: string; // ONLINE / OFFLINE
   author: string; // person editing / creating this
   name: string;
@@ -50,6 +51,7 @@ export class Source extends Relationship {
 
   constructor(relationship? : string) {
     super(relationship);
+    this.objectType = 'Source';
     this.identifiers = new Array<{ url: string, title: string, copyright: string, identifierType: string, sourceType?: string }>();
     this.dates = new Array<{ startDate: Date, endDate: Date, dateName: string}>();
     this.languages = new Array<string>();
