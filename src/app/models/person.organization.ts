@@ -2,6 +2,7 @@ import { Relationship } from './relationship';
 
 export class PersonOrganization extends Relationship {
   name: string;
+  gender: string;
   objectId: string;
   status: string; // ONLINE / OFFLINE
   author: string; // person editing / creating this

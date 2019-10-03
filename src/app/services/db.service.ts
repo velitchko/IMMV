@@ -424,6 +424,7 @@ export class DatabaseService {
     getAsSimplePersonOrganization(json: any): PersonOrganization {
         let personOrganization = new PersonOrganization();
         personOrganization.name = json.name;
+        personOrganization.gender = json.gender;
         personOrganization.objectId = json._id;
         personOrganization.status = json.status;
         personOrganization.author = json.author;
@@ -453,6 +454,7 @@ export class DatabaseService {
     async getAsPersonOrganization(json: any): Promise<any> {
         let personOrganization = new PersonOrganization();
         personOrganization.name = json.name;
+        personOrganization.gender = json.gender;
         personOrganization.objectId = json._id ? json._id : json.objectId;
         personOrganization.status = json.status;
         personOrganization.author = json.author;
