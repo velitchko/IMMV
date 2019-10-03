@@ -12,6 +12,7 @@ import { Observable } from 'rxjs';
 import { map, startWith, filter } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { ActivatedRoute } from "@angular/router";
+import { HistoricEvent } from 'src/app/models/historic.event';
 
 // Endpoint for current vis
 const _VIS: string = 'biographical';
@@ -88,6 +89,7 @@ export class BiographicalComponent implements OnInit {
 
   // Data
   people: Array<PersonOrganization & Location>;         // people/organizations array
+  historicEvents: Array<HistoricEvent>;
   data: Array<any>;                          // data in d3-ish format
   filteredData: Array<any>;                  // filteredData in d3-ish format
 
@@ -114,7 +116,9 @@ export class BiographicalComponent implements OnInit {
 
   // Autocomplete
   peopleCtrl: FormControl;
+  histFilterCtrl: FormControl;
   filteredPeople: Observable<Array<PersonOrganization & Location>>;
+  filteredHistEvents: Observable<Array<HistoricEvent>>
 
   beingFiltered: boolean;
   currentFilter: string;
@@ -141,16 +145,20 @@ export class BiographicalComponent implements OnInit {
     this.currentFilter = '';
 
     this.peopleCtrl = new FormControl();
+    this.histFilterCtrl = new FormControl();
+    this.filteredHistEvents = this.histFilterCtrl.valueChanges
+      .pipe(
+        startWith(''),
+        map((histEv: string) => { return histEv ? this.filterHistEvents(histEv) : this.historicEvents.slice(); })
+      );
     this.filteredPeople = this.peopleCtrl.valueChanges
       .pipe(
         startWith(''),
-        map((person: string) => {
-          return person ? this.filterPeople(person) : this.people.slice()
-        }
-        )
+        map((person: string) => { return person ? this.filterPeople(person) : this.people.slice(); })
       );
 
     this.people = new Array<PersonOrganization & Location>();
+    this.historicEvents = new Array<HistoricEvent>();
     this.data = new Array<any>();
 
     this.theta = 0;
@@ -221,6 +229,10 @@ export class BiographicalComponent implements OnInit {
           break;
         
     }
+
+      this.db.getAllHistoricEvents().then((success) => {
+        this.historicEvents = success;
+      });
   }
   }
 
@@ -229,6 +241,10 @@ export class BiographicalComponent implements OnInit {
    */
   clearAutoComplete(): void {
     this.peopleCtrl.setValue('');
+  }
+  clearChronoAutoComplete(): void {
+    this.histFilterCtrl.setValue('');
+    this.clearTimeSelection();
   }
 
   /**
@@ -251,6 +267,21 @@ export class BiographicalComponent implements OnInit {
 
       return person.name.trim().toLowerCase().includes(nameVal) || person.names.map((n: any) => { return n.name.trim().toLowerCase(); }).includes(nameVal);
     });
+  }
+
+  // TODO: Consider trying to search by date-span for corresponding historic events
+  filterHistEvents(histEv: string): Array<HistoricEvent> {
+    let nameVal = histEv.trim().toLowerCase();
+
+    return this.historicEvents.filter((historicEvent: HistoricEvent) => {
+      return historicEvent.name.trim().toLowerCase().includes(nameVal);
+    })
+  }
+
+  // TODO: Should update vis with new time-span selected by a historic event
+  chronoFilter(histEv: HistoricEvent): void {
+    this.drawDonut(this.rScale(histEv.startDate), this.rScale(histEv.endDate));
+    this.setChartBrush(histEv.startDate, histEv.endDate);
   }
 
   /**

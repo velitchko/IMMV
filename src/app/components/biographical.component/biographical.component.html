@@ -99,6 +99,21 @@
             <h3>{{ displayDate(currentlySelectedMaxDate) }}
                 ({{ getDuration(currentlySelectedMinDate, currentlySelectedMaxDate)}} years)</h3>
         </div>
+        <div class="chrono-filter">
+            <mat-form-field>
+                <input matInput placeholder="Filter by historic period" [matAutocomplete]="autoChrono" [formControl]="histFilterCtrl">
+                <button mat-button matSuffix mat-icon-button aria-label="Clear" (click)="clearChronoAutoComplete()">
+                    <mat-icon>close</mat-icon>
+                </button>
+                <mat-autocomplete #autoChrono="matAutocomplete">
+                    <mat-option *ngFor="let histEv of filteredHistEvents | async" [value]="histEv.name" (click)="chronoFilter(histEv)">
+                        <span>{{ histEv.name }}</span> |
+                        <small>{{ displayDate(histEv.startDate) }} -  {{ displayDate(histEv.endDate) }}</small>
+                    </mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+        </div>
+
     </mat-sidenav-content>
 </mat-sidenav-container>
 

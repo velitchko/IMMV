@@ -23,6 +23,19 @@ $timeline-height: 200px;
     margin-top: 4em;
 }
 
+.chrono-filter {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    position: absolute;
+    top: 8em;
+    left: 1em;
+
+    > mat-form-field {
+        width: 100%;
+    }
+}
+
 #close-btn {
     position: absolute;
     top: -3.8em;
