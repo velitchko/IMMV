@@ -2,6 +2,7 @@ import { Relationship } from './relationship';
 
 export class Theme extends Relationship{
   objectId: string;
+  objectType: string;
   status: string; // ONLINE / OFFLINE
   author: string; // person editing / creating this
   name: string;
@@ -35,6 +36,7 @@ export class Theme extends Relationship{
 
   constructor(relationship?: string) {
     super(relationship);
+    this.objectType = 'Theme';
     this.names = new Array<{ name: string, nameType: string }>();
     this.dates = new Array<{ startDate: Date, endDate: Date, dateName: string }>();
     this.themeTypes = new Array<string>();

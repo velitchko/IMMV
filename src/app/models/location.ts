@@ -17,6 +17,7 @@ export class Geodata {
 
 export class Location extends Relationship {
   objectId: string;
+  objectType: string;
   status: string; // ONLINE / OFFLINE
   author: string; // person editing / creating this
   name: string;
@@ -41,6 +42,7 @@ export class Location extends Relationship {
 
   constructor(relationship?: string) {
     super(relationship);
+    this.objectType = 'Location';
     this.identifiers = new Array<{ url: string, title: string, copyright: string, identifierType: string}>();
     this.names = new Array<{ name: string, nameType: string }>();
     this.locations = new Array<{ location: Location, relationship: string }>();
