@@ -129,6 +129,7 @@ export class BiographicalComponent implements OnInit {
   /**
    * @param db DatabaseService - the service we use to perform database queries and get requests
    * @param window (JS) Window object - Leaflet needs this and we provide it (check app.module.ts)
+   * @param route the route object containing information about the URL parameters 
    * @param _platformId Object determining if we are on the server or browser side
    */
   constructor(private db: DatabaseService, @Inject('WINDOW') private window: any, @Inject(PLATFORM_ID) private _platformId: Object, private route: ActivatedRoute) {
@@ -208,8 +209,8 @@ export class BiographicalComponent implements OnInit {
   ngOnInit(): void {
     if (this.isBrowser) {
       // get data based on data type (passed from URL ?dataType=<data-type> queryParam)
-      switch(this.dataType) {
-        case 'events': 
+      switch (this.dataType) {
+        case 'events':
           break;
         case 'sources':
           break;
@@ -218,22 +219,22 @@ export class BiographicalComponent implements OnInit {
         case 'historicevents':
           break;
         case 'locations':
-      this.prepareLocationData();
+          this.prepareLocationData();
           break;
-        case 'people': 
+        case 'people':
           this.prepareData();
           break;
-        default: 
+        default:
           this.dataType = 'people';
           this.prepareData();
           break;
-        
-    }
+
+      }
 
       this.db.getAllHistoricEvents().then((success) => {
         this.historicEvents = success;
       });
-  }
+    }
   }
 
   /**
@@ -242,6 +243,9 @@ export class BiographicalComponent implements OnInit {
   clearAutoComplete(): void {
     this.peopleCtrl.setValue('');
   }
+  /**
+   * Clears the input in the chrono autocomplete field
+   */
   clearChronoAutoComplete(): void {
     this.histFilterCtrl.setValue('');
     this.clearTimeSelection();
@@ -258,6 +262,7 @@ export class BiographicalComponent implements OnInit {
 
   /**
    * Filters the data to find a person by name
+   * Used for the person autocomplete
    * @param personName the persons name
    */
   filterPeople(personName: string): Array<PersonOrganization & Location> {
@@ -270,6 +275,11 @@ export class BiographicalComponent implements OnInit {
   }
 
   // TODO: Consider trying to search by date-span for corresponding historic events
+  /**
+   * Filters the data to find a historic event by name
+   * Used for the historic event autocomplete
+   * @param histEv 
+   */
   filterHistEvents(histEv: string): Array<HistoricEvent> {
     let nameVal = histEv.trim().toLowerCase();
 
@@ -279,6 +289,10 @@ export class BiographicalComponent implements OnInit {
   }
 
   // TODO: Should update vis with new time-span selected by a historic event
+  /**
+   * Filters the dataset based on a historic event temporal selection
+   * @param histEv - historic event that the user has selected as a filter
+   */
   chronoFilter(histEv: HistoricEvent): void {
     this.drawDonut(this.rScale(histEv.startDate), this.rScale(histEv.endDate));
     this.setChartBrush(histEv.startDate, histEv.endDate);
@@ -459,9 +473,9 @@ export class BiographicalComponent implements OnInit {
       } else if (groupingScheme === 'Gender') {
         return person.gender;
       }
-    } 
+    }
 
-    if(person.locationTypes) {
+    if (person.locationTypes) {
       return person.locationTypes[0] ? person.locationTypes[0] : '?';
       // TODO: Categories for locations????
     }
@@ -595,11 +609,11 @@ export class BiographicalComponent implements OnInit {
       });
       document.addEventListener('resize', this.onResize.bind(this));
 
-      if(this.preset) {
+      if (this.preset) {
         this.updateConfig();
       } else {
-      this.renderRadial(this.data);
-      this.renderChart(this.data);
+        this.renderRadial(this.data);
+        this.renderChart(this.data);
       }
     });
   }
@@ -709,12 +723,12 @@ export class BiographicalComponent implements OnInit {
         document.addEventListener('resize', this.onResize.bind(this));
 
 
-          if(this.preset) {
-            this.updateConfig();
-          } else {
-        this.renderRadial(this.data);
-        this.renderChart(this.data);
-          }
+        if (this.preset) {
+          this.updateConfig();
+        } else {
+          this.renderRadial(this.data);
+          this.renderChart(this.data);
+        }
       });
     });
   }
@@ -733,7 +747,7 @@ export class BiographicalComponent implements OnInit {
       this.mouseBehavior = parameters.mouseBehavior;
       this.brushBehavior = parameters.brushBehavior;
       this.currentFilter = parameters.filter;
-      
+
       let sortedMap = [...this.orderingMap.get(this.currentOrder).entries()]
         .sort((a: any, b: any) => {
           return a[1] - b[1];
@@ -741,7 +755,7 @@ export class BiographicalComponent implements OnInit {
       this.data = this.data.sort((a: any, b: any) => {
         return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
       });
-      
+
       this.renderRadial(this.data, { order: true, group: true });
       this.renderChart(this.data);
       // this.renderChart(this.data);
@@ -753,15 +767,22 @@ export class BiographicalComponent implements OnInit {
       this.drawDonut(this.rScale(this.currentlySelectedMinDate), this.rScale(this.currentlySelectedMaxDate));
       // set brush behavior
       this.brushBehavior ? this.showBrush() : this.hideBrush();
-      if(this.selectedPerson) this.highlightPerson(this.selectedPerson.name)
+      if (this.selectedPerson) this.highlightPerson(this.selectedPerson.name)
     });
   }
 
+  /**
+   * On-resize handler
+   */
   onResize(): void {
     console.log('resized');
     //TODO: implement
   }
 
+  /**
+   * Copies the URL of the current state of the vis to the clipboard
+   * @param item URL coming from the db callback when saving the current vis config
+   */
   copyToClipBoard(item: string): void {
     document.addEventListener('copy', ($event: any) => {
       $event.clipboardData.setData('text/plain', item);
@@ -805,7 +826,11 @@ export class BiographicalComponent implements OnInit {
     this.angleScale = d3.scaleLinear().range([0, 360]); // circle 0-360 degrees
   }
 
-  saveConfig($event: any): void {
+  /**
+   * Saves the current state of the vis (selected parameters, people, time ranges, grouping/ordering strategies)
+   * Copies resulting url to clipboard
+   */
+  saveConfig(): void {
     let item = {
       selectedPerson: this.selectedPerson,
       currentOrder: this.currentOrder,
@@ -1028,28 +1053,43 @@ export class BiographicalComponent implements OnInit {
     this.currentlySelectedPeople = new Array<any>();
   }
 
+  /**
+   * Displays brush used in both the radial and chart
+   */
   showBrush(): void {
     d3.select('.selection').style('opacity', 1).raise();
     d3.select('.radial-brush').style('opacity', 1).raise();
   }
 
+  /**
+   * Hides both brushes used in the radial and chart 
+   */
   hideBrush(): void {
     d3.select('.selection').style('opacity', 0).lower();
     d3.select('.radial-brush').style('opacity', 0).lower();
   }
 
+  /**
+   * Toggles brush behavior (visibility)
+   */
   toggleBrushBehavior(): void {
     this.brushBehavior = !this.brushBehavior;
 
     this.brushBehavior ? this.showBrush() : this.hideBrush();
   }
 
+  /**
+   * Toggles mouse grid behavior
+   */
   toggleMouseBehavior(): void {
     this.mouseBehavior = !this.mouseBehavior;
     this.radialG.select('.circle-grid').attr('opacity', () => { return this.mouseBehavior ? 1 : 0; });
     this.radialG.select('.text-inside').attr('opacity', () => { return this.mouseBehavior ? 1 : 0; });
   }
 
+  /**
+   * Toggles display of names along the circle
+   */
   toggleNames(): void {
     this.showNames = !this.showNames;
     this.radialG.selectAll('.person-name').attr('opacity', () => { return this.showNames ? 1 : 0; });
@@ -1457,6 +1497,7 @@ export class BiographicalComponent implements OnInit {
    * - Life span - defined as line with the class '.before-death'
    * - Post life span - defined as a dashed line with the class '.after-death'
    * - Events - lines / circles plotted on the timelines with the class '.event'
+   * @param data - the data that will be rendered
    */
   renderRadial(data: Array<any>, update?: any): void {
     let personNameArray = new Set<string>();
@@ -1673,7 +1714,6 @@ export class BiographicalComponent implements OnInit {
       })
       .endAngle((d: any) => { return (this.peopleAngles.get(d.key) + Math.PI / 2) + this.theta / 2; });
 
-    console.log(dataByPerson);
     let categoricalBars = this.radialG.selectAll('.category').data(dataByPerson);
     categoricalBars
       .enter()
@@ -1846,6 +1886,9 @@ export class BiographicalComponent implements OnInit {
     d3.select('.radial-brush').raise();
   }
 
+  /**
+   * Mouseout event handler - resets vis depending on settings (list displayed or not)
+   */
   handleMouseout(): void {
     // TODO: improve - after selecting a time period and mouseovering a 
     // event in the timeline - the rddial visualization is desync'd
@@ -1941,6 +1984,14 @@ export class BiographicalComponent implements OnInit {
     }
   }
 
+  /**
+   * Mouseover handler
+   * @param dateName    - name of the event being mouseovered
+   * @param dateID      - id of the event being mpuseovered
+   * @param personID    - id of the person who is associated to the event
+   * @param personName  - name of the person who is associated to the event
+   * @param rad         - true if mouseover comes from the radial display
+   */
   handleMouseover(dateName: string, dateID: string, personID: string, personName: string, rad: boolean): void {
     if (this.radialG && !rad) {
       this.radialG.selectAll('.person-name')
@@ -2030,7 +2081,7 @@ export class BiographicalComponent implements OnInit {
         };
       })
       .entries(filteredData)
-    
+
     // console.log(filteredData);
 
     // 2 * radius margin left and right on X
