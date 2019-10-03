@@ -177,23 +177,10 @@ export class BiographicalComponent implements OnInit {
 
     this.peopleAngles = new Map<string, number>();
 
-    // TODO: Generalize this
-    // meta map
-    this.orderingMap = new Map<string, Map<string, any>>();
-    // create maps for orderings
-    this.orderingMap.set('First Post-death Event', new Map<string, moment.Moment>());
-    this.orderingMap.set('Birth', new Map<string, moment.Moment>());
-    this.orderingMap.set('Death', new Map<string, moment.Moment>());
-    this.orderingMap.set('Honoring Time', new Map<string, moment.Moment>());
-
-    this.ordering = Array.from(this.orderingMap.keys());
-    this.currentOrder = 'Birth';
-
-    this.grouping = new Array<string>('None', 'Role', 'Exiled', 'Born after 1945', 'Died before 1938', 'Gender');
-    this.currentGrouping = 'None';
-
     this.currentlySelectedEvents = new Array<any>();
     this.currentlySelectedPeople = new Array<any>();
+
+    
 
     this.isBrowser = isPlatformBrowser(this._platformId);
   }
@@ -208,6 +195,9 @@ export class BiographicalComponent implements OnInit {
    */
   ngOnInit(): void {
     if (this.isBrowser) {
+        // define map & setup map
+      this.orderingMap = new Map<string, Map<string, any>>();
+      this.setupMaps();
       // get data based on data type (passed from URL ?dataType=<data-type> queryParam)
       switch (this.dataType) {
         case 'events':
@@ -234,6 +224,62 @@ export class BiographicalComponent implements OnInit {
       this.db.getAllHistoricEvents().then((success) => {
         this.historicEvents = success;
       });
+    }
+  }
+
+  /**
+   * Sets up the maps that are used for the ordering and grouping criteria
+   */
+  setupMaps(): void {
+    // meta map
+    switch(this.dataType) {
+      case 'events': 
+        break;
+      case 'people': 
+        // create maps for orderings
+        this.orderingMap.set('First Post-death Event', new Map<string, moment.Moment>());
+        this.orderingMap.set('Birth', new Map<string, moment.Moment>());
+        this.orderingMap.set('Death', new Map<string, moment.Moment>());
+        this.orderingMap.set('Honoring Time', new Map<string, moment.Moment>());
+    
+        this.ordering = Array.from(this.orderingMap.keys());
+        this.currentOrder = 'Birth';
+    
+        this.grouping = new Array<string>('None', 'Role', 'Exiled', 'Born after 1945', 'Died before 1938', 'Gender');
+        this.currentGrouping = 'None';
+        break;
+      case 'locations':
+          this.orderingMap = new Map<string, Map<string, any>>();
+          // create maps for orderings
+          this.orderingMap.set('Number of Events', new Map<string, moment.Moment>());
+          this.orderingMap.set('Proximity to Center', new Map<string, moment.Moment>());
+          this.orderingMap.set('First Event', new Map<string, moment.Moment>());
+      
+          this.ordering = Array.from(this.orderingMap.keys());
+          this.currentOrder = 'First Event';
+      
+          this.grouping = new Array<string>('District', 'Location Type');
+          this.currentGrouping = 'None';
+        break;
+      case 'sources':
+        break;
+      case 'themes':
+        break;
+      case 'historicevents':
+        break;
+      default: 
+        // create maps for orderings
+        this.orderingMap.set('First Post-death Event', new Map<string, moment.Moment>());
+        this.orderingMap.set('Birth', new Map<string, moment.Moment>());
+        this.orderingMap.set('Death', new Map<string, moment.Moment>());
+        this.orderingMap.set('Honoring Time', new Map<string, moment.Moment>());
+    
+        this.ordering = Array.from(this.orderingMap.keys());
+        this.currentOrder = 'Birth';
+    
+        this.grouping = new Array<string>('None', 'Role', 'Exiled', 'Born after 1945', 'Died before 1938', 'Gender');
+        this.currentGrouping = 'None';
+        break;
     }
   }
 
@@ -655,6 +701,7 @@ export class BiographicalComponent implements OnInit {
 
       Promise.all(themePromiseEventArray).then((peopleEvents: Array<any>) => {
         // populate map
+        console.log(this.orderingMap);
         peopleEvents.forEach((personEvents: any) => {
           let person = personEvents.person;
           // person.category = this.getRandomCategory();
