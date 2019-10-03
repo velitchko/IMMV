@@ -260,18 +260,46 @@ export class NetworkComponent implements AfterViewInit {
   }
   
   selectedItem(item: Event | PersonOrganization | Location | Theme | Source | HistoricEvent): void {
-    // TODO: based on item type (event, location, etc) we need to call different db functions to get the object properly structured
-    this.db.getAsEvent(item).then((success) => {
-      if (!this.networkInitialized) {
-        this.setupData(success);
-        this.initNetwork();
-        this.initTimeline();
-        this.populateCountByTypeAndYear();
-      } else {
-        this.updateData(success);
-        this.populateCountByTypeAndYear();
-      }
-    });
+    console.log(item);
+    switch(item.objectType) {
+      case 'Event': 
+        this.db.getAsEvent(item).then((success) => { this.update(success); });
+        break;
+      case 'HistoricEvent': 
+        this.db.getAsHistoricEvent(item).then((success) => { this.update(success); });
+        break;
+      case 'Person':
+          this.db.getAsPersonOrganization(item).then((success) => { this.update(success); });
+        break;
+      case 'Organization':
+          this.db.getAsPersonOrganization(item).then((success) => { this.update(success); });
+        break;
+      case 'Location':
+          this.db.getAsLocation(item).then((success) => { this.update(success); });
+        break;
+      case 'Source':
+          this.db.getAsSource(item).then((success) => { this.update(success); });
+        break;
+      case 'Theme': 
+        this.db.getAsTheme(item).then((success) => { this.update(success); });
+        break;
+      default: 
+        console.log('Unknown object type');
+        console.log(item);
+        break;
+    }
+  }
+
+  update(data: any): void {
+    if (!this.networkInitialized) {
+      this.setupData(data);
+      this.initNetwork();
+      this.initTimeline();
+      this.populateCountByTypeAndYear();
+    } else {
+      this.updateData(data);
+      this.populateCountByTypeAndYear();
+    }
   }
 
   private openSnackBar(message: string) {
@@ -307,10 +335,10 @@ export class NetworkComponent implements AfterViewInit {
     // ALL NODES (everything related to the ego node)
     if (!this.checkIfNodeExists(data.objectId)) {
       let root = data;
-      root['objectType'] = 'event';
+      root['objectType'] = data.objectType.toLowerCase();
       root['id'] = data.objectId;
       root['label'] = `${data.name} ${this.getTotalRelationshipCount(data) ? `(${this.getTotalRelationshipCount(data)})` : ''}`;
-      root['color'] = this.colors.get('event');
+      root['color'] = this.colors.get(data.objectType.toLowerCase());
       root['hidden'] = false;
       this.nodes.add(root);
 
@@ -327,32 +355,46 @@ export class NetworkComponent implements AfterViewInit {
         });
       }
     }
-
-    for (let i = 0; i < data.events.length; i++) {
-      let e = data.events[i];
-      this.addDataItems(data, e, 'event');
+    // Build data conditionally
+    if(data.objectType === 'Event') {
+      for (let i = 0; i < data.events.length; i++) {
+        let e = data.events[i];
+        this.addDataItems(data, e, 'event');
+      }
     }
 
-    for (let i = 0; i < data.themes.length; i++) {
-      let e = data.themes[i];
-      this.addDataItems(data, e, 'theme');
-    }
-    for (let i = 0; i < data.locations.length; i++) {
-      let e = data.locations[i];
-      this.addDataItems(data, e, 'location')
-    }
-    for (let i = 0; i < data.historicEvents.length; i++) {
-      let e = data.historicEvents[i];
-      this.addDataItems(data, e, 'historicEvent');
-    }
-    for (let i = 0; i < data.peopleOrganizations.length; i++) {
-      let e = data.peopleOrganizations[i];
-      this.addDataItems(data, e, 'personOrganization')
+    if(data.objectType === 'Event' || data.objectType === 'Theme') {
+      for (let i = 0; i < data.themes.length; i++) {
+        let e = data.themes[i];
+        this.addDataItems(data, e, 'theme');
+      }
     }
 
-    for (let i = 0; i < data.sources.length; i++) {
-      let e = data.sources[i];
-      this.addDataItems(data, e, 'source');
+    if(data.objectType === 'Event' || data.objectType === 'Location') {
+      for (let i = 0; i < data.locations.length; i++) {
+        let e = data.locations[i];
+        this.addDataItems(data, e, 'location')
+      }
+    }
+
+    if(data.objectType === 'Event' || data.objectType === 'HistoricEvent') {
+      for (let i = 0; i < data.historicEvents.length; i++) {
+        let e = data.historicEvents[i];
+        this.addDataItems(data, e, 'historicEvent');
+      }
+    }
+
+    if(data.objectType === 'Event' || data.objectType === 'Person' || data.objectType === 'Organization') {
+      for (let i = 0; i < data.peopleOrganizations.length; i++) {
+        let e = data.peopleOrganizations[i];
+        this.addDataItems(data, e, 'personOrganization')
+      }
+    }
+    if(data.objectType === 'Event' || data.objectType === 'Source') {
+      for (let i = 0; i < data.sources.length; i++) {
+        let e = data.sources[i];
+        this.addDataItems(data, e, 'source');
+      }
     }
   }
 
