@@ -3,6 +3,7 @@ import * as mongoose from 'mongoose';
 
 let PersonOrganizationSchema = new mongoose.Schema({
   name: String,
+  gender: String,
   status: {
     type: String,
     default: 'OFFLINE'
