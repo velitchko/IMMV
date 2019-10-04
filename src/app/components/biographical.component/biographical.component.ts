@@ -529,14 +529,13 @@ export class BiographicalComponent implements OnInit {
       if(groupingScheme === 'Location Type') {
         if (personLocation.locationTypes) {
           return personLocation.locationTypes[0] ? personLocation.locationTypes[0] : '?';
-          // TODO: Categories for locations????
         }
       } else if (groupingScheme === 'District') {
         let district = '';
         personLocation.geodata.forEach((g: Geodata) => {
           district = `${g.districtNumber}`; // num to string
         });
-        return district;
+        return district !== '' ? district : '?';
       }
 
     }
@@ -628,8 +627,48 @@ export class BiographicalComponent implements OnInit {
     }), { order: true, group: true }); // full update (order needs to be true to update the personAngleMap)
   }
 
-  getDistance(location: Location): number {
-    return 0;
+  /**
+   * Returns the distance between two points defined by their lat/lng coordinates
+   * Distance from location to center of Vienna (Stephansplatz)
+   * Adapted from: https://www.geodatasource.com/developers/javascript
+   * @param location the location we are checking the distance of to Stephansplatz
+   * @param unit the unit of distance K - Kilometers, M - Miles, N - Nautical Miles
+   */
+  getDistance(location: Location, unit: string = 'K'): number {
+    // TODO: Check if lat/lng or geodata exist on location object
+    // TODO: Do we always take the first geodata object from the array?
+    if(!location.geodata || location.geodata.length === 0) return 0;
+    let geodata = location.geodata[0];
+    let lat1 = geodata.lat;
+    let lng1 = geodata.lng;
+
+    if(!lat1 || !lng1) return 0; // no lat / lng TODO: Look for other array elements or?
+
+    //NOTE: Stephansplatz (Considered center)
+    let lat2 = 48.208561;
+    let lng2 = 16.373124;
+    if ((lat1 == lat2) && (lng1 == lng2)) {
+      return 0;
+    }
+    else {
+      let radlat1 = Math.PI * lat1 / 180;
+      let radlat2 = Math.PI * lat2 / 180;
+      let theta = lng1 - lng2;
+      let radtheta = Math.PI * theta / 180;
+      let dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+      if (dist > 1) {
+        dist = 1;
+      }
+      dist = Math.acos(dist);
+      dist = dist * 180 / Math.PI;
+      dist = dist * 60 * 1.1515;
+      if (unit === 'K') { dist = dist * 1.609344 }
+      if (unit === 'N') { dist = dist * 0.8684 }
+      console.log(location.geodata);
+      console.log('Distance to ' + location.name + ' : ' + dist);
+      console.log('----------');
+      return dist;
+    }
   }
 
   prepareLocationData(): void {
@@ -673,7 +712,6 @@ export class BiographicalComponent implements OnInit {
       // create timeline
       this.createTimeline();
       // populate timeline(s)
-      //TODO: Define ordering and grouping criteria for locations
       let sortedMap = [...this.orderingMap.get(this.currentOrder).entries()]
         .sort((a: any, b: any) => {
           return a[1] - b[1];
@@ -788,8 +826,6 @@ export class BiographicalComponent implements OnInit {
         // create timeline
         this.createTimeline();
         // populate timeline(s)
-        //TODO: Improve dataset to filter more people
-
         this.data = this.data.sort((a: any, b: any) => {
           return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
         });
@@ -1529,7 +1565,6 @@ export class BiographicalComponent implements OnInit {
     gridLines
       .transition().duration(250)
       .attr('opacity', 0);
-    // TODO: Highlight events in timeline 
   }
 
   /**
@@ -2207,7 +2242,6 @@ export class BiographicalComponent implements OnInit {
     dots.enter()
       .append('circle')
       .attr('class', (d: any) => {
-        // if(d.color === 'none') console.log(d); // TODO: should probably discuss which events are to be shown and how we can categorize them
         return `dots ${d.color}`;
       })
       .attr('cx', 0)
