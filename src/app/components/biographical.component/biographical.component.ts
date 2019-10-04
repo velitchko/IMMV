@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild, Inject, ElementRef, EventEmitter } from '@angular/core';
 import { DatabaseService } from '../../services/db.service';
 import { PersonOrganization } from '../../models/person.organization';
-import { Location } from '../../models/location';
+import { Location, Geodata } from '../../models/location';
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { Event } from '../../models/event';
@@ -125,7 +125,7 @@ export class BiographicalComponent implements OnInit {
 
   preset: string;
   dataType: string;
-
+  themeID: string;
   /**
    * @param db DatabaseService - the service we use to perform database queries and get requests
    * @param window (JS) Window object - Leaflet needs this and we provide it (check app.module.ts)
@@ -135,6 +135,8 @@ export class BiographicalComponent implements OnInit {
   constructor(private db: DatabaseService, @Inject('WINDOW') private window: any, @Inject(PLATFORM_ID) private _platformId: Object, private route: ActivatedRoute) {
     this.preset = this.route.snapshot.paramMap.get('preset');
     this.dataType = this.route.snapshot.queryParamMap.get('dataType');
+    this.themeID = this.route.snapshot.queryParamMap.get('themeID');
+
     this.personSelected = false;
 
     this.showNames = false;
@@ -459,71 +461,84 @@ export class BiographicalComponent implements OnInit {
 
   /**
    * Retrieve the persons category
-   * @param person person/organization object
+   * @param personLocation person/organization object
    * @param groupingScheme defines the current grouping
    */
-  getCategory(person: (PersonOrganization & Location), groupingScheme: string): string {
+  getCategory(personLocation: (PersonOrganization & Location), groupingScheme: string): string {
     let cat = '';
-    if (person.roles) {
-      if (groupingScheme === 'Role' || groupingScheme === 'None') { // default
-        let fallsIntoCat = 0;
-
-        if (person.roles.includes('Musician') || person.roles.includes('Performer') || person.roles.includes('Vocalist')) {
-          cat = 'Musician';
-          fallsIntoCat++;
-        }
-        if (person.roles.includes('Author')) {
-          cat = 'Author';
-          fallsIntoCat++;
-        }
-        if (person.roles.includes('Composer')) {
-          cat = 'Composer'
-          fallsIntoCat++;
-        }
-        if (person.roles.includes('Conductor')) {
-          cat = 'Conductor';
-          fallsIntoCat++;
-        }
-        return cat;
-      } else if (groupingScheme === 'Exiled') {
-        let cat = person.functions.map((f: any) => { return f.dateName; }).includes('Exil') ? 'Exiled' : 'Not-Exiled';
-        return cat;
-      } else if (groupingScheme === 'Born after 1945') {
-        let bday: moment.Moment;
-
-        for (let i = 0; i < person.dates.length; i++) {
-          let date = person.dates[i];
-
-          if (date.dateName === 'Birth') {
-            bday = moment(date.date);
-            return bday.isSameOrAfter('1945', 'year') ? 'Born after 1945' : 'Born before 1945';
+    if(this.dataType === 'people') {
+      if (personLocation.roles) {
+        if (groupingScheme === 'Role' || groupingScheme === 'None') { // default
+          let fallsIntoCat = 0;
+  
+          if (personLocation.roles.includes('Musician') || personLocation.roles.includes('Performer') || personLocation.roles.includes('Vocalist')) {
+            cat = 'Musician';
+            fallsIntoCat++;
           }
-        }
-        if (!bday) {
-          return '?';
-        }
-      } else if (groupingScheme === 'Died before 1938') {
-        let dday: moment.Moment;
-
-        for (let i = 0; i < person.dates.length; i++) {
-          let date = person.dates[i];
-
-          if (date.dateName === 'Death') {
-            dday = moment(date.date);
-            return dday.isSameOrBefore('1938', 'year') ? 'Died before 1938' : 'Died after 1938';
+          if (personLocation.roles.includes('Author')) {
+            cat = 'Author';
+            fallsIntoCat++;
           }
+          if (personLocation.roles.includes('Composer')) {
+            cat = 'Composer'
+            fallsIntoCat++;
+          }
+          if (personLocation.roles.includes('Conductor')) {
+            cat = 'Conductor';
+            fallsIntoCat++;
+          }
+          return cat;
+        } else if (groupingScheme === 'Exiled') {
+          let cat = personLocation.functions.map((f: any) => { return f.dateName; }).includes('Exil') ? 'Exiled' : 'Not-Exiled';
+          return cat;
+        } else if (groupingScheme === 'Born after 1945') {
+          let bday: moment.Moment;
+  
+          for (let i = 0; i < personLocation.dates.length; i++) {
+            let date = personLocation.dates[i];
+  
+            if (date.dateName === 'Birth') {
+              bday = moment(date.date);
+              return bday.isSameOrAfter('1945', 'year') ? 'Born after 1945' : 'Born before 1945';
+            }
+          }
+          if (!bday) {
+            return '?';
+          }
+        } else if (groupingScheme === 'Died before 1938') {
+          let dday: moment.Moment;
+  
+          for (let i = 0; i < personLocation.dates.length; i++) {
+            let date = personLocation.dates[i];
+  
+            if (date.dateName === 'Death') {
+              dday = moment(date.date);
+              return dday.isSameOrBefore('1938', 'year') ? 'Died before 1938' : 'Died after 1938';
+            }
+          }
+          if (!dday) {
+            return '?';
+          }
+        } else if (groupingScheme === 'Gender') {
+          return personLocation.gender;
         }
-        if (!dday) {
-          return '?';
-        }
-      } else if (groupingScheme === 'Gender') {
-        return person.gender;
       }
     }
 
-    if (person.locationTypes) {
-      return person.locationTypes[0] ? person.locationTypes[0] : '?';
-      // TODO: Categories for locations????
+    if(this.dataType === 'locations') {
+      if(groupingScheme === 'Location Type') {
+        if (personLocation.locationTypes) {
+          return personLocation.locationTypes[0] ? personLocation.locationTypes[0] : '?';
+          // TODO: Categories for locations????
+        }
+      } else if (groupingScheme === 'District') {
+        let district = '';
+        personLocation.geodata.forEach((g: Geodata) => {
+          district = `${g.districtNumber}`; // num to string
+        });
+        return district;
+      }
+
     }
     // return this.categoricalArray[Math.floor(Math.random() * 3)];
   }
@@ -613,6 +628,10 @@ export class BiographicalComponent implements OnInit {
     }), { order: true, group: true }); // full update (order needs to be true to update the personAngleMap)
   }
 
+  getDistance(location: Location): number {
+    return 0;
+  }
+
   prepareLocationData(): void {
     let themeID = '';
     this.db.getEventsByLocations().then((success: Array<{ location: Location, events: Array<Event> }>) => {
@@ -620,7 +639,17 @@ export class BiographicalComponent implements OnInit {
       this.people = locations;
       success.forEach((s: { location: Location, events: Array<Event> }) => {
         (s.location as any).category = s.location.locationTypes[0] ? s.location.locationTypes[0] : '?'
-        console.log(s.location);
+        this.orderingMap.get('Number of Events').set(s.location.objectId, s.events.length);
+        this.orderingMap.get('Proximity to Center').set(s.location.objectId, this.getDistance(s.location));
+
+        let firstEvent = moment(s.events
+          .sort((a: Event, b: Event) => {
+            if(!a.startDate || !b.startDate) return 0; 
+            // TODO: Some events have missing startdates
+            return a.startDate.valueOf() - b.startDate.valueOf();
+          })[0].startDate);
+
+        this.orderingMap.get('First Event').set(s.location.objectId, firstEvent);
         s.events.forEach((e: Event) => {
           // add events to this.data as data points
           // TODO: categorical attribute
@@ -654,7 +683,7 @@ export class BiographicalComponent implements OnInit {
         return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
       });
       document.addEventListener('resize', this.onResize.bind(this));
-
+      console.log(this.orderingMap);
       if (this.preset) {
         this.updateConfig();
       } else {
@@ -671,7 +700,7 @@ export class BiographicalComponent implements OnInit {
    * - Formats data so we can use it easily with d3
    */
   prepareData(): void {
-    let themeID = '5be942be2447d22473b2e80c'; // festwochen'5d949c5334492200a542f2e3'; // 1. mai '5d94990f34492200a542f2da'// mdt '5be942be2447d22473b2e80c'; 
+    let themeID = this.themeID ? this.themeID : '5be942be2447d22473b2e80c'; // festwochen'5d949c5334492200a542f2e3'; // 1. mai '5d94990f34492200a542f2da'// mdt '5be942be2447d22473b2e80c'; 
     this.db.getPeopleByTheme(themeID).then((success) => {
       this.people = success;
       let roles = new Set<string>();
@@ -700,8 +729,6 @@ export class BiographicalComponent implements OnInit {
       });
 
       Promise.all(themePromiseEventArray).then((peopleEvents: Array<any>) => {
-        // populate map
-        console.log(this.orderingMap);
         peopleEvents.forEach((personEvents: any) => {
           let person = personEvents.person;
           // person.category = this.getRandomCategory();
@@ -724,7 +751,6 @@ export class BiographicalComponent implements OnInit {
               dataPoint.color = this.getEventType(func.dateName ? func.dateName : '');
               this.data.push(dataPoint);
             });
-
             // other dates
             person.dates.forEach((date: any) => {
               if (date.dateName === 'Birth') {
@@ -1744,7 +1770,7 @@ export class BiographicalComponent implements OnInit {
         return d.hidden ? 0 : 1;
       })
       .attr('stroke-width', '8px')
-      .attr('stroke', (d: any) => { return this.colors(d.color); })
+      .attr('stroke', (d: any) => { return this.colors(d.color); }) // TODO: Coloring by theme
       // .attr('stroke', (d: any) => { return '#A5D5E6' })
       .attr('x1', (d: any, i: number) => { return this.getXCoordinates(d.startDate.toDate(), this.peopleAngles.get(d.person)); })
       .attr('x2', (d: any, i: number) => { return this.getXCoordinates(d.endDate.toDate(), this.peopleAngles.get(d.person)); })
