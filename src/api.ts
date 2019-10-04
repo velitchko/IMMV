@@ -12,8 +12,9 @@ let SourceSchema = require('./database/schemas/source');
 let SnapshotSchema = require('./database/schemas/snapshots');
 
 const DATABASE_COLLECTION = 'immv2';
-
-// README: PDFImage requires imagemagick ghostscript poppler-utils to be installed
+mongoose.set('debug', true);
+mongoose.set('useNewUrlParser', true);
+// NOTE: PDFImage requires imagemagick ghostscript poppler-utils to be installed
 const PDFImage = require('pdf-image').PDFImage;
 
 
@@ -185,6 +186,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   /**
   FIND
   **/
+ // TODO: Just query by name / title of items?
   api.post('/api/v1/search', (req: express.Request, res: express.Response) => {
     let promiseArr = new Array<Promise<any>>();
     // EVENTS
