@@ -45,8 +45,23 @@
                 <div *ngFor="let person of selectedObject.peopleOrganizations">
                     <a href="javascript:void(0)">{{ getPersonOrganizationName(person.personOrganization) }}</a>
                 </div>
+                <div *ngIf="selectedObject.identifiers.length > 0">
+                    <span>More information...</span>
+                    <div *ngFor="let identifier of selectedObject.identifiers">
+                        <a [href]="identifier.url" target="_blank">{{ identifier.identifierType }}</a>
+                    </div>
+                </div>
             </div>
             <div *ngIf="selectedObject.objectType === 'Location'">
+                <div *ngFor="let location of selectedObject.locations">
+                    <a href="javascript:void(0)">{{ getLocationName(location.location) }}</a>
+                </div>
+                <div *ngIf="selectedObject.identifiers.length > 0">
+                    <span>More information...</span>
+                    <div *ngFor="let identifier of selectedObject.identifiers">
+                        <a [href]="identifier.url" target="_blank">{{ identifier.identifierType }}</a>
+                    </div>
+                </div>
             </div>
         </div>
     </mat-sidenav>
