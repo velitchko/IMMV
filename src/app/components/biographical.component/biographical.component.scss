@@ -159,6 +159,10 @@ $timeline-height: 200px;
     margin-top: 2px;
 }
 
+::ng-deep .event {
+    cursor: pointer;
+}
+
 ::ng-deep .event-header {
     margin-left: 30px;
 }
