@@ -42,7 +42,7 @@ function findLocations() {
                     for(let j = 0; j < location.geodata.length; j++) {
                         let geodata = location.geodata[j];
                         // if(geodata.lat !== 0 && geodata.lng !== 0) continue;
-                        let result = await geocode(geodata, location._id, geodata._id);
+                        let result = await geocode(geodata, location._id.toString(), geodata._id.toString());
                         results.push(result);
                     }
                 }
@@ -100,7 +100,7 @@ function findEvents() {
                 // console.log(event.geodata);
                 // console.log(event.geodata);
                 if (event.geodata && event.geodata.streetName) {
-                    let result = await geocode(event.geodata, event._id);
+                    let result = await geocode(event.geodata, event._id.toString());
                     if (result) {
                         results.push(result);
                     }
@@ -130,18 +130,14 @@ function saveLocationResults() {
                 return;
             }
             if(location.geodata) {
-                // console.log(result);
-                // console.log(location.geodata);
                 for(let i = 0; i < location.geodata.length; i++) {
                     let geodata = location.geodata[i];
-                    console.log(geodata._id, result.geodata, geodata._id.toString().localeCompare(result.geodata), location.geodata.length);
-                    if(geodata._id.toString().localeCompare(result.geodata)) {
-                        console.log('updating geodata')
+                    if(geodata._id.toString() === result.geodata) {
                         geodata.lat = result.lat;
                         geodata.lng = result.lng;
                     }
                 }
-                console.log('----------');
+                // console.log('----------');
             }
             location.save((err, saved) => {
                 if(err) {
