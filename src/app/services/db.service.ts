@@ -632,6 +632,31 @@ export class DatabaseService {
         return promise;
     }
 
+
+    async getLocationsByTheme(theme: string): Promise<any> {
+        let promise = new Promise((resolve, reject) => {
+            this.http.post(environment.API_URL + 'getLocationsByTheme', { theme: theme }).subscribe((success: any) => {
+                if(success.message === 'OK') {
+                    let peopleArray = new Array<PersonOrganization>();
+                    success.results.forEach((s: any) => {
+                        peopleArray.push(this.getAsSimplePersonOrganization(s));
+                    });
+
+                    resolve(peopleArray);
+                    return;
+                }
+                if (success.message === 'ERROR') {
+                    console.error(success.error);
+                    reject(success);
+                    return;
+                }
+            });
+
+        });
+
+        return promise;
+    }
+
     getAsSimpleLocation(json: any): Location {
         let location = new Location();
         location.objectId = json._id;
@@ -683,7 +708,7 @@ export class DatabaseService {
         return this.sources;
     }
 
-    getSourcetById(objectId: string): Source {
+    getSourceById(objectId: string): Source {
         return this.sources.find((e: Source) => { return e.objectId === objectId; });
     }
 
