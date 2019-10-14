@@ -349,6 +349,44 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
     });
   });
 
+  api.post('/api/v1/getLocationsByTheme', (req: express.Request, res: express.Response) => {
+    let themeId = req.body.theme;
+
+    let query = { themes: { $elemMatch: { theme: themeId } } };
+    // get events by theme
+    EventSchema.find(query, (err: Error, events: Array<any>) => {
+      if (err) {
+        console.log(err);
+        res.status(500).json({ "message": "ERROR", "error": err });
+      }
+      // get people by events
+      let locations = new Set<string>();
+      events.forEach((event: any) => {
+        // conductor, musician, composer
+        event.locations.forEach((location: any) => {
+          if (locations.has(location.location.toString())) return;
+          locations.add(location.location.toString());
+        })
+      });
+      // promise array to resolve after all queries have been performed
+      let promiseArr = new Array<Promise<any>>();
+      locations.forEach((p: any) => {
+        promiseArr.push(LocationSchema.findOne({ _id: mongoose.Types.ObjectId(p) }).exec());
+      });
+
+      // send response after promise array resolves
+      Promise.all(promiseArr).then((success: any) => {
+        let results = new Array<any>();
+
+        success.forEach((s: any) => {
+          if (!s) return;
+            results.push(s);
+        });
+        res.status(200).json({ "message": "OK", results: results });
+      });
+    });
+  });
+
   api.post('/api/v1/getPeopleByTheme', (req: express.Request, res: express.Response) => {
     let themeId = req.body.theme;
 
