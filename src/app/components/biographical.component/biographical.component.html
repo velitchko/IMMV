@@ -1,22 +1,52 @@
 <mat-sidenav-container class="container">
-    <mat-sidenav #sidenav mode="side" [opened]="personSelected">
+    <mat-sidenav #sidenav mode="side" [opened]="objectSelected">
         <!-- Details about selected person -->
-        <div class="detail" *ngIf="selectedPerson">
+        <div class="detail" *ngIf="selectedObject">
             <button id="close-btn" mat-icon-button (click)="closePersonDetails()">
                 <mat-icon>close</mat-icon>
             </button>
             <div class="person-details">
-                <h3>{{ selectedPerson.name }}</h3>
+                <h3>{{ selectedObject.name }}</h3>
+            </div>
+            <div *ngIf="selectedObject.objectType === 'Event'">
                 <mat-chip-list>
-                    <mat-chip *ngFor="let r of selectedPerson.roles">{{ r }}</mat-chip>
+                    <mat-chip *ngFor="let r of selectedObject.themes">{{ getThemeName(r.theme) }}</mat-chip>
                 </mat-chip-list>
-                <div *ngFor="let d of selectedPerson.dates">
+                <p>{{ displayDate(selectedObject.startDate) }} {{ selectedObject.endDate ? '-' : '' }} {{ displayDate(selectedObject.endDate) }}</p>
+
+                <div *ngFor="let person of selectedObject.peopleOrganizations">
+                    <a href="javascript:void(0)">{{ getPersonOrganizationName(person.personOrganization) }}</a>
+                </div>
+
+                <div *ngFor="let location of selectedObject.locations">
+                    <a href="javascript:void(0)">{{ getLocationName(location.location) }}</a>
+                </div>
+
+                <div *ngFor="let source of selectedObject.sources">
+                    <a href="javascript:void(0)">{{ getSourceName(source.source) }}</a>
+                </div>
+
+                <div *ngFor="let event of selectedObject.events">
+                    <a href="javascript:void(0)">{{ getEventName(event.event) }}</a>
+                </div>
+            </div>
+            <div *ngIf="selectedObject.objectType === 'Person'">
+                <mat-chip-list>
+                    <mat-chip *ngFor="let r of selectedObject.roles">{{ r }}</mat-chip>
+                </mat-chip-list>
+                <div *ngFor="let d of selectedObject.dates">
                     <p>{{ displayDate(d.date) }} {{ d.dateName }}</p>
                 </div>
 
-                <div *ngFor="let d of selectedPerson.functions">
+                <div *ngFor="let d of selectedObject.functions">
                     <p>{{ displayDate(d.startDate) }} - {{ displayDate((d.endDate)) }} {{ d.dateName }}</p>
                 </div>
+                <p>{{ selectedObject.bio }}</p>
+                <div *ngFor="let person of selectedObject.peopleOrganizations">
+                    <a href="javascript:void(0)">{{ getPersonOrganizationName(person.personOrganization) }}</a>
+                </div>
+            </div>
+            <div *ngIf="selectedObject.objectType === 'Location'">
             </div>
         </div>
     </mat-sidenav>
@@ -31,16 +61,19 @@
                 <button mat-flat-button (click)="clearTimeSelection()"><mat-icon>refresh</mat-icon> clear selection</button> <br>
                 <button mat-flat-button (click)="toggleMouseBehavior()"><mat-icon>{{ mouseBehavior ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> toggle mouse behavior</button> <br>
                 <button mat-flat-button (click)="toggleBrushBehavior()"><mat-icon>{{ brushBehavior ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> toggle brush visibility</button> <br>
-                <button mat-flat-button (click)="showExile()"><mat-icon>{{ showExiled ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> show exile</button> <br>
+                <button *ngIf="dataType == 'people'" mat-flat-button (click)="showExile()"><mat-icon>{{ showExiled ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> show exile</button> <br *ngIf="dataType === 'people'">
                 <button mat-flat-button (click)="toggleNames()"><mat-icon>{{ showNames ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> show names</button>
                 <!-- <button mat-flat-button (click)="updateScales()"><mat-icon>zoom_in</mat-icon> apply zoom</button> -->
             </div>
             <!-- <div>
                 <mat-slide-toggle (change)="toggleBrush()">Brush</mat-slide-toggle>
             </div> -->
-            <mat-radio-group class="filter-radio-group">
-                <mat-radio-button *ngFor="let e of eventTypes" (change)="filterEventsByType(e)" [value]="e">{{ e }}</mat-radio-button>
-            </mat-radio-group>
+            <mat-form-field>
+                <mat-label>Event Type Filter</mat-label>
+                <mat-select placeholder="Event Type Filter by" (selectionChange)="filterEventsByType($event.value)">
+                    <mat-option *ngFor="let e of eventTypes" [value]="e">{{ e }}</mat-option>
+                </mat-select>
+            </mat-form-field>
             <mat-form-field>
                 <mat-label>Order by</mat-label>
                 <mat-select [(value)]="currentOrder" placeholder="Order by" (selectionChange)="updateOrder()">
@@ -55,12 +88,12 @@
                 </mat-form-field>
             <div id="autocomplete">
                 <mat-form-field>
-                    <input matInput placeholder="Person" [matAutocomplete]="auto" [formControl]="peopleCtrl">
+                    <input matInput placeholder="Person/Location" [matAutocomplete]="auto" [formControl]="objectCtrl">
                     <button mat-button matSuffix mat-icon-button aria-label="Clear" (click)="clearAutoComplete()">
                         <mat-icon>close</mat-icon>
                     </button>
                     <mat-autocomplete #auto="matAutocomplete">
-                        <mat-option *ngFor="let person of filteredPeople | async" [value]="person.name" (click)="displayPersonDetails(person.name)">
+                        <mat-option *ngFor="let person of filteredObjects | async" [value]="person.name" (click)="displayPersonDetails(person.name)">
                             <span>{{ person.name }}</span> 
                         </mat-option>
                     </mat-autocomplete>

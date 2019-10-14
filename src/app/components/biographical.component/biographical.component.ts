@@ -88,7 +88,7 @@ export class BiographicalComponent implements OnInit {
   // ordering
 
   // Data
-  people: Array<PersonOrganization & Location>;         // people/organizations array
+  objects: Array<Event & PersonOrganization & Location>;         // people/organizations array
   historicEvents: Array<HistoricEvent>;
   data: Array<any>;                          // data in d3-ish format
   filteredData: Array<any>;                  // filteredData in d3-ish format
@@ -111,13 +111,13 @@ export class BiographicalComponent implements OnInit {
   grouping: Array<string>;
   currentGrouping: string;
 
-  personSelected: boolean;
-  selectedPerson: PersonOrganization & Location;
+  objectSelected: boolean;
+  selectedObject: Event | PersonOrganization | Location; // one of the following types
 
   // Autocomplete
-  peopleCtrl: FormControl;
+  objectCtrl: FormControl;
   histFilterCtrl: FormControl;
-  filteredPeople: Observable<Array<PersonOrganization & Location>>;
+  filteredObjects: Observable<Array<PersonOrganization & Location>>;
   filteredHistEvents: Observable<Array<HistoricEvent>>
 
   beingFiltered: boolean;
@@ -137,7 +137,7 @@ export class BiographicalComponent implements OnInit {
     this.dataType = this.route.snapshot.queryParamMap.get('dataType');
     this.themeID = this.route.snapshot.queryParamMap.get('themeID');
 
-    this.personSelected = false;
+    this.objectSelected = false;
 
     this.showNames = false;
     this.showingList = false;
@@ -147,42 +147,44 @@ export class BiographicalComponent implements OnInit {
     this.showExiled = false;
     this.currentFilter = '';
 
-    this.peopleCtrl = new FormControl();
+    this.objectCtrl = new FormControl();
     this.histFilterCtrl = new FormControl();
     this.filteredHistEvents = this.histFilterCtrl.valueChanges
       .pipe(
         startWith(''),
         map((histEv: string) => { return histEv ? this.filterHistEvents(histEv) : this.historicEvents.slice(); })
       );
-    this.filteredPeople = this.peopleCtrl.valueChanges
+    this.filteredObjects = this.objectCtrl.valueChanges
       .pipe(
         startWith(''),
-        map((person: string) => { return person ? this.filterPeople(person) : this.people.slice(); })
+        map((person: string) => { return person ? this.filterPeople(person) : this.objects.slice(); })
       );
 
-    this.people = new Array<PersonOrganization & Location>();
+    this.objects = new Array<Event & PersonOrganization & Location>();
     this.historicEvents = new Array<HistoricEvent>();
     this.data = new Array<any>();
 
     this.theta = 0;
 
-    this.colors = d3.scaleOrdinal()
-      .domain(['street', 'exhibition', 'exile', 'prize', 'none', 'memorial', 'conference', 'anniversary'])
-      .range(['red', 'blue', '#4F8874', 'purple', '#47DBA7', '#ff6bb5', '#ffa500', '#0dff00']); // old none blue - #027cef
+    
 
     this.categoricalColors = d3.scaleOrdinal()
       .range(['#040404', '#494949', '#a7a7a7', '#d8d8d7']);//(d3.schemeSet2);
     // .domain(['Musician', 'Composer', 'Conductor', 'Author', 'Mixed'])
     // .range(['#F286D2', '#36b3d0', '#FFE18D', '#ff0000', '#efefef']);
 
-    this.eventTypes = new Array<string>('street', 'exhibition', 'prize', 'memorial', 'anniversary', 'conference', 'all');
+    
 
     this.peopleAngles = new Map<string, number>();
 
     this.currentlySelectedEvents = new Array<any>();
     this.currentlySelectedPeople = new Array<any>();
 
-    
+    this.db.getAllThemes(); // preload all themes
+    this.db.getAllEvents(); // preload all events
+    this.db.getAllPeopleOrganizations(); // preload all people / organizations
+    this.db.getAllLocations(); // preload all locations
+    this.db.getAllSources(); // preload all sources
 
     this.isBrowser = isPlatformBrowser(this._platformId);
   }
@@ -289,7 +291,7 @@ export class BiographicalComponent implements OnInit {
    * Clears the input in the autocomplete field
    */
   clearAutoComplete(): void {
-    this.peopleCtrl.setValue('');
+    this.objectCtrl.setValue('');
   }
   /**
    * Clears the input in the chrono autocomplete field
@@ -316,7 +318,7 @@ export class BiographicalComponent implements OnInit {
   filterPeople(personName: string): Array<PersonOrganization & Location> {
     let nameVal = personName.trim().toLowerCase();
 
-    return this.people.filter((person: PersonOrganization & Location) => {
+    return this.objects.filter((person: PersonOrganization & Location) => {
 
       return person.name.trim().toLowerCase().includes(nameVal) || person.names.map((n: any) => { return n.name.trim().toLowerCase(); }).includes(nameVal);
     });
@@ -352,21 +354,21 @@ export class BiographicalComponent implements OnInit {
    */
   spinTo(closed: boolean = false): void {
     if (closed) {
-      if (!this.mouseBehavior) this.toggleMouseBehavior(); // turn back on if closing
+      // if (!this.mouseBehavior) this.toggleMouseBehavior(); // turn back on if closing
       // rotate back by -Math.PI
       this.timelineSVG
         .transition().duration(250)
         .attr('transform', 'rotate(0)');
       this.unhighlightPerson();
     } else {
-      if (this.mouseBehavior) this.toggleMouseBehavior(); // turn off if true
+      // if (this.mouseBehavior) this.toggleMouseBehavior(); // turn off if true
       // rotate to Math.PI
-      let currentAngle = this.peopleAngles.get(this.selectedPerson.name) * (180 / Math.PI); // to degrees
+      let currentAngle = this.peopleAngles.get(this.selectedObject.name) * (180 / Math.PI); // to degrees
       this.timelineSVG
         .transition().duration(250)
         .attr('transform', `rotate(${180 - currentAngle})`);
 
-      this.highlightPerson(this.selectedPerson.name);
+      this.highlightPerson(this.selectedObject.name);
     }
   }
 
@@ -378,7 +380,6 @@ export class BiographicalComponent implements OnInit {
    */
   filterEventsByType(type?: string): void {
     if (!type) type = 'all';
-
     this.beingFiltered = true;
     this.currentFilter = type;
 
@@ -391,7 +392,8 @@ export class BiographicalComponent implements OnInit {
       })
       .attr('stroke', (d: any) => {
         if (type === 'all') return this.colors(d.color);
-        return (d.color !== type && d.color !== 'none') ? '#e7e7e7' : this.colors(d.color);
+        if (d.color === 'none') return '#e7e7e7';
+        return d.color !== type ? '#e7e7e7' : this.colors(d.color);
       });
 
     this.chartG.selectAll('.dots')
@@ -399,11 +401,13 @@ export class BiographicalComponent implements OnInit {
       .duration(250)
       .attr('opacity', (d: any) => {
         if (type === 'all') return 1;
+        
         return (d.color !== type && d.color !== 'none') ? 0.15 : 1;
       })
       .attr('fill', (d: any) => {
         if (type === 'all') return this.colors(d.color);
-        return (d.color !== type && d.color !== 'none') ? '#e7e7e7' : this.colors(d.color);
+        if (d.color === 'none') return '#e7e7e7';
+        return d.color !== type ? '#e7e7e7' : this.colors(d.color);
       });
   }
 
@@ -447,6 +451,7 @@ export class BiographicalComponent implements OnInit {
       }
 
       let dataPoint: any = {};
+      dataPoint.objectType = event.objectType;
       dataPoint.person = person.name;
       dataPoint.dateID = event.objectId;
       dataPoint.personID = person.objectId;
@@ -557,7 +562,7 @@ export class BiographicalComponent implements OnInit {
 
     let exiled = new Set<string>();
 
-    this.people.forEach((person: PersonOrganization & Location) => {
+    this.objects.forEach((person: PersonOrganization & Location) => {
       if (person.functions.map((f: any) => {
         if (!f.dateName) return; // someone forgot to add a date name
         return f.dateName.toLowerCase();
@@ -609,7 +614,7 @@ export class BiographicalComponent implements OnInit {
   updateGroup(): void {
     // update the categorical attribute of people
     // used by the categoricalArc in the renderRadial() function
-    this.people.forEach((p: PersonOrganization & Location) => {
+    this.objects.forEach((p: PersonOrganization & Location) => {
       (p as any).category = this.getCategory(p, this.currentGrouping);
     });
 
@@ -671,11 +676,16 @@ export class BiographicalComponent implements OnInit {
     }
   }
 
+  //TODO: Get locations by theme
   prepareLocationData(): void {
-    let themeID = '';
+    this.colors = d3.scaleOrdinal().range(d3.schemeSet3);
+    this.eventTypes = new Array<string>('all');
+
+    let themeID = this.themeID ? this.themeID : ''; // else use some default theme?
+    // this.db.getLocationsByTheme(themeID)...
     this.db.getEventsByLocations().then((success: Array<{ location: Location, events: Array<Event> }>) => {
-      let locations: Array<PersonOrganization & Location> = success.map((s: { location: PersonOrganization & Location, events: Array<Event> }) => { return s.location; });
-      this.people = locations;
+      let locations: Array<Event & PersonOrganization & Location> = success.map((s: { location: Event & PersonOrganization & Location, events: Array<Event> }) => { return s.location; });
+      this.objects = locations;
       success.forEach((s: { location: Location, events: Array<Event> }) => {
         (s.location as any).category = s.location.locationTypes[0] ? s.location.locationTypes[0] : '?'
         this.orderingMap.get('Number of Events').set(s.location.objectId, s.events.length);
@@ -691,10 +701,14 @@ export class BiographicalComponent implements OnInit {
         this.orderingMap.get('First Event').set(s.location.objectId, firstEvent);
         s.events.forEach((e: Event) => {
           // add events to this.data as data points
-          // TODO: categorical attribute
-          // TODO: role attribute?
           let dataPoint: any = {};
           if (!e.startDate) return;
+
+          let themeColor: string;
+          e.themes.forEach((t: any) => {
+            if(!themeColor) themeColor = this.db.getThemeById(t.theme).name;
+          });
+          dataPoint.objectType = e.objectType;
           dataPoint.startDate = moment(e.startDate);
           dataPoint.endDate = e.endDate ? moment(e.endDate) : moment(e.startDate);
           dataPoint.person = s.location.name;
@@ -703,7 +717,9 @@ export class BiographicalComponent implements OnInit {
           dataPoint.dateName = e.name;
           dataPoint.personID = s.location.objectId;
           dataPoint.category = s.location.locationTypes[0] ? s.location.locationTypes[0] : 'none'; // TODO: should be event categorical type
-          dataPoint.color = dataPoint.category; // default: none // TODO: should be colorcoded according to the category
+          // dataPoint.color = dataPoint.category; // default: none // TODO: should be colorcoded according to the category
+          dataPoint.color = themeColor ? themeColor : 'none';
+          if(!this.eventTypes.includes(dataPoint.color) && dataPoint.color !== 'none') this.eventTypes.push(dataPoint.color);
           this.data.push(dataPoint);
         });
       });
@@ -738,9 +754,14 @@ export class BiographicalComponent implements OnInit {
    * - Formats data so we can use it easily with d3
    */
   prepareData(): void {
+    this.colors = d3.scaleOrdinal()
+      .domain(['street', 'exhibition', 'exile', 'prize', 'none', 'memorial', 'conference', 'anniversary'])
+      .range(['red', 'blue', '#4F8874', 'purple', '#47DBA7', '#ff6bb5', '#ffa500', '#0dff00']); // old none blue - #027cef
+    this.eventTypes = new Array<string>('street', 'exhibition', 'prize', 'memorial', 'anniversary', 'conference', 'all');
+
     let themeID = this.themeID ? this.themeID : '5be942be2447d22473b2e80c'; // festwochen'5d949c5334492200a542f2e3'; // 1. mai '5d94990f34492200a542f2da'// mdt '5be942be2447d22473b2e80c'; 
     this.db.getPeopleByTheme(themeID).then((success) => {
-      this.people = success;
+      this.objects = success;
       let roles = new Set<string>();
       let themePromiseEventArray = new Array<Promise<any>>();
       success.forEach((person: any) => {
@@ -778,6 +799,7 @@ export class BiographicalComponent implements OnInit {
             person.functions.forEach((func: any) => {
               let dataPoint: any = {};
               if (!func.startDate) return;
+              dataPoint.objectType = person.objectType;
               dataPoint.startDate = moment(func.startDate);
               dataPoint.endDate = func.endDate ? moment(func.endDate) : moment(func.startDate);
               dataPoint.person = person.name;
@@ -798,6 +820,7 @@ export class BiographicalComponent implements OnInit {
                 this.orderingMap.get('Death').set(person.objectId, moment(date.date));
               }
               let dataPoint: any = {};
+              dataPoint.objectType = person.objectType;
               dataPoint.startDate = moment(date.date);
               dataPoint.endDate = moment(date.date);
               dataPoint.dateID = date._id;
@@ -848,7 +871,7 @@ export class BiographicalComponent implements OnInit {
   updateConfig(): void {
     this.db.getSnapshot(this.preset).then((success: any) => {
       let parameters = JSON.parse(success.parameters);
-      this.selectedPerson = parameters.selectedPerson;
+      this.selectedObject = parameters.selectedPerson;
       this.currentOrder = parameters.currentOrder;
       this.currentGrouping = parameters.currentGrouping;
       this.currentlySelectedMinDate = moment(parameters.currentlySelectedMinDate).toDate();
@@ -876,7 +899,7 @@ export class BiographicalComponent implements OnInit {
       this.drawDonut(this.rScale(this.currentlySelectedMinDate), this.rScale(this.currentlySelectedMaxDate));
       // set brush behavior
       this.brushBehavior ? this.showBrush() : this.hideBrush();
-      if (this.selectedPerson) this.highlightPerson(this.selectedPerson.name)
+      if (this.selectedObject) this.highlightPerson(this.selectedObject.name)
     });
   }
 
@@ -941,7 +964,7 @@ export class BiographicalComponent implements OnInit {
    */
   saveConfig(): void {
     let item = {
-      selectedPerson: this.selectedPerson,
+      selectedPerson: this.selectedObject,
       currentOrder: this.currentOrder,
       currentGrouping: this.currentGrouping,
       currentlySelectedMinDate: this.currentlySelectedMinDate,
@@ -978,14 +1001,39 @@ export class BiographicalComponent implements OnInit {
     return Math.sin(angle) * this.rScale(date);
   }
 
+  getThemeName(id: string): string {
+    return this.db.getThemeById(id).name;
+  }
+
+  getPersonOrganizationName(id: string): string {
+    let personOrganization = this.db.getPersonById(id);
+    if(!personOrganization)
+    personOrganization = this.db.getOrganizationById(id);
+    return personOrganization ? personOrganization.name : '';
+  }
+
+  getLocationName(id: string): string {
+    let location = this.db.getLocationById(id);
+    if(!location) return;
+    return location.name;
+  }
+
+  getSourceName(id: string): string {
+    return this.db.getSourceById(id).name;
+  }
+
+  getEventName(id: string): string {
+    return this.db.getEventById(id).name;
+  }
+
   /**
    * Open up sidepanel to display a persons details, including
    * events / other people related to them
    * @param name the persons name
    */
   displayPersonDetails(name: string): void {
-    this.personSelected = true;
-    this.selectedPerson = this.people.find((p: PersonOrganization & Location) => { return p.name === name; });
+    this.objectSelected = true;
+    this.selectedObject = this.objects.find((p: PersonOrganization & Location) => { return p.name === name; });
     this.spinTo(); // notify that we have opened the side panel
   }
 
@@ -993,8 +1041,8 @@ export class BiographicalComponent implements OnInit {
    * Closes the sidepanel
    */
   closePersonDetails(): void {
-    this.personSelected = false;
-    this.selectedPerson = undefined;
+    this.objectSelected = false;
+    this.selectedObject = undefined;
     this.spinTo(true); // notify that we have closed the side panel
   }
 
@@ -1452,6 +1500,7 @@ export class BiographicalComponent implements OnInit {
     peopleNames
       .transition().duration(250)
       .attr('opacity', (d: any) => {
+        if(!this.showNames) return 0;
         d.hidden = false;
         return 1;
       })
@@ -1572,8 +1621,9 @@ export class BiographicalComponent implements OnInit {
    */
   drawGridCircle(): void {
     if (!this.mouseBehavior) return;
-    let mouseX = (d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right)) / 2);
-    let mouseY = (d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom)) / 2);
+    // - 25 accounts for offset in drawing (radius starts from 50)
+    let mouseX = (d3.event.x - (this.WIDTH + (this.margin.left + this.margin.right - 25)) / 2);
+    let mouseY = (d3.event.y - (this.HEIGHT + (this.margin.top + this.margin.bottom - 25)) / 2);
 
     let radius = Math.ceil(Math.sqrt(mouseX * mouseX + mouseY * mouseY));
     let date = this.rScale.invert(radius);
@@ -1618,8 +1668,8 @@ export class BiographicalComponent implements OnInit {
 
     if (update && update.group) {
       dataByPerson.sort((a: any, b: any) => {
-        let personA = this.people.find((p: PersonOrganization & Location) => { return p.name === a.key; });
-        let personB = this.people.find((p: PersonOrganization & Location) => { return p.name === b.key; });
+        let personA = this.objects.find((p: PersonOrganization & Location) => { return p.name === a.key; });
+        let personB = this.objects.find((p: PersonOrganization & Location) => { return p.name === b.key; });
         let catA = this.getCategory(personA, this.currentGrouping);
         let catB = this.getCategory(personB, this.currentGrouping);
         return catA.localeCompare(catB);
@@ -1698,7 +1748,7 @@ export class BiographicalComponent implements OnInit {
         if (birthDate) birthDate = birthDate.startDate;
         if (deathDate) deathDate = deathDate.startDate;
         let age = Math.abs((birthDate ? birthDate : moment()).diff(deathDate ? deathDate : moment(), 'years'));
-        let person = this.people.find((p: PersonOrganization & Location) => { return p.name === d.key; });
+        let person = this.objects.find((p: PersonOrganization & Location) => { return p.name === d.key; });
         let artistName = '';
         person.names.forEach((name: any) => {
           if (name.nameType === 'Showbiz Name') artistName = name.name;
@@ -1782,7 +1832,7 @@ export class BiographicalComponent implements OnInit {
         this.tooltip.nativeElement.style.display = 'block';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
         this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
-        let person = this.people.find((p: PersonOrganization & Location) => { return p.name === d.person; });
+        let person = this.objects.find((p: PersonOrganization & Location) => { return p.name === d.person; });
         let artistName = '';
         person.names.forEach((name: any) => {
           if (name.nameType === 'Showbiz Name') artistName = name.name;
@@ -1798,6 +1848,9 @@ export class BiographicalComponent implements OnInit {
       .on('mouseout', (d: any, i: number, n: any) => {
         this.tooltip.nativeElement.style.display = 'none';
         this.handleMouseout();
+      })
+      .on('click', (d: any) => {
+        this.handleClick(d);
       })
       .merge(eventLines)
       .transition().duration(250)
@@ -1830,7 +1883,7 @@ export class BiographicalComponent implements OnInit {
       .attr('d', categoricalArc)
       .on('mouseover', (d: any) => {
         if (d.hidden) return;
-        let person = this.people.find((p: PersonOrganization & Location) => { return p.name === d.key; })
+        let person = this.objects.find((p: PersonOrganization & Location) => { return p.name === d.key; })
         let artistName = '';
         person.names.forEach((name: any) => {
           if (name.nameType === 'Showbiz Name') artistName = name.name;
@@ -1855,7 +1908,7 @@ export class BiographicalComponent implements OnInit {
       .attr('d', categoricalArc)
       .attr('stroke', '#7b7b7b')
       .attr('fill', (d: any) => {
-        let person = this.people.find((p: any) => { return p.name === d.key; });
+        let person = this.objects.find((p: any) => { return p.name === d.key; });
         categories.add((person as any).category);
         return this.categoricalColors((person as any).category);
       });
@@ -1870,7 +1923,7 @@ export class BiographicalComponent implements OnInit {
       .merge(peopleNames)
       .transition().duration(250)
       .text((d: any) => {
-        let person = this.people.find((p: any) => { return p.name === d.key; });
+        let person = this.objects.find((p: any) => { return p.name === d.key; });
         let artistName = '';
         person.names.forEach((name: any) => {
           if (name.nameType === 'Showbiz Name') artistName = name.name;
@@ -1914,7 +1967,7 @@ export class BiographicalComponent implements OnInit {
 
     let peopleByCategory = d3.nest()
       .key((d: any) => {
-        let person = this.people.find((p: PersonOrganization & Location) => {
+        let person = this.objects.find((p: PersonOrganization & Location) => {
           return p.name === d.person;
         })
         return this.getCategory(person, this.currentGrouping);
@@ -1934,6 +1987,7 @@ export class BiographicalComponent implements OnInit {
       })
       .attr('fill', (d: any) => { return this.categoricalColors(d); })
       .text((d: any) => {
+        console.log(dataByPerson);
         let total = dataByPerson.length;
         let people = new Set<string>();
         peopleByCategory.forEach((pbc: any) => {
@@ -1992,6 +2046,29 @@ export class BiographicalComponent implements OnInit {
 
     // brush above things
     d3.select('.radial-brush').raise();
+  }
+
+  handleClick(object: any): void {
+    switch(object.objectType) {
+      case 'Event': 
+        this.selectedObject = this.db.getEventById(object.dateID);
+        this.objectSelected = true;
+        break;
+      case 'Person':
+        // this case is handled by the category click event listener
+        // and uses displayPersonDetails() function instead 
+        this.selectedObject = this.db.getPersonById(object.personID);
+        this.objectSelected = true;
+        break;
+      case 'Location': 
+        this.selectedObject = this.db.getLocationById(object.personID);
+        this.objectSelected = true;
+        break;
+      default:
+        break;
+    }
+
+    console.log(this.selectedObject);
   }
 
   /**
@@ -2269,7 +2346,7 @@ export class BiographicalComponent implements OnInit {
           left -= tooltipBBox.width;
           this.tooltip.nativeElement.style.left = `${left}px`;
         }
-        let person = this.people.find((p: PersonOrganization & Location) => { return p.name === d.person; });
+        let person = this.objects.find((p: PersonOrganization & Location) => { return p.name === d.person; });
         let artistName = '';
         person.names.forEach((name: any) => {
           if (name.nameType === 'Showbiz Name') artistName = name.name;
@@ -2284,6 +2361,9 @@ export class BiographicalComponent implements OnInit {
       .on('mouseout', (d: any, i: number, n: any) => {
         this.tooltip.nativeElement.style.display = 'none';
         this.handleMouseout();
+      })
+      .on('click', (d: any) => {
+        this.handleClick(d);
       })
       .merge(dots)
       .transition().duration(250)
