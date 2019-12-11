@@ -18,6 +18,22 @@ $timeline-height: 200px;
     margin-right: .5em;
 }
 
+::ng-deep .historic-text {
+    font-family: 'Font Awesome 5 Free';
+    cursor: pointer;
+}
+
+.mat-expansion-panel-align .mat-expansion-panel-header-title,
+.mat-expansion-panel-align .mat-expansion-panel-header-description {
+    flex-basis: 0;
+}
+
+.mat-expansion-panel-align .mat-expansion-panel-header-description {
+    justify-content: space-between;
+    align-items: center;
+}
+
+
 .person-details {
     position: relative;
     margin-top: 4em;
