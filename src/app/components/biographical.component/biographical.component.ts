@@ -17,6 +17,14 @@ import { HistoricEvent } from 'src/app/models/historic.event';
 // Endpoint for current vis
 const _VIS: string = 'biographical';
 
+// Opacity Values
+const OPACITY = {
+  full: 1,
+  base: 0.65,
+  fade: 0.15,
+  hide: 0
+}
+
 @Component({
   selector: 'app-biographical',
   templateUrl: './biographical.component.html',
@@ -42,7 +50,7 @@ export class BiographicalComponent implements OnInit {
   HEIGHT: number;                           // height of the browsers viewport
   MIN_DATE: moment.Moment;                  // min date
   MAX_DATE: moment.Moment;                  // max date
-
+  MAX_REL_CNT: number;                      // max relationship count for sizing
   // D3 things
   timelineSVG: any;                            // timeline svg holder
   timeChartSVG: any;                           // timeline chart
@@ -55,10 +63,11 @@ export class BiographicalComponent implements OnInit {
   yScale: d3.ScaleLinear<number, number>;      // vertical extent
   xChartScale: d3.ScaleTime<number, number>;   // horizontal scale for the line chart
   yChartScale: d3.ScaleLinear<number, number>; // vertical scale for the line chart
+  nodeSizeScale: d3.ScaleLinear<number, number>; // node size scale
   angleScale: d3.ScaleLinear<number, number>;
   rScale: d3.ScaleTime<number, number>;
   colors: d3.ScaleOrdinal<string, {}>;  // d3 color coding
-  categoricalColors: d3.ScaleOrdinal<string, {}>;
+  colorGreys: d3.ScaleOrdinal<string, {}>;
   /**
    *  '#006345' - dark green - exile
       '#e333af' - pink - other renamings
@@ -70,6 +79,7 @@ export class BiographicalComponent implements OnInit {
   dragStartPoint: number;
   theta: number;
   arc: d3.Arc<any, {}>;
+  zoom: any;
 
   // internal data structures
   orderingMap: Map<string, Map<string, any>>;
@@ -89,7 +99,8 @@ export class BiographicalComponent implements OnInit {
 
   // Data
   objects: Array<Event & PersonOrganization & Location>;         // people/organizations array
-  historicEvents: Array<HistoricEvent>;
+  historicEvents: Array<string>;
+  locations: Array<string>;
   data: Array<any>;                          // data in d3-ish format
   filteredData: Array<any>;                  // filteredData in d3-ish format
 
@@ -102,8 +113,10 @@ export class BiographicalComponent implements OnInit {
   brushBehavior: boolean;
   showingList: boolean;
   showExiled: boolean;
+  flipTime: boolean;
 
   eventTypes: Array<string>;
+  nodeSizes: Array<string>;
 
   ordering: Array<string>;
   currentOrder: string;
@@ -112,16 +125,18 @@ export class BiographicalComponent implements OnInit {
   currentGrouping: string;
 
   objectSelected: boolean;
+  detailPanelOpen: boolean;
   selectedObject: Event | PersonOrganization | Location; // one of the following types
 
   // Autocomplete
   objectCtrl: FormControl;
-  histFilterCtrl: FormControl;
+  // histFilterCtrl: FormControl;
   filteredObjects: Observable<Array<PersonOrganization & Location>>;
-  filteredHistEvents: Observable<Array<HistoricEvent>>
+  // filteredHistEvents: Observable<Array<HistoricEvent>>
 
   beingFiltered: boolean;
   currentFilter: string;
+  currentNodeSizing: string;
 
   preset: string;
   dataType: string;
@@ -138,7 +153,7 @@ export class BiographicalComponent implements OnInit {
     this.themeID = this.route.snapshot.queryParamMap.get('themeID');
 
     this.objectSelected = false;
-
+    this.flipTime = false;
     this.showNames = false;
     this.showingList = false;
     this.mouseBehavior = true;
@@ -146,34 +161,45 @@ export class BiographicalComponent implements OnInit {
     this.beingFiltered = false;
     this.showExiled = false;
     this.currentFilter = '';
+    this.detailPanelOpen = false;
+
+    this.currentNodeSizing = 'peopleOrganizations';
 
     this.objectCtrl = new FormControl();
-    this.histFilterCtrl = new FormControl();
-    this.filteredHistEvents = this.histFilterCtrl.valueChanges
-      .pipe(
-        startWith(''),
-        map((histEv: string) => { return histEv ? this.filterHistEvents(histEv) : this.historicEvents.slice(); })
-      );
+    // this.histFilterCtrl = new FormControl();
+    // this.filteredHistEvents = this.histFilterCtrl.valueChanges
+    //   .pipe(
+    //     startWith(''),
+    //     map((histEv: string) => { return histEv ? this.filterHistEvents(histEv) : this.historicEvents.slice(); })
+    //   );
     this.filteredObjects = this.objectCtrl.valueChanges
       .pipe(
         startWith(''),
-        map((person: string) => { return person ? this.filterPeople(person) : this.objects.slice(); })
+        map((person: string) => { return person ? this.filterPeople(person) : this.objects.slice().sort((a, b) => { return a.name.localeCompare(b.name); }); })
       );
 
     this.objects = new Array<Event & PersonOrganization & Location>();
-    this.historicEvents = new Array<HistoricEvent>();
+    this.historicEvents = new Array<string>('5bc8887bb9817e01d81db006', '5bc8887bb9817e01d81daff6', '5bc8887bb9817e01d81dafe9', '5bc8887bb9817e01d81dafdc', '5bc8887bb9817e01d81dafda');
+    // 35 key locations
+    this.locations = new Array<string>('5bc878254a37780173b531d2', '5bc878254a37780173b531dd', '5bc878254a37780173b531e0', '5bc878254a37780173b531e8',
+      '5bc878254a37780173b531f2', '5bc878254a37780173b5320f', '5bc878254a37780173b53213', '5bc878254a37780173b53219',
+      '5bc878254a37780173b5323f', '5bc878254a37780173b53242', '5bc878254a37780173b53248', '5bc878254a37780173b53273',
+      '5bc878254a37780173b5328c', '5bc878254a37780173b5329a', '5bc878254a37780173b532a4', '5bc878254a37780173b532c8',
+      '5bc878254a37780173b532ea', '5bc878254a37780173b532f5', '5bc878254a37780173b5330d', '5bd9d52f2447d22473b2d639',
+      '5be9543b2447d22473b2ea49', '5be959222447d22473b2ea73', '5be95e4e2447d22473b2ea8e', '5be967402447d22473b2eb02',
+      '5c3323235c9d43155c96499a', '5c33254b5c9d43155c9649b9', '5c33557f5c9d43155c964e61', '5c3dc0cb3fe57001f2a01feb',
+      '5c51da721bb7f85d3b1e5b20', '5cf6aa0596dea228181335d9', '5cf7d54096dea22818133bcb', '5d4c3b1cb08c896317dc3373',
+      '5d824f58c9cc8f5cf77fc9d8', '5d822be7f884422184a17f70', '5bc878254a37780173b5321c');
     this.data = new Array<any>();
+    this.nodeSizes = new Array<string>('events', 'historicEvents', 'peopleOrganizations', 'locations', 'themes', 'sources');
 
     this.theta = 0;
 
-    
-
-    this.categoricalColors = d3.scaleOrdinal()
-      .range(['#040404', '#494949', '#a7a7a7', '#d8d8d7']);//(d3.schemeSet2);
+    this.colorGreys = d3.scaleOrdinal().range(d3.schemeGreys[9]);//(d3.schemeSet2);
     // .domain(['Musician', 'Composer', 'Conductor', 'Author', 'Mixed'])
     // .range(['#F286D2', '#36b3d0', '#FFE18D', '#ff0000', '#efefef']);
 
-    
+
 
     this.peopleAngles = new Map<string, number>();
 
@@ -199,7 +225,7 @@ export class BiographicalComponent implements OnInit {
    */
   ngOnInit(): void {
     if (this.isBrowser) {
-        // define map & setup map
+      // define map & setup map
       this.orderingMap = new Map<string, Map<string, any>>();
       this.setupMaps();
       // get data based on data type (passed from URL ?dataType=<data-type> queryParam)
@@ -226,7 +252,7 @@ export class BiographicalComponent implements OnInit {
       }
 
       this.db.getAllHistoricEvents().then((success) => {
-        this.historicEvents = success;
+        // this.historicEvents = success;
       });
     }
   }
@@ -236,34 +262,34 @@ export class BiographicalComponent implements OnInit {
    */
   setupMaps(): void {
     // meta map
-    switch(this.dataType) {
-      case 'events': 
+    switch (this.dataType) {
+      case 'events':
         break;
-      case 'people': 
+      case 'people':
         // create maps for orderings
         this.orderingMap.set('First Post-death Event', new Map<string, moment.Moment>());
         this.orderingMap.set('Birth', new Map<string, moment.Moment>());
         this.orderingMap.set('Death', new Map<string, moment.Moment>());
         this.orderingMap.set('Honoring Time', new Map<string, moment.Moment>());
-    
+
         this.ordering = Array.from(this.orderingMap.keys());
         this.currentOrder = 'Birth';
-    
+
         this.grouping = new Array<string>('None', 'Role', 'Exiled', 'Born after 1945', 'Died before 1938', 'Gender');
         this.currentGrouping = 'None';
         break;
       case 'locations':
-          this.orderingMap = new Map<string, Map<string, any>>();
-          // create maps for orderings
-          this.orderingMap.set('Number of Events', new Map<string, moment.Moment>());
-          this.orderingMap.set('Proximity to Center', new Map<string, moment.Moment>());
-          this.orderingMap.set('First Event', new Map<string, moment.Moment>());
-      
-          this.ordering = Array.from(this.orderingMap.keys());
-          this.currentOrder = 'First Event';
-      
-          this.grouping = new Array<string>('District', 'Location Type');
-          this.currentGrouping = 'None';
+        this.orderingMap = new Map<string, Map<string, any>>();
+        // create maps for orderings
+        this.orderingMap.set('Number of Events', new Map<string, moment.Moment>());
+        this.orderingMap.set('Proximity to Center', new Map<string, moment.Moment>());
+        this.orderingMap.set('First Event', new Map<string, moment.Moment>());
+
+        this.ordering = Array.from(this.orderingMap.keys());
+        this.currentOrder = 'First Event';
+
+        this.grouping = new Array<string>('District', 'Location Type');
+        this.currentGrouping = 'None';
         break;
       case 'sources':
         break;
@@ -271,16 +297,16 @@ export class BiographicalComponent implements OnInit {
         break;
       case 'historicevents':
         break;
-      default: 
+      default:
         // create maps for orderings
         this.orderingMap.set('First Post-death Event', new Map<string, moment.Moment>());
         this.orderingMap.set('Birth', new Map<string, moment.Moment>());
         this.orderingMap.set('Death', new Map<string, moment.Moment>());
         this.orderingMap.set('Honoring Time', new Map<string, moment.Moment>());
-    
+
         this.ordering = Array.from(this.orderingMap.keys());
         this.currentOrder = 'Birth';
-    
+
         this.grouping = new Array<string>('None', 'Role', 'Exiled', 'Born after 1945', 'Died before 1938', 'Gender');
         this.currentGrouping = 'None';
         break;
@@ -296,17 +322,29 @@ export class BiographicalComponent implements OnInit {
   /**
    * Clears the input in the chrono autocomplete field
    */
-  clearChronoAutoComplete(): void {
-    this.histFilterCtrl.setValue('');
-    this.clearTimeSelection();
-  }
+  // clearChronoAutoComplete(): void {
+  //   this.histFilterCtrl.setValue('');
+  //   this.clearTimeSelection();
+  // }
 
   /**
    * Returns color for the event type / categorical value
    * @param type event type or categorical value
+   * @return d3.scaleOrdinal object resolving the color
    */
   getColorForType(type: string): {} {
     return this.colors(type);
+  }
+
+  /**
+   * Returns color for the corresponding main theme or gray if its not a main theme
+   * @param id - id of the theme
+   * @return d3.scaleOrdinal object resolving the color
+   */
+  getColorForTheme(id: string): {} {
+    let theme = this.db.getThemeById(id);
+    if (theme.themeTypes.includes('Main Topics')) return this.colors(theme.name);
+    return '#e7e7e7';
   }
 
 
@@ -319,8 +357,9 @@ export class BiographicalComponent implements OnInit {
     let nameVal = personName.trim().toLowerCase();
 
     return this.objects.filter((person: PersonOrganization & Location) => {
-
       return person.name.trim().toLowerCase().includes(nameVal) || person.names.map((n: any) => { return n.name.trim().toLowerCase(); }).includes(nameVal);
+    }).sort((a, b) => {
+      return a.name.localeCompare(b.name);
     });
   }
 
@@ -330,13 +369,13 @@ export class BiographicalComponent implements OnInit {
    * Used for the historic event autocomplete
    * @param histEv 
    */
-  filterHistEvents(histEv: string): Array<HistoricEvent> {
-    let nameVal = histEv.trim().toLowerCase();
+  // filterHistEvents(histEv: string): Array<HistoricEvent> {
+  //   let nameVal = histEv.trim().toLowerCase();
 
-    return this.historicEvents.filter((historicEvent: HistoricEvent) => {
-      return historicEvent.name.trim().toLowerCase().includes(nameVal);
-    })
-  }
+  //   return this.historicEvents.filter((historicEvent: HistoricEvent) => {
+  //     return historicEvent.name.trim().toLowerCase().includes(nameVal);
+  //   })
+  // }
 
   // TODO: Should update vis with new time-span selected by a historic event
   /**
@@ -356,13 +395,15 @@ export class BiographicalComponent implements OnInit {
     if (closed) {
       // if (!this.mouseBehavior) this.toggleMouseBehavior(); // turn back on if closing
       // rotate back by -Math.PI
+      this.detailPanelOpen = false;
       this.timelineSVG
         .transition().duration(250)
         .attr('transform', 'rotate(0)');
       this.unhighlightPerson();
     } else {
-      // if (this.mouseBehavior) this.toggleMouseBehavior(); // turn off if true
+      if (this.mouseBehavior) this.toggleMouseBehavior(); // turn off if true
       // rotate to Math.PI
+      this.detailPanelOpen = true;
       let currentAngle = this.peopleAngles.get(this.selectedObject.name) * (180 / Math.PI); // to degrees
       this.timelineSVG
         .transition().duration(250)
@@ -382,27 +423,57 @@ export class BiographicalComponent implements OnInit {
     if (!type) type = 'all';
     this.beingFiltered = true;
     this.currentFilter = type;
+    let peopleNames = new Set<string>();
 
     this.radialG.selectAll('.event')
       .transition()
       .duration(250)
-      .attr('opacity', (d: any) => {
-        if (type === 'all') return 1;
-        return (d.color !== type && d.color !== 'none') ? 0.15 : 1;
+      .attr('stroke-opacity', (d: any, i: any, n: any) => {
+        if (type === 'all') return OPACITY.base;
+        if (d.color === type) d3.select(n[i]).raise();
+        if(d.color === type) peopleNames.add(d.person);
+        return (d.color !== type && d.color !== 'other') ? OPACITY.fade : OPACITY.base;
       })
       .attr('stroke', (d: any) => {
-        if (type === 'all') return this.colors(d.color);
-        if (d.color === 'none') return '#e7e7e7';
+        if (type === 'all') {
+          return d.dateName === 'Birth' || d.dateName === 'Death' ? '#59a14f' : this.colors(d.color);
+        } 
+        if (d.color === 'other') return '#e7e7e7';
         return d.color !== type ? '#e7e7e7' : this.colors(d.color);
       });
 
+      this.radialG.selectAll('.category')
+        .transition()
+        .duration(250)
+        .attr('opacity', (d: any) => {
+          if(type === 'all') return OPACITY.base;
+          return ([...peopleNames].includes(d.key)) ? OPACITY.base : OPACITY.hide;
+        });
+    
+      this.radialG.selectAll('.event')
+        .transition()
+        .duration(250)
+        .attr('stroke-opacity', (d: any) => {
+          if(type === 'all') return OPACITY.base;
+          if(d.color === type) return; // these are already set
+          return ([...peopleNames].includes(d.person) && (d.dateName === 'Death' || d.dateName === 'Birth')) ? OPACITY.base : OPACITY.hide;
+        });
+  
+      this.radialG.selectAll('.before-death')
+      .transition()
+      .duration(250)
+      .attr('stroke-opacity', (d: any) => {
+        if(type === 'all') return OPACITY.base;
+        return ([...peopleNames].includes(d.key)) ? OPACITY.base : OPACITY.hide;
+      });
+    
     this.chartG.selectAll('.dots')
       .transition()
       .duration(250)
       .attr('opacity', (d: any) => {
-        if (type === 'all') return 1;
-        
-        return (d.color !== type && d.color !== 'none') ? 0.15 : 1;
+        if (type === 'all') return OPACITY.full;
+        //  && d.color !== 'none'
+        return (d.color !== type) ? OPACITY.fade : OPACITY.full;
       })
       .attr('fill', (d: any) => {
         if (type === 'all') return this.colors(d.color);
@@ -418,14 +489,14 @@ export class BiographicalComponent implements OnInit {
   getEventType(eventName: string): string {
     // TODO: Event types for Locations?
     let name = eventName.trim().toLowerCase();
-    let cat = 'none';
+    let cat = 'other';
     if (name.includes('gedenk') || name.includes('denkmal') || name.includes('nachlass') || name.includes('büste')) cat = 'memorial';
     if (name.includes('benannt') || name.includes('benennung')) cat = 'street';
     if (name.includes('verleihung') || name.includes('verliehen') || name.includes('preis') || name.includes('bürger') || name.includes('ehrenmedaille')) cat = 'prize';
     if (name.includes('symposium') || name.includes('konferenz')) cat = 'conference';
     if (name.includes('todestag') || name.includes('geburtstag')) cat = 'anniversary';
     if (name.includes('ausstellung')) cat = 'exhibition';
-    if (eventName.includes('exil')) cat = 'exile';
+    if (name.includes('exil')) cat = 'exile';
 
     return cat;
   }
@@ -471,11 +542,11 @@ export class BiographicalComponent implements OnInit {
    */
   getCategory(personLocation: (PersonOrganization & Location), groupingScheme: string): string {
     let cat = '';
-    if(this.dataType === 'people') {
+    if (this.dataType === 'people') {
       if (personLocation.roles) {
         if (groupingScheme === 'Role' || groupingScheme === 'None') { // default
           let fallsIntoCat = 0;
-  
+
           if (personLocation.roles.includes('Musician') || personLocation.roles.includes('Performer') || personLocation.roles.includes('Vocalist')) {
             cat = 'Musician';
             fallsIntoCat++;
@@ -498,10 +569,10 @@ export class BiographicalComponent implements OnInit {
           return cat;
         } else if (groupingScheme === 'Born after 1945') {
           let bday: moment.Moment;
-  
+
           for (let i = 0; i < personLocation.dates.length; i++) {
             let date = personLocation.dates[i];
-  
+
             if (date.dateName === 'Birth') {
               bday = moment(date.date);
               return bday.isSameOrAfter('1945', 'year') ? 'Born after 1945' : 'Born before 1945';
@@ -512,10 +583,10 @@ export class BiographicalComponent implements OnInit {
           }
         } else if (groupingScheme === 'Died before 1938') {
           let dday: moment.Moment;
-  
+
           for (let i = 0; i < personLocation.dates.length; i++) {
             let date = personLocation.dates[i];
-  
+
             if (date.dateName === 'Death') {
               dday = moment(date.date);
               return dday.isSameOrBefore('1938', 'year') ? 'Died before 1938' : 'Died after 1938';
@@ -530,21 +601,30 @@ export class BiographicalComponent implements OnInit {
       }
     }
 
-    if(this.dataType === 'locations') {
-      if(groupingScheme === 'Location Type') {
+    if (this.dataType === 'locations') {
+      if (groupingScheme === 'Location Type') {
         if (personLocation.locationTypes) {
-          return personLocation.locationTypes[0] ? personLocation.locationTypes[0] : '?';
+          return personLocation.locationTypes[0]  ? personLocation.locationTypes[0] : 'Other';
         }
       } else if (groupingScheme === 'District') {
         let district = '';
         personLocation.geodata.forEach((g: Geodata) => {
           district = `${g.districtNumber}`; // num to string
         });
-        return district !== '' ? district : '?';
+        return district; // !== '' ? district : '?';
       }
-
+      return 'Other';
     }
     // return this.categoricalArray[Math.floor(Math.random() * 3)];
+  }
+
+  /**
+   * Filters the events and people to only show those that are exiled
+   * then orders them according to the current ordering strategy
+   * calls render to update changes
+   */
+  showKeyLocations(): void {
+    // TODO: Implement like the show exile but for key locations
   }
 
   /**
@@ -642,12 +722,12 @@ export class BiographicalComponent implements OnInit {
   getDistance(location: Location, unit: string = 'K'): number {
     // TODO: Check if lat/lng or geodata exist on location object
     // TODO: Do we always take the first geodata object from the array?
-    if(!location.geodata || location.geodata.length === 0) return 0;
+    if (!location.geodata || location.geodata.length === 0) return 0;
     let geodata = location.geodata[0];
     let lat1 = geodata.lat;
     let lng1 = geodata.lng;
 
-    if(!lat1 || !lng1) return 0; // no lat / lng TODO: Look for other array elements or?
+    if (!lat1 || !lng1) return 0; // no lat / lng TODO: Look for other array elements or?
 
     //NOTE: Stephansplatz (Considered center)
     let lat2 = 48.208561;
@@ -678,66 +758,84 @@ export class BiographicalComponent implements OnInit {
 
   //TODO: Get locations by theme
   prepareLocationData(): void {
-    this.colors = d3.scaleOrdinal().range(d3.schemeSet3);
+    let mainThemes = new Set<string>();
     this.eventTypes = new Array<string>('all');
-
+    let maxRelationshipCount = 0;
     let themeID = this.themeID ? this.themeID : ''; // else use some default theme?
     // this.db.getLocationsByTheme(themeID)...
     this.db.getEventsByLocations().then((success: Array<{ location: Location, events: Array<Event> }>) => {
       let locations: Array<Event & PersonOrganization & Location> = success.map((s: { location: Event & PersonOrganization & Location, events: Array<Event> }) => { return s.location; });
       this.objects = locations;
-      success.forEach((s: { location: Location, events: Array<Event> }) => {
-        (s.location as any).category = s.location.locationTypes[0] ? s.location.locationTypes[0] : '?'
+      success.forEach((s: { location: Location, events: Array<Event> }, i: number) => {
+        // if(i > 30) return;
+        // TODO: Filter locations based on the key locations defined
+        // Allow a 'show key locations' button like for the exiled in people vis
+        (s.location as any).category = s.location.locationTypes[0];// ? s.location.locationTypes[0] : '?'
         this.orderingMap.get('Number of Events').set(s.location.objectId, s.events.length);
         this.orderingMap.get('Proximity to Center').set(s.location.objectId, this.getDistance(s.location));
 
         let firstEvent = moment(s.events
           .sort((a: Event, b: Event) => {
-            if(!a.startDate || !b.startDate) return 0; 
+            if (!a.startDate || !b.startDate) return 0;
             // TODO: Some events have missing startdates
             return a.startDate.valueOf() - b.startDate.valueOf();
           })[0].startDate);
 
         this.orderingMap.get('First Event').set(s.location.objectId, firstEvent);
         s.events.forEach((e: Event) => {
+          // always get max relationship count for size scaling
+          maxRelationshipCount = maxRelationshipCount < e.peopleOrganizations.length ? e.peopleOrganizations.length : maxRelationshipCount;
+
           // add events to this.data as data points
           let dataPoint: any = {};
           if (!e.startDate) return;
+          if (this.getEventType(e.name) === 'prize') return;
 
           let themeColor: string;
           e.themes.forEach((t: any) => {
-            if(!themeColor) themeColor = this.db.getThemeById(t.theme).name;
+            let theme = this.db.getThemeById(t.theme);
+            if (!theme) {
+              return;
+            }
+            if (theme.themeTypes.includes('Main Topics')) {
+              mainThemes.add(theme.name)
+              if (!themeColor) themeColor = theme.name;
+            }
           });
           dataPoint.objectType = e.objectType;
           dataPoint.startDate = moment(e.startDate);
           dataPoint.endDate = e.endDate ? moment(e.endDate) : moment(e.startDate);
           dataPoint.person = s.location.name;
           dataPoint.dateID = e.objectId;
-          dataPoint.personCategory = s.location.locationTypes[0] ? s.location.locationTypes[0] : '?';
+          dataPoint.personCategory = s.location.locationTypes[0]; // ? s.location.locationTypes[0] : '?';
           dataPoint.dateName = e.name;
           dataPoint.personID = s.location.objectId;
-          dataPoint.category = s.location.locationTypes[0] ? s.location.locationTypes[0] : 'none'; // TODO: should be event categorical type
+          dataPoint.category = s.location.locationTypes[0]; // ? s.location.locationTypes[0] : 'none'; // TODO: should be event categorical type
           // dataPoint.color = dataPoint.category; // default: none // TODO: should be colorcoded according to the category
-          dataPoint.color = themeColor ? themeColor : 'none';
-          if(!this.eventTypes.includes(dataPoint.color) && dataPoint.color !== 'none') this.eventTypes.push(dataPoint.color);
+          dataPoint.color = themeColor ? themeColor : 'other';
+          if (!this.eventTypes.includes(dataPoint.color) && dataPoint.color !== 'other') this.eventTypes.push(dataPoint.color);
           this.data.push(dataPoint);
         });
+        this.MAX_REL_CNT = maxRelationshipCount;
+        this.eventTypes.sort(); // sort filter alphabetically
       });
 
+      // console.log([...relationshipDistribution].sort());
       this.calculateScales();
       // create timeline
       this.createTimeline();
       // populate timeline(s)
       let sortedMap = [...this.orderingMap.get(this.currentOrder).entries()]
         .sort((a: any, b: any) => {
-          return a[1] - b[1];
+          return b[1] - a[1];
         }).map((d: any) => { return d[0]; });
 
       this.data = this.data.sort((a: any, b: any) => {
         return sortedMap.indexOf(a.personID) - sortedMap.indexOf(b.personID);
       });
       document.addEventListener('resize', this.onResize.bind(this));
-      console.log(this.orderingMap);
+      let tableauColors = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'];
+      this.colors = d3.scaleOrdinal().domain([...mainThemes]).range(tableauColors); // d3.schemeSet2/1
       if (this.preset) {
         this.updateConfig();
       } else {
@@ -754,11 +852,14 @@ export class BiographicalComponent implements OnInit {
    * - Formats data so we can use it easily with d3
    */
   prepareData(): void {
+    let tableauColors = ['#4e79a7', '#f28e2c', '#59a14f', '#e15759', '#76b7b2', '#edc949', '#af7aa1', '#ff9da7']; //, '#9c755f', '#bab0ab'];
     this.colors = d3.scaleOrdinal()
-      .domain(['street', 'exhibition', 'exile', 'prize', 'none', 'memorial', 'conference', 'anniversary'])
-      .range(['red', 'blue', '#4F8874', 'purple', '#47DBA7', '#ff6bb5', '#ffa500', '#0dff00']); // old none blue - #027cef
-    this.eventTypes = new Array<string>('street', 'exhibition', 'prize', 'memorial', 'anniversary', 'conference', 'all');
+      .domain(['street', 'exhibition', 'exile', 'prize', 'memorial', 'conference', 'anniversary', 'other'])
+      .range(tableauColors); // d3.schemeSet2/1
+    // .range(['red', 'blue', '#4F8874', 'purple', '#47DBA7', '#ff6bb5', '#ffa500', '#0dff00']); // old none blue - #027cef
+    this.eventTypes = new Array<string>('street', 'exhibition', 'exile', 'prize', 'memorial', 'conference', 'anniversary', 'all');
 
+    let maxRelationshipCount = 0;
     let themeID = this.themeID ? this.themeID : '5be942be2447d22473b2e80c'; // festwochen'5d949c5334492200a542f2e3'; // 1. mai '5d94990f34492200a542f2da'// mdt '5be942be2447d22473b2e80c'; 
     this.db.getPeopleByTheme(themeID).then((success) => {
       this.objects = success;
@@ -774,11 +875,16 @@ export class BiographicalComponent implements OnInit {
             .then((eventsByPerson: Array<Event>) => {
               let events = new Set<Event>();
               eventsByPerson.forEach((event: Event) => {
+                // always get max relationship count for size scaling
+                maxRelationshipCount = maxRelationshipCount < event.peopleOrganizations.length ? event.peopleOrganizations.length : maxRelationshipCount;
+
                 event.themes.forEach((theme: any) => {
                   if (theme.theme === themeID) events.add(event);
                 });
               });
 
+              this.MAX_REL_CNT = maxRelationshipCount;
+              // console.log([...relationshipDistribution].sort());
               return {
                 person: person,
                 events: Array.from(events)
@@ -865,6 +971,12 @@ export class BiographicalComponent implements OnInit {
     });
   }
 
+  getEventsAtLocation(id: string): Array<Event> {
+    let events = new Array<Event>();
+
+    return events;
+  }
+
   /**
    * Get config from db setup parameters and update the visualization
    */
@@ -879,6 +991,7 @@ export class BiographicalComponent implements OnInit {
       this.mouseBehavior = parameters.mouseBehavior;
       this.brushBehavior = parameters.brushBehavior;
       this.currentFilter = parameters.filter;
+      // this.historicEvents = [];
 
       let sortedMap = [...this.orderingMap.get(this.currentOrder).entries()]
         .sort((a: any, b: any) => {
@@ -941,7 +1054,7 @@ export class BiographicalComponent implements OnInit {
       return moment(d.startDate, ['YYYY-MM-DD',]);
     }));
     // this.MIN_DATE = moment('1938-01-01', 'YYYY-MM-DD');
-    this.MAX_DATE = moment(); // d3.max(this.data.map((d: any) => { return moment(d.endDate, ['YYYY-MM-DD']); })); 
+    this.MAX_DATE = moment('31-12-2018', 'DD-MM-YYYY'); // d3.max(this.data.map((d: any) => { return moment(d.endDate, ['YYYY-MM-DD']); })); 
 
     this.xScale = d3.scaleTime()
       .domain([this.MIN_DATE, this.MAX_DATE])
@@ -956,6 +1069,53 @@ export class BiographicalComponent implements OnInit {
       .range([50, Math.min((this.WIDTH - (this.margin.left + this.margin.right) / 2), (this.HEIGHT - (this.margin.top + this.margin.bottom)) / 2)]);
 
     this.angleScale = d3.scaleLinear().range([0, 360]); // circle 0-360 degrees
+  }
+
+  resetTimeScale(): void {
+    this.rScale = d3.scaleTime()
+      .domain([this.MIN_DATE, this.MAX_DATE])
+      .range([50, Math.min((this.WIDTH - (this.margin.left + this.margin.right) / 2), (this.HEIGHT - (this.margin.top + this.margin.bottom)) / 2)]);
+
+    // update the 1945 mark
+    this.radialG.select('.worldwartwo')
+      .transition().duration(250)
+      .attr('r', () => { return Math.abs(this.rScale(moment('1945').toDate())); });
+
+    this.renderRadial(this.data);
+  }
+
+  rescaleTime(start: Date | moment.Moment, end: Date | moment.Moment): void {
+    this.rScale = d3.scaleTime()
+      .domain([start, end])
+      .range([50, Math.min((this.WIDTH - (this.margin.left + this.margin.right) / 2), (this.HEIGHT - (this.margin.top + this.margin.bottom)) / 2)]);
+
+    // update the 1945 mark
+    this.radialG.select('.worldwartwo')
+      .transition().duration(250)
+      .attr('r', () => {
+        let ww2 = moment('1945');
+        if (ww2.isBefore(this.currentlySelectedMinDate) || ww2.isAfter(this.currentlySelectedMaxDate)) return null;
+        return Math.abs(this.rScale(ww2.toDate()));
+      });
+
+    this.renderRadial(this.data);
+  }
+
+  invertTime(): void {
+    // rScale range starts from 50 to create an empty hole at the center
+    this.flipTime = !this.flipTime;
+    let timeArr = this.flipTime ? [this.MAX_DATE, this.MIN_DATE] : [this.MIN_DATE, this.MAX_DATE];
+    this.rScale = d3.scaleTime()
+      .domain(timeArr)
+      .range([50, Math.min((this.WIDTH - (this.margin.left + this.margin.right) / 2), (this.HEIGHT - (this.margin.top + this.margin.bottom)) / 2)]);
+
+    // update the 1945 mark
+    this.radialG.select('.worldwartwo')
+      .transition().duration(250)
+      .attr('r', () => { return Math.abs(this.rScale(moment('1945').toDate())); });
+
+    this.renderRadial(this.data);
+
   }
 
   /**
@@ -1007,14 +1167,14 @@ export class BiographicalComponent implements OnInit {
 
   getPersonOrganizationName(id: string): string {
     let personOrganization = this.db.getPersonById(id);
-    if(!personOrganization)
-    personOrganization = this.db.getOrganizationById(id);
+    if (!personOrganization)
+      personOrganization = this.db.getOrganizationById(id);
     return personOrganization ? personOrganization.name : '';
   }
 
   getLocationName(id: string): string {
     let location = this.db.getLocationById(id);
-    if(!location) return;
+    if (!location) return;
     return location.name;
   }
 
@@ -1024,6 +1184,10 @@ export class BiographicalComponent implements OnInit {
 
   getEventName(id: string): string {
     return this.db.getEventById(id).name;
+  }
+
+  getHistoricEventName(id: string): string {
+    return this.db.getHistoricEventById(id).name;
   }
 
   /**
@@ -1058,14 +1222,13 @@ export class BiographicalComponent implements OnInit {
       .style('overflow', 'visible')
       .attr('width', this.WIDTH)
       .attr('height', this.HEIGHT);
-
     // .attr('viewBox', `${-this.WIDTH / 2} ${-this.HEIGHT / 2} ${this.WIDTH} ${this.HEIGHT}`)
-    this.WIDTH = this.WIDTH - (this.margin.left + this.margin.right);
-    this.HEIGHT = this.HEIGHT - (this.margin.top + this.margin.bottom);
+    // this.WIDTH = this.WIDTH - (this.margin.left + this.margin.right);
+    // this.HEIGHT = this.HEIGHT - (this.margin.top + this.margin.bottom);
     // group for data
     let g = this.timelineSVG.append('g')
-      .attr('width', this.WIDTH)
-      .attr('height', this.HEIGHT)
+      .attr('width', this.WIDTH - (this.margin.left + this.margin.right))
+      .attr('height', this.HEIGHT - (this.margin.top + this.margin.bottom))
       .attr('transform', `translate(${this.WIDTH / 2}, ${this.rScale.range()[1]})`);
 
     this.radialG = g.append('g')
@@ -1093,7 +1256,7 @@ export class BiographicalComponent implements OnInit {
       .append('text')
       .attr('class', 'text-inside')
       .attr('text-anchor', 'middle')
-      .attr('opacity', 0)
+      .attr('opacity', OPACITY.hide)
       .attr('x', 0)
       .attr('y', 0)
       .attr('dy', '.4em')
@@ -1114,10 +1277,29 @@ export class BiographicalComponent implements OnInit {
     this.radialG.append('circle')
       .attr('cx', 0)
       .attr('cy', 0)
+      .attr('class', 'worldwartwo')
       .attr('r', () => { return Math.abs(this.rScale(moment('1945').toDate())); })
       .attr('stroke', '#777777')
       .attr('stroke-width', '4px')
       .attr('fill', 'none');
+
+    this.zoom = d3.zoom()
+      .scaleExtent([1, 40])
+      .translateExtent([[-500, -500], [this.WIDTH + 500, this.HEIGHT + 500]])
+      .on('zoom', this.zoomed.bind(this));
+
+    this.timelineSVG.call(this.zoom);
+
+    // this.timelineSVG.call(
+    //   d3.drag()
+    //     .on('start', () => { this.radialDragStart(); })
+    //     .on('drag', () => { this.radialDragging(); })
+    //     .on('end', () => { this.radialDragEnd(); })
+    // );
+  }
+
+  zoomed(): void {
+    this.radialG.attr('transform', d3.event.transform);
   }
 
   /**
@@ -1141,10 +1323,10 @@ export class BiographicalComponent implements OnInit {
     d3.select('.radial-brush')
       .transition().duration(0)
       .attr('d', this.arc)
-      .attr('fill', '#4286f4')
-      .attr('fill-opacity', '.15')
+      .attr('fill', '#d3d3d3')
+      .attr('fill-opacity', OPACITY.fade)
       .attr('stroke', '#fff')
-      .attr('stroke-opacity', '1')
+      .attr('stroke-opacity', OPACITY.full)
       .attr('stroke-width', '2px')
       .attr('id', 'arc-selection');
     // .lower();
@@ -1158,7 +1340,7 @@ export class BiographicalComponent implements OnInit {
    */
   clearTimeSelection() {
     d3.select('.brush').call(this.chartBrush.move, null);
-    this.drawDonut(null, null);
+    // this.drawDonut(null, null);
 
     this.currentlySelectedMaxDate = this.MAX_DATE.toDate();
     this.currentlySelectedMinDate = this.MIN_DATE.toDate();
@@ -1166,29 +1348,31 @@ export class BiographicalComponent implements OnInit {
     this.radialG.selectAll('.category')
       .transition()
       .duration(250)
-      .attr('opacity', 1);
+      .attr('opacity', OPACITY.base);
 
     this.radialG.selectAll('.event') // after death / event line
       .transition()
       .duration(250)
       .attr('stroke', (d: any) => { return this.colors(d.color); })
-      .attr('opacity', 1);
+      .attr('stroke-opacity', OPACITY.fade);
 
     this.radialG.selectAll('.before-death')
       .transition()
       .duration(250)
       .attr('stroke', '#A5F0D6')
-      .attr('opacity', 1);
+      .attr('stroke-opacity', OPACITY.base);
 
     this.chartG.selectAll('.dots')
       .transition()
       .duration(250)
-      .attr('opacity', 1)
+      .attr('opacity', OPACITY.fade)
       .attr('fill', (d: any) => { return this.colors(d.color); });
 
     d3.select('#count-tooltip')
-      .style('opacity', 0)
+      .style('opacity', OPACITY.hide)
       .html('');
+
+    this.resetTimeScale();
   }
 
   /**
@@ -1214,16 +1398,16 @@ export class BiographicalComponent implements OnInit {
    * Displays brush used in both the radial and chart
    */
   showBrush(): void {
-    d3.select('.selection').style('opacity', 1).raise();
-    d3.select('.radial-brush').style('opacity', 1).raise();
+    d3.select('.selection').style('opacity', OPACITY.full).raise();
+    d3.select('.radial-brush').style('opacity', OPACITY.full).raise();
   }
 
   /**
    * Hides both brushes used in the radial and chart 
    */
   hideBrush(): void {
-    d3.select('.selection').style('opacity', 0).lower();
-    d3.select('.radial-brush').style('opacity', 0).lower();
+    d3.select('.selection').style('opacity', OPACITY.hide).lower();
+    d3.select('.radial-brush').style('opacity', OPACITY.hide).lower();
   }
 
   /**
@@ -1240,8 +1424,8 @@ export class BiographicalComponent implements OnInit {
    */
   toggleMouseBehavior(): void {
     this.mouseBehavior = !this.mouseBehavior;
-    this.radialG.select('.circle-grid').attr('opacity', () => { return this.mouseBehavior ? 1 : 0; });
-    this.radialG.select('.text-inside').attr('opacity', () => { return this.mouseBehavior ? 1 : 0; });
+    this.radialG.select('.circle-grid').attr('opacity', () => { return this.mouseBehavior ? OPACITY.full : OPACITY.hide; });
+    this.radialG.select('.text-inside').attr('opacity', () => { return this.mouseBehavior ? OPACITY.full : OPACITY.hide; });
   }
 
   /**
@@ -1249,7 +1433,7 @@ export class BiographicalComponent implements OnInit {
    */
   toggleNames(): void {
     this.showNames = !this.showNames;
-    this.radialG.selectAll('.person-name').attr('opacity', () => { return this.showNames ? 1 : 0; });
+    this.radialG.selectAll('.person-name').attr('opacity', () => { return this.showNames ? OPACITY.full : OPACITY.hide; });
   }
 
   /**
@@ -1309,7 +1493,7 @@ export class BiographicalComponent implements OnInit {
 
     this.drawDonut(tmpStart, tmpEnd);
 
-    this.setChartBrush(startDate, endDate);
+    // this.setChartBrush(startDate, endDate);
 
   }
 
@@ -1365,19 +1549,19 @@ export class BiographicalComponent implements OnInit {
         }
         return d.startDate.isBetween(start, end, 'year') ? this.colors(d.color) : '#777777';
       })
-      .attr('opacity', (d: any) => {
-        return d.startDate.isBetween(start, end, 'year') ? 1 : .25;
+      .attr('stroke-opacity', (d: any) => {
+        return d.startDate.isBetween(start, end, 'year') ? OPACITY.full : OPACITY.fade;
       });
 
     this.radialG.selectAll('.person-name')
       .attr('opacity', (d: any) => {
         if (!this.showNames) return 0;
-        return peopleNamesInRange.has(d.key) ? 1 : 0;
+        return peopleNamesInRange.has(d.key) ? OPACITY.full : OPACITY.hide;
       });
 
     this.radialG.selectAll('.category')
       .attr('opacity', (d: any) => {
-        return peopleNamesInRange.has(d.key) ? 1 : 0;
+        return peopleNamesInRange.has(d.key) ? OPACITY.full : OPACITY.hide;
       });
 
     this.radialG.selectAll('.before-death')
@@ -1392,13 +1576,13 @@ export class BiographicalComponent implements OnInit {
           return '#A5F0D6';
         }
       })
-      .attr('opacity', (d: any) => {
+      .attr('stroke-opacity', (d: any) => {
         // find bday
         let bday = d.values.filter((dd: any) => { return dd.dateName === 'Birth'; })[0];
         if (bday && bday.startDate) {
-          return bday.startDate.isBetween(start, end, 'year') ? 1 : .25;
+          return bday.startDate.isBetween(start, end, 'year') ? OPACITY.hide : OPACITY.fade;
         } else {
-          return 1;
+          return OPACITY.hide;
         }
       });
 
@@ -1408,7 +1592,7 @@ export class BiographicalComponent implements OnInit {
       .attr('fill', (d: any) => {
         return d.startDate.isBetween(start, end, 'year') ? this.colors(d.color) : '#777777';
       }).attr('opacity', (d: any) => {
-        return d.startDate.isBetween(start, end, 'year') ? 1 : .25;
+        return d.startDate.isBetween(start, end, 'year') ? OPACITY.base : OPACITY.fade;
       });
   }
 
@@ -1475,17 +1659,23 @@ export class BiographicalComponent implements OnInit {
    * De-selects the selected person (highlighted)
    */
   unhighlightPerson(): void {
+      // console.log(this.selectedObject);
+      this.radialG.select('.start').attr('opacity', OPACITY.full);
+      this.radialG.selectAll('.type-dots').attr('opacity', OPACITY.full);
+      this.radialG.selectAll('.type-labels').attr('opacity', OPACITY.full);
+      this.radialG.selectAll('.categories').attr('opacity', OPACITY.full);
+      this.radialG.selectAll('.cat-labels').attr('opacity', OPACITY.full);
     let beforeDeathLines = this.radialG.selectAll('.before-death');
     beforeDeathLines
       .transition().duration(250)
-      .attr('stroke-opacity', 1);
+      .attr('stroke-opacity', OPACITY.full);
 
     let eventLines = this.radialG.selectAll('.event')
     eventLines
       .transition().duration(250)
       .attr('stroke-opacity', (d: any) => {
         d.hidden = false;
-        return 1;
+        return OPACITY.base;
       });
 
     let categoricalBars = this.radialG.selectAll('.category');
@@ -1493,21 +1683,22 @@ export class BiographicalComponent implements OnInit {
       .transition().duration(250)
       .attr('opacity', (d: any) => {
         d.hidden = false;
-        return 1;
+        return OPACITY.full;
       });
 
     let peopleNames = this.radialG.selectAll('.person-name');
     peopleNames
       .transition().duration(250)
       .attr('opacity', (d: any) => {
-        if(!this.showNames) return 0;
+        if (!this.showNames) return OPACITY.hide;
         d.hidden = false;
-        return 1;
+        return OPACITY.full;
       })
       .attr('transform', (d: any, i: number) => {
         let rotate = (this.theta * i * 180 / Math.PI);
-        let today = moment();
-        let radius = this.rScale(today.add(25, 'years').toDate()); // 8 year offset for text from outer circle
+        // let today = moment();
+
+        let radius = this.rScale(this.MAX_DATE.add(25, 'years').toDate()); // 8 year offset for text from outer circle
         let flip = (rotate > 90 && rotate < 270) ? 180 : 0;
         let offset = (rotate > 90 && rotate < 270) ? -1 : .5; // correct offset
         return `rotate(${rotate + offset}) translate(${radius}) rotate(${flip})`;
@@ -1520,22 +1711,25 @@ export class BiographicalComponent implements OnInit {
     let timelineDots = this.chartG.selectAll('.dots');
     timelineDots
       .transition().duration(250)
-      .attr('opacity', (d: any) => { return 1; });
+      .attr('opacity', OPACITY.full);
 
     let dots = this.legendSVG.selectAll('.dots');
     dots
       .transition().duration(250)
-      .attr('opacity', 1);
+      .attr('opacity', OPACITY.fade);
 
     let labels = this.legendSVG.selectAll('.labels');
     labels
       .transition().duration(250)
-      .attr('opacity', 1);
+      .attr('opacity', OPACITY.full);
 
     let gridLines = this.radialG.selectAll('.grid-line');
     gridLines
       .transition().duration(250)
-      .attr('opacity', 1);
+      .attr('opacity', OPACITY.full);
+
+      this.chartG.remove(); // remove old
+      this.renderChart(this.data, 1920); // full width
   }
 
   /**
@@ -1543,12 +1737,18 @@ export class BiographicalComponent implements OnInit {
    * @param name person to highlight
    */
   highlightPerson(name: string): void {
+    this.radialG.selectAll('.start').attr('opacity', OPACITY.hide);
+    this.radialG.selectAll('.type-dots').attr('opacity', OPACITY.hide);
+    this.radialG.selectAll('.type-labels').attr('opacity', OPACITY.hide);
+    this.radialG.selectAll('.categories').attr('opacity', OPACITY.hide);
+    this.radialG.selectAll('.cat-labels').attr('opacity', OPACITY.hide);
+
     let beforeDeathLines = this.radialG.selectAll('.before-death');
     beforeDeathLines
       .transition().duration(250)
       .attr('stroke-opacity', (d: any) => {
         d.hidden = d.key !== name ? true : false;
-        return d.key !== name ? 0 : 1;
+        return d.key !== name ? OPACITY.hide : OPACITY.full;
       });
 
     let listOfDates = new Array<any>();
@@ -1558,7 +1758,7 @@ export class BiographicalComponent implements OnInit {
       .attr('stroke-opacity', (d: any) => {
         if (d.person === name) listOfDates.push(d);
         d.hidden = d.person !== name ? true : false;
-        return d.person !== name ? 0 : 1;
+        return d.person !== name ? OPACITY.hide : OPACITY.full;
       });
     listOfDates.sort((a: any, b: any) => {
       return a.startDate.valueOf() - b.startDate.valueOf();
@@ -1574,13 +1774,13 @@ export class BiographicalComponent implements OnInit {
       .transition().duration(250)
       .attr('opacity', (d: any) => {
         d.hidden = d.key !== name ? true : false;
-        return d.key !== name ? 0 : 1;
+        return d.key !== name ? OPACITY.hide : OPACITY.full;
       });
 
     let peopleNames = this.radialG.selectAll('.person-name');
     peopleNames
       .transition().duration(250)
-      .attr('opacity', (d: any) => { return d.key !== name ? 0 : 1; })
+      .attr('opacity', (d: any) => { return d.key !== name ? OPACITY.hide : OPACITY.full; })
       .attr('transform', (d: any, i: number) => {
         let rotate = (this.theta * i * 180 / Math.PI);
         let today = moment();
@@ -1593,27 +1793,38 @@ export class BiographicalComponent implements OnInit {
         return 'end'; // reverse anchor
       });
 
-    let timelineDots = this.chartG.selectAll('.dots');
-    timelineDots
-      .transition().duration(250)
-      .attr('opacity', (d: any) => {
-        return d.person === name ? 1 : 0;
-      });
-
     let dots = this.legendSVG.selectAll('.dots');
     dots
       .transition().duration(250)
-      .attr('opacity', 0);
+      .attr('opacity', OPACITY.hide);
 
     let labels = this.legendSVG.selectAll('.labels');
     labels
       .transition().duration(250)
-      .attr('opacity', 0);
+      .attr('opacity', OPACITY.hide);
 
     let gridLines = this.radialG.selectAll('.grid-line');
     gridLines
       .transition().duration(250)
-      .attr('opacity', 0);
+      .attr('opacity', OPACITY.hide);
+
+     // update TL width
+    let currTLWidth = this.chartG.attr('width');
+    let panelWidth = 500;
+
+    let newWidth = currTLWidth - panelWidth;
+    this.chartG.remove(); // remove old
+    this.renderChart(this.data, newWidth);
+
+    // delay this by a bit
+    setTimeout(() => {
+      let timelineDots = this.chartG.selectAll('.dots');
+      timelineDots
+        .transition().duration(250)
+        .attr('opacity', (d: any) => {
+          return d.person === name ? OPACITY.full : OPACITY.hide;
+        });
+    }, 500);
   }
 
   /**
@@ -1628,9 +1839,14 @@ export class BiographicalComponent implements OnInit {
     let radius = Math.ceil(Math.sqrt(mouseX * mouseX + mouseY * mouseY));
     let date = this.rScale.invert(radius);
 
-
-    if (moment(date).isBefore(this.MIN_DATE)) date = this.MIN_DATE.toDate();
-    if (moment(date).isAfter(this.MAX_DATE)) date = this.MAX_DATE.toDate();
+    // if no date range has been selected use one defined by data else use min / max selected ones
+    if (!this.currentlySelectedMaxDate || !this.currentlySelectedMinDate) {
+      if (moment(date).isBefore(this.MIN_DATE)) date = this.MIN_DATE.toDate();
+      if (moment(date).isAfter(this.MAX_DATE)) date = this.MAX_DATE.toDate();
+    } else {
+      if (moment(date).isBefore(this.currentlySelectedMinDate)) date = this.currentlySelectedMinDate;
+      if (moment(date).isAfter(this.currentlySelectedMaxDate)) date = this.currentlySelectedMaxDate;
+    }
 
     radius = this.rScale(date);
 
@@ -1644,7 +1860,7 @@ export class BiographicalComponent implements OnInit {
       .raise(); //bring it up
 
     this.radialG.select('.text-inside')
-      .attr('opacity', 1)
+      .attr('opacity', OPACITY.full)
       .text(`${moment(date).year()}`);
   }
 
@@ -1672,17 +1888,12 @@ export class BiographicalComponent implements OnInit {
         let personB = this.objects.find((p: PersonOrganization & Location) => { return p.name === b.key; });
         let catA = this.getCategory(personA, this.currentGrouping);
         let catB = this.getCategory(personB, this.currentGrouping);
+        
         return catA.localeCompare(catB);
       });
     }
     this.theta = 2 * Math.PI / dataByPerson.length;
-
-    this.timelineSVG.call(
-      d3.drag()
-        .on('start', () => { this.radialDragStart(); })
-        .on('drag', () => { this.radialDragging(); })
-        .on('end', () => { this.radialDragEnd(); })
-    );
+    this.nodeSizeScale = d3.scaleLinear().domain([1, this.MAX_REL_CNT]).range([5, 10]); // 4-8 range of the event lines width in px
 
     let temporalData = d3.timeYear.range(this.MIN_DATE.toDate(), this.MAX_DATE.toDate(), 10);
     temporalData.push(moment('01-01-1945').toDate());
@@ -1702,16 +1913,16 @@ export class BiographicalComponent implements OnInit {
       .merge(gridLines)
       .transition().duration(250)
       .attr('x1', (d: any, i: number) => {
-        return this.getXCoordinates(this.MIN_DATE.toDate(), i * this.theta);
+        return this.getXCoordinates(this.currentlySelectedMinDate, i * this.theta);
       })
       .attr('x2', (d: any, i: number) => {
-        return this.getXCoordinates(this.MAX_DATE.toDate(), i * this.theta);
+        return this.getXCoordinates(this.currentlySelectedMaxDate, i * this.theta);
       })
       .attr('y1', (d: any, i: number) => {
-        return this.getYCoordinates(this.MIN_DATE.toDate(), i * this.theta);
+        return this.getYCoordinates(this.currentlySelectedMinDate, i * this.theta);
       })
       .attr('y2', (d: any, i: number) => {
-        return this.getYCoordinates(this.MAX_DATE.toDate(), i * this.theta);
+        return this.getYCoordinates(this.currentlySelectedMaxDate, i * this.theta);
       })
 
 
@@ -1721,7 +1932,8 @@ export class BiographicalComponent implements OnInit {
       .append('line')
       .attr('class', 'before-death')
       .attr('stroke', '#A5F0D6')
-      .attr('stroke-width', 8)
+      .attr('stroke-width', '4px')
+      .attr('data-object', null)
       .attr('x1', (d: any, i: number, n: any) => {
         let x1 = d3.select(n[i]).attr('x1');
         return x1 ? x1 : 0;
@@ -1769,31 +1981,67 @@ export class BiographicalComponent implements OnInit {
       })
       .merge(beforeDeathLines)
       .transition().duration(250)
-      .attr('stroke', (d: any, i: number) => {
-        return '#A5F0D6';
+      .attr('stroke', '#A5F0D6')
+      .attr('data-object', (d: any) => {
+        let object = this.objects.find((o: PersonOrganization & Location) => {
+          return o.name === d.key;
+        });
+        return `${object.name}`;
       })
       .attr('x1', (d: any, i: number) => {
         if (!this.peopleAngles.has(d.key)) this.peopleAngles.set(d.key, i * this.theta);
         if (update && update.order) this.peopleAngles.set(d.key, i * this.theta);
         let birthDate = d.values.find((dd: any) => dd.dateName === 'Birth' ? dd : null);
         let date = birthDate ? birthDate.startDate : Date.now();
+
+        if (this.currentlySelectedMinDate || this.currentlySelectedMaxDate) {
+          if (moment(date).isBefore(this.currentlySelectedMinDate)) return this.getXCoordinates(this.currentlySelectedMinDate, i * this.theta);
+          if (moment(date).isAfter(this.currentlySelectedMaxDate)) return this.getXCoordinates(this.currentlySelectedMaxDate, i * this.theta);
+        }
         return this.getXCoordinates(date, i * this.theta);
       })
       .attr('x2', (d: any, i: number) => {
         let deathDate = d.values.find((dd: any) => dd.dateName === 'Death' ? dd : null);
         let date = deathDate ? deathDate.endDate : Date.now();
+
+        if (this.currentlySelectedMinDate || this.currentlySelectedMaxDate) {
+          if (moment(date).isBefore(this.currentlySelectedMinDate)) return this.getXCoordinates(this.currentlySelectedMinDate, i * this.theta);
+          if (moment(date).isAfter(this.currentlySelectedMaxDate)) return this.getXCoordinates(this.currentlySelectedMaxDate, i * this.theta);
+        }
         return this.getXCoordinates(date, i * this.theta);
       })
       .attr('y1', (d: any, i: number) => {
         let birthDate = d.values.find((dd: any) => dd.dateName === 'Birth' ? dd : null);
         let date = birthDate ? birthDate.startDate : Date.now();
+
+        if (this.currentlySelectedMinDate || this.currentlySelectedMaxDate) {
+          if (moment(date).isBefore(this.currentlySelectedMinDate)) return this.getYCoordinates(this.currentlySelectedMinDate, i * this.theta);
+          if (moment(date).isAfter(this.currentlySelectedMaxDate)) return this.getYCoordinates(this.currentlySelectedMaxDate, i * this.theta);
+        }
         return this.getYCoordinates(date, i * this.theta);
       })
       .attr('y2', (d: any, i: number) => {
         let deathDate = d.values.find((dd: any) => dd.dateName === 'Death' ? dd : null);
         let date = deathDate ? deathDate.endDate : Date.now();
+
+        if (this.currentlySelectedMinDate || this.currentlySelectedMaxDate) {
+          if (moment(date).isBefore(this.currentlySelectedMinDate)) return this.getYCoordinates(this.currentlySelectedMinDate, i * this.theta);
+          if (moment(date).isAfter(this.currentlySelectedMaxDate)) return this.getYCoordinates(this.currentlySelectedMaxDate, i * this.theta);
+        }
+
         return this.getYCoordinates(date, i * this.theta);
       });
+
+    let startingPoint = this.radialG.selectAll('.start').data(['']); // clear them
+
+    startingPoint
+      .enter()
+      .append('path')
+      .attr('class', 'start')
+      .merge(startingPoint)
+      .attr('opacity', .7)
+      .attr('d', () => { return d3.symbol().type(d3.symbolTriangle).size(400)(); })
+      .attr('fill', '#000');
 
     let eventLines = this.radialG.selectAll('.event').data(data);
     eventLines
@@ -1801,12 +2049,10 @@ export class BiographicalComponent implements OnInit {
       .append('line')
       .attr('class', 'event')
       .attr('stroke', '#cbeabb')
-      .attr('stroke-width', '2px')
+      .attr('stroke-width', 0)
       .attr('stroke-linecap', 'round')
-      .attr('stroke-opacity', 1)
-      .attr('data-dateid', (d: any) => {
-        return d.dateID;
-      })
+      .attr('stroke-opacity', OPACITY.base)
+      .attr('data-dateid', null)
       .attr('x1', (d: any, i: number, n: any) => {
         let x1 = d3.select(n[i]).attr('x1');
         return x1 ? x1 : 0;
@@ -1854,18 +2100,64 @@ export class BiographicalComponent implements OnInit {
       })
       .merge(eventLines)
       .transition().duration(250)
-      .attr('stroke-opacity', (d: any) => {
-        return d.hidden ? 0 : 1;
+      .attr('data-dateid', (d: any) => {
+        return d.dateID;
       })
-      .attr('stroke-width', '8px')
-      .attr('stroke', (d: any) => { return this.colors(d.color); }) // TODO: Coloring by theme
+      .attr('stroke-opacity', (d: any) => {
+        if (d.startDate.isBefore(this.currentlySelectedMinDate) || d.endDate.isAfter(this.currentlySelectedMaxDate)) {
+          // isnt in view hide
+          return OPACITY.hide;
+        }
+
+        return d.hidden ? OPACITY.hide : OPACITY.base;
+      })
+      .attr('stroke-width', (d: any) => {
+        let object = this.db.getEventById(d.dateID);
+        return object ? `${Math.ceil(this.nodeSizeScale(object[this.currentNodeSizing].length))}px` : '4px';
+      })
+      .attr('stroke', (d: any) => {
+        if(d.dateName === 'Birth' || d.dateName === 'Death') return '#59a14f';
+        return this.colors(d.color);
+      })
       // .attr('stroke', (d: any) => { return '#A5D5E6' })
-      .attr('x1', (d: any, i: number) => { return this.getXCoordinates(d.startDate.toDate(), this.peopleAngles.get(d.person)); })
-      .attr('x2', (d: any, i: number) => { return this.getXCoordinates(d.endDate.toDate(), this.peopleAngles.get(d.person)); })
-      .attr('y1', (d: any, i: number) => { return this.getYCoordinates(d.startDate.toDate(), this.peopleAngles.get(d.person)); })
-      .attr('y2', (d: any, i: number) => { return this.getYCoordinates(d.endDate.toDate(), this.peopleAngles.get(d.person)); });
+      .attr('x1', (d: any, i: number) => {
+        let x = this.getXCoordinates(d.startDate.toDate(), this.peopleAngles.get(d.person));
+        if (d.startDate.isBefore(this.currentlySelectedMinDate) || d.endDate.isAfter(this.currentlySelectedMaxDate)) {
+          // isnt in view return null
+          return null;
+        }
+        return x;
+      })
+      .attr('x2', (d: any, i: number) => {
+        let x = this.getXCoordinates(d.endDate.toDate(), this.peopleAngles.get(d.person));
+        if (d.startDate.isBefore(this.currentlySelectedMinDate) || d.endDate.isAfter(this.currentlySelectedMaxDate)) {
+          // isnt in view return null
+          return null;
+        }
+        return x;
+      })
+      .attr('y1', (d: any, i: number) => {
+        let y = this.getYCoordinates(d.startDate.toDate(), this.peopleAngles.get(d.person));
+        if (d.startDate.isBefore(this.currentlySelectedMinDate) || d.endDate.isAfter(this.currentlySelectedMaxDate)) {
+          // isnt in view return null
+          return null;
+        }
+        return y;
+      })
+      .attr('y2', (d: any, i: number) => {
+        let y = this.getYCoordinates(d.endDate.toDate(), this.peopleAngles.get(d.person));
+        if (d.startDate.isBefore(this.currentlySelectedMinDate) || d.endDate.isAfter(this.currentlySelectedMaxDate)) {
+          // isnt in view return null
+          return null;
+        }
+        return y;
+      });
 
     let categories = new Set<string>();
+    this.objects.forEach((p: any) => { 
+      categories.add((p as any).category);
+    });
+
     let categoricalArc = d3.arc();
     categoricalArc
       .innerRadius(() => { return this.rScale.range()[1] + 5; })
@@ -1874,6 +2166,11 @@ export class BiographicalComponent implements OnInit {
         return (this.peopleAngles.get(d.key) + Math.PI / 2) - this.theta / 2;
       })
       .endAngle((d: any) => { return (this.peopleAngles.get(d.key) + Math.PI / 2) + this.theta / 2; });
+    
+    let oldCategories = [...categories].sort();
+    oldCategories = oldCategories.filter((c: any) => { return c !== undefined; });
+    this.colorGreys = d3.scaleOrdinal().domain(oldCategories).range(d3.schemeGreys[4]);
+    oldCategories.push('clear');
 
     let categoricalBars = this.radialG.selectAll('.category').data(dataByPerson);
     categoricalBars
@@ -1883,24 +2180,29 @@ export class BiographicalComponent implements OnInit {
       .attr('d', categoricalArc)
       .on('mouseover', (d: any) => {
         if (d.hidden) return;
-        let person = this.objects.find((p: PersonOrganization & Location) => { return p.name === d.key; })
+        let object = this.objects.find((p: PersonOrganization & Location) => { return p.name === d.key; })
         let artistName = '';
-        person.names.forEach((name: any) => {
+        object.names.forEach((name: any) => {
           if (name.nameType === 'Showbiz Name') artistName = name.name;
         });
         this.tooltip.nativeElement.style.display = 'block';
         this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
         this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
         this.tooltip.nativeElement.innerHTML = `
-        <h3>${artistName !== '' ? artistName : person.name}</h3>
+        <h3>${artistName !== '' ? artistName : object.name}</h3>
         ${artistName !== '' ? `<span class="aka">a.k.a. ${d.key}</span>` : ''}
-        <p>Category ${(person as any).category}</p>
+        <h4>${object.objectType}</h2>
+        ${object.objectType === 'Location' ? `<p>Category: ${object.locationTypes}</p>` : ''}
+        ${object.objectType === 'Person' ? `<p>Category: ${(object as any).category}</p>` : ''}
         `;
       })
       .on('mouseout', () => {
         this.tooltip.nativeElement.style.display = 'none';
       })
       .on('click', (d: any) => {
+        // let id = d.values[0].personID;
+        // console.log(id);
+        // this.handleClick(id);
         this.displayPersonDetails(d.key);
       })
       .merge(categoricalBars)
@@ -1910,7 +2212,7 @@ export class BiographicalComponent implements OnInit {
       .attr('fill', (d: any) => {
         let person = this.objects.find((p: any) => { return p.name === d.key; });
         categories.add((person as any).category);
-        return this.categoricalColors((person as any).category);
+        return this.colorGreys((person as any).category);
       });
 
 
@@ -1930,13 +2232,13 @@ export class BiographicalComponent implements OnInit {
         })
         return artistName !== '' ? artistName : d.key;
       })
-      .attr('opacity', () => { return this.showNames ? 1 : 0; })
+      .attr('opacity', () => { return this.showNames ? OPACITY.full : OPACITY.hide; })
+      .style('pointer-events', 'none')
       .style('font-size', '11px')
       .attr('transform', (d: any, i: number) => {
         let rotate = (this.theta * i * 180 / Math.PI);
-        let today = moment();
-        let radius = this.rScale(today.add(25, 'years').toDate()); // 8 year offset for text from outer circle
-        // TODO: consider using a number as an offset instead of years (years are variable we need a fixed offset)
+        let radius = this.rScale(this.rScale.domain()[1]); // 8 year offset for text from outer circle
+        radius += 25; // radial offset to draw names
         let flip = (rotate > 90 && rotate < 270) ? 180 : 0;
         let offset = (rotate > 90 && rotate < 270) ? -1 : .5; // correct offset
         return `rotate(${rotate + offset}) translate(${radius}) rotate(${flip})`;
@@ -1949,64 +2251,277 @@ export class BiographicalComponent implements OnInit {
 
 
     // Legend
-    let legendDots = this.legendSVG.selectAll('.dots').data([...categories].sort());
-    legendDots.enter()
+    // let newCategories = Array<string>('Park/Field', 'Music Hall/Opera House', 'Streets/Bridges', 'Other', 'Clear');
+    
+    let legendDots = this.legendSVG.selectAll('.type-dots').data(oldCategories);
+    legendDots
+      .enter()
       .append('rect')
-      .attr('class', 'dots')
-      // .transition()
-      // .duration(250)
+      .attr('class', 'type-dots')
       .merge(legendDots)
-      .attr('x', -700)
+      .attr('x', -825)
       .attr('y', (d: any, i: any) => {
-        return i * 25;
+        return -107 + i * 25;
       })
+      .attr('stroke', '#000')
       .attr('width', 14)
       .attr('height', 14)
-      // .attr('r', 7)
-      .attr('fill', (d: any) => { return this.categoricalColors(d); });
+      .attr('fill', (d: any) => { return d === 'clear' ? '#fff' : this.colorGreys(d); })
+      // .attr('stroke', (d: any) => { return d === 'clear' ? '#000' : '#fff'})
+      .on('click', (d: any) => {
+        if(d === 'clear') {
+          this.radialG.selectAll('.category').attr('opacity', OPACITY.base);
+          this.filterEventsByType();
+          return;
+        }
+        let objectIDs = new Set<string>();
+        let bday: moment.Moment, dday: moment.Moment;
+        this.radialG
+          .selectAll('.category')
+          .transition().duration(250)
+          .attr('opacity', (dd: any) => {
+            // let searchCats = d.split('/');
 
-    let peopleByCategory = d3.nest()
-      .key((d: any) => {
-        let person = this.objects.find((p: PersonOrganization & Location) => {
-          return p.name === d.person;
-        })
-        return this.getCategory(person, this.currentGrouping);
-      })
-      .entries(data);
+            let object = this.objects.find((o: PersonOrganization & Location) => { return o.name === dd.key; });
+            switch (this.currentGrouping) {
+              case 'District':
+                if (object.geodata.map((g: any) => { return `${g.districtNumber}`; }).includes(d)) {
+                  objectIDs.add(object.name);
+                  return OPACITY.base;
+                } else {
+                  return OPACITY.hide;
+                }
+              case 'Location Type':
+                // TODO: These conditions need to be updated to map from an array to the combined locationTypes we have
+                // Could use d.split('/') -> then we get 2 locationTypes check for either
+                // In case of Other just return everything that is not part of the main location types?
+                if (object.locationTypes.includes(d)) {
+                  objectIDs.add(object.name);
+                  return OPACITY.base;
+                } else {
+                  return OPACITY.hide;
+                }
+              case 'Role':
+                if (object.roles.includes(d)) {
+                  objectIDs.add(object.name);
+                  return OPACITY.base;
+                } else {
+                  return OPACITY.hide;
+                }
+              case 'Exiled':
+                if (d === 'Exiled') {
+                  if (object.functions.map((f: any) => { return f.dateName; }).includes('Exil')) {
+                    objectIDs.add(object.name);
+                    return OPACITY.base;
+                  } else {
+                    return OPACITY.hide;
+                  }
+                } else if (d === 'Not-Exiled') {
+                  if (object.functions.map((f: any) => { return f.dateName; }).includes('Exil')) {
+                    return OPACITY.hide;
+                  } else {
+                    objectIDs.add(object.name);
+                    return OPACITY.base;
+                  }
+                }
+              case 'Born after 1945':
+                if (d === 'Born after 1945') {
+                  for (let i = 0; i < object.dates.length; i++) {
+                    let date = object.dates[i];
 
-    let legendLabels = this.legendSVG.selectAll('.labels').data([...categories].sort());
-    legendLabels.enter()
+                    if (date.dateName === 'Birth') {
+                      bday = moment(date.date);
+                    }
+                  }
+                  if (!bday) return OPACITY.hide;
+
+                  if (bday.isSameOrAfter('1945', 'year')) {
+                    objectIDs.add(object.name);
+                    return OPACITY.base;
+                  } else {
+                    return OPACITY.hide;
+                  }
+                } else if (d === 'Born before 1945') {
+                  for (let i = 0; i < object.dates.length; i++) {
+                    let date = object.dates[i];
+
+                    if (date.dateName === 'Birth') {
+                      bday = moment(date.date);
+                    }
+                  }
+
+                  if (!bday) return OPACITY.hide;
+
+                  if (bday.isSameOrBefore('1945', 'year')) {
+                    objectIDs.add(object.name);
+                    return OPACITY.base;
+                  } else {
+                    return OPACITY.hide;
+                  }
+                }
+              case 'Died before 1938':
+                if (d === 'Died before 1938') {
+                  for (let i = 0; i < object.dates.length; i++) {
+                    let date = object.dates[i];
+
+                    if (date.dateName === 'Death') {
+                      dday = moment(date.date);
+                    }
+                  }
+                  if (!dday) return OPACITY.hide;
+
+                  if (dday.isSameOrBefore('1938', 'year')) {
+                    objectIDs.add(object.name);
+                    return OPACITY.base;
+                  } else {
+                    return OPACITY.hide;
+                  }
+                } else if (d === 'Died after 1938') {
+                  for (let i = 0; i < object.dates.length; i++) {
+                    let date = object.dates[i];
+
+                    if (date.dateName === 'Death') {
+                      dday = moment(date.date);
+                    }
+                  }
+                  if (!dday) return OPACITY.hide;
+                  if (dday.isSameOrAfter('1938', 'year')) {
+                    objectIDs.add(object.name);
+                    return OPACITY.base;
+                  } else {
+                    return OPACITY.hide;
+                  }
+                }
+              case 'Gender':
+                if (object.gender === d) {
+                  objectIDs.add(object.name);
+                  return OPACITY.base;
+                } else {
+                  return OPACITY.hide;
+                }
+              case 'None':
+                if (this.dataType === 'people') {
+                  // default is roles
+                  if (object.roles.includes(d)) {
+                    objectIDs.add(object.name);
+                    return OPACITY.base;
+                  } else {
+                    return OPACITY.hide;
+                  }
+                }
+                if (this.dataType === 'locations') {
+                  if (object.locationTypes.includes(d)) {
+                    objectIDs.add(object.name);
+                    return OPACITY.base;
+                  } else {
+                    return OPACITY.hide;
+                  }
+                }
+            }
+          });
+
+        this.radialG
+          .selectAll('.event')
+          .attr('stroke-opacity', (d: any) => {
+            let object = this.objects.find(o => { return o.objectId === d.personID });
+            return objectIDs.has(object.name) ? OPACITY.base : OPACITY.hide;
+          });
+
+        this.radialG
+          .selectAll('.before-death')
+          .attr('stroke-opacity', (d: any, i: any, n: any) => {
+            let dataID: string = d3.select(n[i]).attr('data-object');
+            // console.log(dataID);
+            // dataID is 'object:<IDENTIFIER>' -> need to split and get second argument
+            // console.log(dataID.split(':')[1]);
+            return objectIDs.has(dataID) ? OPACITY.base : OPACITY.hide;
+          });
+      });
+
+    let legendLabels = this.legendSVG.selectAll('.type-labels').data(oldCategories);
+    legendLabels
+      .enter()
       .append('text')
-      .attr('class', 'labels')
+      .attr('class', 'type-labels')
       // .transition()
       // .duration(250) 
       .merge(legendLabels)
-      .attr('x', -670)
+      .attr('x', -800)
       .attr('y', (d: any, i: any) => {
-        return 8 + i * 25;
+        return -107 + (8 + i * 25);
       })
-      .attr('fill', (d: any) => { return this.categoricalColors(d); })
       .text((d: any) => {
-        console.log(dataByPerson);
-        let total = dataByPerson.length;
-        let people = new Set<string>();
-        peopleByCategory.forEach((pbc: any) => {
-          if (pbc.key === d) {
-            pbc.values.forEach((v: any) => {
-              people.add(v.person);
-            })
-          }
-        });
-
-        let ofType = people.size;
-        let percent = Math.ceil(ofType / total * 100);
-        return `${d} (${percent}%)`;
+        // let total = dataByPerson.length;
+        // let people = new Set<string>();
+        // peopleByCategory.forEach((pbc: any) => {
+        //   if (pbc.key === d) {
+        //     pbc.values.forEach((v: any) => {
+        //       people.add(v.person);
+        //     })
+        //   }
+        // });
+        // let ofType = people.size;
+        // let percent = Math.ceil(ofType / total * 100);
+        return d; // (${percent}%)`;
       })
       .attr('text-anchor', 'left')
       .attr('alignment-baseline', 'middle');
+    // let peopleByCategory = d3.nest()
+    //   .key((d: any) => {
+    //     let person = this.objects.find((p: PersonOrganization & Location) => {
+    //       return p.name === d.person;
+    //     })
+    //     return this.getCategory(person, this.currentGrouping);
+    //   })
+    //   .entries(data);
+    let themeCategories = this.colors.domain();
+    themeCategories.sort();
+    // themeCategories.splice(themeCategories.indexOf('exile'), 1);
+    themeCategories.push('clear');
+    let categoricalDots = this.legendSVG.selectAll('.categories').data(themeCategories);
+    categoricalDots
+      .enter()
+      .append('circle')
+      .attr('class', 'categories')
+      .merge(categoricalDots)
+      .attr('r', 7)
+      .attr('fill', (d: any) => {
+        return d === 'clear' ? '#fff' : this.colors(d);
+      })
+      .attr('stroke', '#000')
+      .attr('cx', -1825)
+      .attr('cy', (d: any, i: any) => {
+        return -100 + i * 25;
+      })
+      .on('click', (d: any) => {
+        d === 'clear' ? this.filterEventsByType() : this.filterEventsByType(d);
+      });
+
+    let categoricalLabels = this.legendSVG.selectAll('.cat-labels').data(themeCategories);
+    categoricalLabels
+      .enter()
+      .append('text')
+      .attr('class', 'cat-labels')
+      .merge(categoricalLabels)
+      .attr('x', -1840)
+      .attr('y', (d: any, i: any) => {
+        return -100 + i * 25;
+      })
+      .attr('fill', '#040404')
+      .text((d: any) => {
+        return `${d}`;
+      })
+      .attr('text-anchor', 'end')
+      .attr('alignment-baseline', 'middle');
+
+    
 
     legendDots.exit().remove();
     legendLabels.exit().remove();
+    categoricalDots.exit().remove();
+    categoricalLabels.exit().remove();
+
+    startingPoint.exit().remove();
 
     gridLines.exit()
       .transition().duration(250)
@@ -2045,14 +2560,78 @@ export class BiographicalComponent implements OnInit {
       .remove();
 
     // brush above things
-    d3.select('.radial-brush').raise();
+    // d3.select('.radial-brush').raise();
   }
 
   handleClick(object: any): void {
-    switch(object.objectType) {
-      case 'Event': 
+    // incase the objectType attribute is missing
+    if (object.personOrganization) {
+      object.objectType = 'Person';
+      object.personID = object.personOrganization;
+    }
+    if (object.event) {
+      object.objectType = 'Event';
+      object.dateID = object.event;
+    }
+    if (object.location) {
+      object.objectType = 'Location';
+      object.personID = object.location;
+    }
+
+    switch (object.objectType) {
+      case 'Event':
         this.selectedObject = this.db.getEventById(object.dateID);
+        let relatedEvents = this.selectedObject.events.map((e: any) => {
+          return e.event;
+        });
         this.objectSelected = true;
+        // Highlight related events
+        this.radialG.selectAll('.before-death')
+          .attr('stroke-opacity', (d: any) => {
+            return d.key === this.selectedObject.name ? OPACITY.base : OPACITY.hide;
+          })
+          .attr('stroke', (d: any) => {
+            return d.key === this.selectedObject.name ? this.colors(d.color) : '#e7e7e7'
+          });
+
+        this.radialG.selectAll('.event')
+          .transition().duration(250)
+          .attr('stroke', (d: any) => {
+            if (d.personID === this.selectedObject.objectId) return this.colors(d.color);
+            // if (d.color === 'none') return '#e7e7e7';
+            // console.log(d);
+            // console.log((relatedEvents.includes(d.eventID)));
+            return (relatedEvents.includes(d.eventID)) ? this.colors(d.color) : '#e7e7e7';
+          })
+          .attr('stroke-opacity', (d: any) => {
+            if (d.personID === this.selectedObject.objectId) return OPACITY.base;
+            if (d.color === 'other') return OPACITY.fade;
+            return (relatedEvents.includes(d.eventID)) ? OPACITY.base : OPACITY.fade;
+          })
+          .attr('stroke-width', (d: any) => {
+            let object = this.db.getEventById(d.dateID);
+            if (!object) return '4px';
+            if (d.color === 'other') return `${this.nodeSizeScale(object[this.currentNodeSizing].length)}px`;
+            if (d.personID === this.selectedObject.objectId) return `${this.nodeSizeScale(object[this.currentNodeSizing].length)}px`;
+            return (relatedEvents.includes(d.eventID)) ? '14px' : object ? `${this.nodeSizeScale(object[this.currentNodeSizing].length)}px` : '4px';;
+          });
+
+        this.chartG.selectAll('.dots')
+          .transition().duration(250)
+          .attr('fill', (d: any) => {
+            if (d.color === 'other') return '#e7e7e7';
+            return (relatedEvents.includes(d.eventID)) ? this.colors(d.color) : '#e7e7e7';
+          })
+          .attr('opacity', (d: any) => {
+            if (d.color === 'other') return OPACITY.fade;
+            return (relatedEvents.includes(d.eventID)) ? OPACITY.base : OPACITY.fade;
+          })
+          .attr('r', (d: any) => {
+            let object = this.db.getEventById(d.dateID);
+            if (!object) return '4px;'
+            if (d.color === 'other') return `${this.nodeSizeScale(object[this.currentNodeSizing].length)}px`;
+            return (relatedEvents.includes(d.eventID)) ? '14px' : object ? `${this.nodeSizeScale(object[this.currentNodeSizing].length)}px` : '4px';;
+          });
         break;
       case 'Person':
         // this case is handled by the category click event listener
@@ -2060,23 +2639,23 @@ export class BiographicalComponent implements OnInit {
         this.selectedObject = this.db.getPersonById(object.personID);
         this.objectSelected = true;
         break;
-      case 'Location': 
+      case 'Location':
         this.selectedObject = this.db.getLocationById(object.personID);
         this.objectSelected = true;
+        break;
+      case 'Source':
+        // this.selectedObject = this.db.getSourceById(object.personID);
         break;
       default:
         break;
     }
-
-    console.log(this.selectedObject);
   }
 
   /**
    * Mouseout event handler - resets vis depending on settings (list displayed or not)
    */
   handleMouseout(): void {
-    // TODO: improve - after selecting a time period and mouseovering a 
-    // event in the timeline - the rddial visualization is desync'd
+    if(!this.detailPanelOpen) this.radialG.select('.start').attr('opacity', .5);
     if (this.showingList) {
       let start = this.currentlySelectedMinDate;
       let end = this.currentlySelectedMaxDate;
@@ -2089,21 +2668,39 @@ export class BiographicalComponent implements OnInit {
           if (d.startDate.isBetween(start, end, 'year')) {
             peopleNamesInRange.add(d.person);
           }
+
+          if(this.detailPanelOpen && d.personID === this.selectedObject.objectId) {
+            return d.startDate.isBetween(start, end, 'year') ? this.colors(d.color) : '#777777';  
+          }
+          
           return d.startDate.isBetween(start, end, 'year') ? this.colors(d.color) : '#777777';
         })
-        .attr('opacity', (d: any) => {
-          return d.startDate.isBetween(start, end, 'year') ? 1 : .25;
+        .attr('stroke-width', (d: any) => {
+          let object = this.db.getEventById(d.dateID);
+          return object ? `${Math.ceil(this.nodeSizeScale(object[this.currentNodeSizing].length))}px` : '4px';
+        })
+        .attr('stroke-opacity', (d: any) => {
+          if(this.detailPanelOpen && d.personID === this.selectedObject.objectId) {
+            return d.startDate.isBetween(start, end, 'year') ? OPACITY.base : OPACITY.fade;
+          }
+          return d.startDate.isBetween(start, end, 'year') ? OPACITY.base : OPACITY.fade;
         });
 
       this.radialG.selectAll('.person-name')
         .attr('opacity', (d: any) => {
           if (!this.showNames) return 0;
-          return peopleNamesInRange.has(d.key) ? 1 : 0;
+          if(this.detailPanelOpen && d.personID === this.selectedObject.objectId) {
+            return OPACITY.full;
+          }
+          return peopleNamesInRange.has(d.key) ? OPACITY.full : OPACITY.hide;
         });
 
       this.radialG.selectAll('.category')
         .attr('opacity', (d: any) => {
-          return peopleNamesInRange.has(d.key) ? 1 : 0;
+          if(this.detailPanelOpen && d.key === this.selectedObject.name) {
+            return OPACITY.full;
+          }
+          return peopleNamesInRange.has(d.key) ? OPACITY.full : OPACITY.hide;
         });
 
       this.radialG.selectAll('.before-death')
@@ -2118,13 +2715,13 @@ export class BiographicalComponent implements OnInit {
             return '#A5F0D6';
           }
         })
-        .attr('opacity', (d: any) => {
+        .attr('stroke-opacity', (d: any) => {
           // find bday
           let bday = d.values.filter((dd: any) => { return dd.dateName === 'Birth'; })[0];
           if (bday && bday.startDate) {
-            return bday.startDate.isBetween(start, end, 'year') ? 1 : .25;
+            return bday.startDate.isBetween(start, end, 'year') ? OPACITY.base : OPACITY.fade;
           } else {
-            return 1;
+            return OPACITY.full;
           }
         });
 
@@ -2132,40 +2729,75 @@ export class BiographicalComponent implements OnInit {
         .transition()
         .duration(250)
         .attr('fill', (d: any) => {
+          if(this.detailPanelOpen && d.personID === this.selectedObject.objectId) {
+            return d.startDate.isBetween(start, end, 'year') ? this.colors(d.color) : '#777777';
+          }
           return d.startDate.isBetween(start, end, 'year') ? this.colors(d.color) : '#777777';
         }).attr('opacity', (d: any) => {
-          return d.startDate.isBetween(start, end, 'year') ? 1 : .25;
+          if(this.detailPanelOpen && d.personID === this.selectedObject.objectId) {
+            return d.startDate.isBetween(start, end, 'year') ? OPACITY.base : OPACITY.fade;
+          }
+          return d.startDate.isBetween(start, end, 'year') ? OPACITY.base : OPACITY.fade;
         });
     }
     if (!this.showingList) {
       this.radialG.selectAll('.person-name')
         .transition().duration(250)
         .attr('opacity', (d: any) => {
-          if (!this.showNames) return 0;
-          return d.hidden ? 0 : 1
+          if(this.detailPanelOpen && d.personID === this.selectedObject.objectId) {
+            return OPACITY.full;
+          }
+          if (!this.showNames) return OPACITY.hide;
+          return d.hidden ? OPACITY.hide : OPACITY.full
         });
 
       this.radialG.selectAll('.before-death')
         .transition().duration(250)
         .attr('stroke', '#A5F0D6')
-        .attr('opacity', (d: any) => { return d.hidden ? 0.25 : 1 });
+        .attr('stroke-opacity', (d: any) => { return d.hidden ? OPACITY.fade : OPACITY.full });
 
       this.radialG.selectAll('.category')
         .transition().duration(250)
-        .attr('opacity', (d: any) => {
-          return d.hidden ? 0 : 1
-        });
+        .attr('opacity', (d: any) => { return d.hidden ? OPACITY.hide : OPACITY.full; });
 
       this.radialG.selectAll('.event')
         .transition().duration(250)
-        .attr('stroke-width', '8px')
-        .attr('stroke', (d: any) => { return this.colors(d.color); });
+        .attr('stroke-width', (d: any) => {
+          let object = this.db.getEventById(d.dateID);
+          return object ? `${Math.ceil(this.nodeSizeScale(object[this.currentNodeSizing].length))}px` : '4px';
+        })
+        .attr('stroke', (d: any) => {
+          if (!this.currentFilter || this.currentFilter === 'all') return (d.dateName === 'Birth' || d.dateName === 'Death') ? '#59a14f' : this.colors(d.color);
+          if(this.detailPanelOpen && d.personID === this.selectedObject.objectId) {
+            return (d.dateName === 'Birth' || d.dateName === 'Death') ? '#59a14f' : this.colors(d.color);
+          }
+          return d.color !== this.currentFilter ? ' #e7e7e7' : ((d.dateName === 'Birth' || d.dateName === 'Death') ? '#59a14f' : this.colors(d.color));
+        })
+        .attr('stroke-opacity', (d: any) => { 
+          if(!this.detailPanelOpen) return d.hidden ? OPACITY.fade : OPACITY.base;
+          return (this.detailPanelOpen && d.personID === this.selectedObject.objectId) ? OPACITY.base : OPACITY.hide; // d.hidden ? OPACITY.fade : OPACITY.base;
+        });
 
       this.chartG.selectAll('.dots')
         .transition().duration(250)
-        .attr('r', 4)
-        .attr('fill', (d: any) => { return this.colors(d.color); })
-        .attr('opacity', (d: any) => { return d.hidden ? 0.25 : 1 });
+        // .attr('r', (d: any) => {
+        //   let object = this.db.getEventById(d.dateID);
+        //   console.log('wrong scaling ' + `${Math.ceil(this.nodeSizeScale(object[this.currentNodeSizing].length))}px`);
+        //   return object ? `${Math.ceil(this.nodeSizeScale(object[this.currentNodeSizing].length))}px` : '4px';
+        // })
+        .attr('fill', (d: any) => {
+          if (!this.currentFilter || this.currentFilter === 'all') return this.colors(d.color);
+          return d.color !== this.currentFilter ? ' #e7e7e7' : this.colors(d.color);
+        })
+        .attr('r', (d: any) => {
+          let object = this.db.getEventById(d.dateID);
+          return object ? `${Math.ceil(this.nodeSizeScale(object[this.currentNodeSizing].length)) / 2}px` : '2px';
+        })
+        .attr('opacity', (d: any) => { 
+          if(!this.detailPanelOpen) return d.hidden ? OPACITY.fade : OPACITY.base;
+          return (this.detailPanelOpen && d.personID === this.selectedObject.objectId) ? OPACITY.base : OPACITY.hide; // d.hidden ? OPACITY.fade : OPACITY.base;
+          // return d.hidden ? OPACITY.fade : OPACITY.base 
+        });
     }
   }
 
@@ -2178,48 +2810,58 @@ export class BiographicalComponent implements OnInit {
    * @param rad         - true if mouseover comes from the radial display
    */
   handleMouseover(dateName: string, dateID: string, personID: string, personName: string, rad: boolean): void {
-    if (this.radialG && !rad) {
+    // if(personID !== this.selectedObject)
+    this.radialG.select('.start').attr('opacity', OPACITY.hide);
+    if (this.radialG && !rad) { // coming from TL
       this.radialG.selectAll('.person-name')
         .attr('opacity', (d: any) => {
           if (!this.showNames) return 0;
-          return personName.localeCompare(d.key) ? 0 : 1;
+          return personName.localeCompare(d.key) ? OPACITY.hide : OPACITY.full;
         });
 
       this.radialG.selectAll('.before-death')
         .attr('stroke', (d: any) => {
           return d.key === personName ? '#A5F0D6' : '#e7e7e7';
         })
-        .attr('opacity', (d: any) => {
-          return d.key === personName ? 1 : .25;
+        .attr('stroke-opacity', (d: any) => {
+          return d.key === personName ? OPACITY.full : OPACITY.fade;
         });
 
       this.radialG.selectAll('.category')
         .attr('opacity', (d: any) => {
-          return d.key === personName ? 1 : 0;
+          return d.key === personName ? OPACITY.full : OPACITY.hide;
         })
 
       this.radialG.selectAll('.event')
         // .transition().duration(250)
         .attr('stroke-width', (d: any) => {
-          return d.dateName === dateName && d.personID === personID ? '10px' : '8px';
+          let object = this.db.getEventById(d.dateID);
+          return d.dateName === dateName && d.personID === personID ? '14px' : object ? `${this.nodeSizeScale(object.peopleOrganizations.length)}px` : '4px';;
         })
         .attr('stroke', (d: any) => {
           return d.dateName === dateName && d.personID === personID ? this.colors(d.color) : '#e7e7e7';
+        })
+        .attr('stroke-opacity', (d: any) => {
+          return d.dateName === dateName && d.personID === personID ? OPACITY.base : OPACITY.fade;
         });
       this.radialG.select(`.event[data-dateid="${dateID}"]`).raise(); // raise selection
     }
 
-    if (this.chartG && rad) {
+    if (this.chartG && rad) { // coming from rad
       this.chartG.selectAll('.dots')
         // .transition().duration(250)
         .attr('r', (d: any) => {
-          return d.dateName === dateName && d.personID === personID ? 8 : 4;
+          let object = this.db.getEventById(d.dateID);
+          return d.dateName === dateName && d.personID === personID ? 8 : object ? `${Math.ceil(this.nodeSizeScale(object[this.currentNodeSizing].length)) / 2}px` : '2px';
         })
         .attr('fill', (d: any) => {
           return d.dateName === dateName && d.personID === personID ? this.colors(d.color) : '#e7e7e7';
         })
         .attr('opacity', (d: any) => {
-          return d.dateName === dateName && d.personID === personID ? 1 : .25;
+          if(this.detailPanelOpen) {
+            return d.personID === this.selectedObject.objectId ? OPACITY.base : OPACITY.hide;
+          }
+          return d.dateName === dateName && d.personID === personID ? OPACITY.base : OPACITY.fade;
         });
     }
   }
@@ -2228,7 +2870,7 @@ export class BiographicalComponent implements OnInit {
    * Renders a timeline chart of event types (count) over time
    * @param data the dataset 
    */
-  renderChart(data: Array<any>): void {
+  renderChart(data: Array<any>, rescale? :number): void {
     let radius = 4;
     let timelineHeight = 200;
     //'street', 'exhibition', 'exile', 'prize', 'none'
@@ -2243,7 +2885,7 @@ export class BiographicalComponent implements OnInit {
       .entries(data)
       .forEach((d: any) => {
         d.values.forEach((v: any) => {
-          if (v.color !== 'none') filteredData.push(v);
+          if (v.color !== 'other') filteredData.push(v);
         });
       });
 
@@ -2262,7 +2904,7 @@ export class BiographicalComponent implements OnInit {
           anniversary: s.filter((ss: any) => { return ss.color === 'anniversary' }).length,
           conference: s.filter((ss: any) => { return ss.color === 'conference' }).length,
           memorial: s.filter((ss: any) => { return ss.color === 'memorial' }).length,
-          none: s.filter((ss: any) => { return ss.color === 'none' }).length,
+          other: s.filter((ss: any) => { return ss.color === 'other' }).length,
         };
       })
       .entries(filteredData)
@@ -2270,8 +2912,12 @@ export class BiographicalComponent implements OnInit {
     // console.log(filteredData);
 
     // 2 * radius margin left and right on X
-    this.xChartScale = d3.scaleTime().range([radius * 2, (this.timelineChart.nativeElement.clientWidth - radius * 2)]).domain([moment('01-01-1930', 'DD-MM-YYYY'), this.MAX_DATE]);
+    let width = rescale ? rescale : this.timelineChart.nativeElement.clientWidth; // add the 500 px we took away when rescaling 
+    this.MAX_DATE = moment('31-12-2018', 'DD-MM-YYYY');
+    // radius * 2 to offset drawing points by 1 point
+    this.xChartScale = d3.scaleTime().range([radius*2, width]).domain([this.MIN_DATE.toDate(), this.MAX_DATE.toDate()]); //moment('01-01-1930', 'DD-MM-YYYY')
     this.yChartScale = d3.scaleLinear().range([this.timelineChart.nativeElement.clientHeight, 0]).domain([0, 20]).nice();
+
     // special year
     let tickAmount = this.MAX_DATE.diff(this.MIN_DATE, 'years') / 10;
     let ticks = this.xChartScale.ticks(Math.floor(tickAmount));
@@ -2302,6 +2948,39 @@ export class BiographicalComponent implements OnInit {
 
     this.chartG.select('.domain').remove(); // black line ontop of timeline
 
+    let historicEvents = [];
+    this.historicEvents.forEach((h: string) => {
+      let hEv = this.db.getHistoricEventById(h);
+      historicEvents.push(hEv);
+    });
+
+    let histEvents = this.chartG.selectAll('.historic').data(historicEvents);
+
+    histEvents.enter()
+      .append('rect')
+      .attr('class', 'historic')
+      .attr('data-id', (d: any) => { return `${d.objectId}`; })
+      .merge(histEvents)
+      .attr('x', (d: any) => {
+        return this.xChartScale(moment(d.startDate).toDate());
+      })
+      .attr('y', (d: any) => {
+        return 0;
+      })
+      .attr('width', (d: any) => {
+        let startX = this.xChartScale(moment(d.startDate).toDate());
+        let endX = this.xChartScale(moment(d.endDate).toDate());
+
+        return endX - startX;
+      })
+      .attr('height', (d: any) => {
+        return timelineHeight;
+      })
+      .attr('fill', '#e7e7e7')
+      // .attr('stroke', '#000000')
+      // .attr('stroke-opacity', .5)
+      .attr('fill-opacity', .35);
+
     // brush
     this.chartBrush = d3.brushX()
       .extent([[0, 0], [this.xChartScale.range()[1], 200]]) // 0,0 - width, height
@@ -2310,6 +2989,60 @@ export class BiographicalComponent implements OnInit {
     this.chartG.append('g')
       .attr('class', 'brush')
       .call(this.chartBrush);
+
+    let histText = this.chartG.selectAll('.historic-text').data(historicEvents);
+    histText.enter()
+      .append('text')
+      .attr('class', 'fa historic-text')
+      .merge(histText)
+      .attr('x', (d: any) => {
+        return this.xChartScale(moment(d.startDate).toDate());
+      })
+      .attr('y', (d: any) => { return 25; })
+      .attr('text-anchor', 'left')
+      .attr('fill', '#8c8c8c')
+      .attr('font-size', '20px')
+      .attr('fill-opacity', OPACITY.base)
+      .text('\uf05a')
+      .on('mouseover', (d: any) => {
+        // if (d.hidden) return;
+        // if filter selected and object not of filter type - no interaction
+        this.chartG.select(`.historic[data-id="${d.objectId}"]`)
+          .transition().duration(250)
+          .attr('fill-opacity', OPACITY.base + .4);
+
+        this.tooltip.nativeElement.style.display = 'block';
+        this.tooltip.nativeElement.style.top = `${d3.event.pageY}px`;
+        this.tooltip.nativeElement.style.left = `${d3.event.pageX + 20}px`;
+        // clamp tt to bottom - dont render outside of view
+        let top = this.tooltip.nativeElement.offsetTop;
+        let tooltipBBox = (d3.select('#tooltip').node() as any).getBoundingClientRect();
+        if (top + tooltipBBox.height > this.window.innerHeight) {
+          top -= tooltipBBox.height;
+          this.tooltip.nativeElement.style.top = `${top}px`;
+        }
+        // clamp it to right
+        let left = this.tooltip.nativeElement.offsetLeft;
+        if (left + tooltipBBox.width > this.window.innerWidth) {
+          left -= tooltipBBox.width;
+          this.tooltip.nativeElement.style.left = `${left}px`;
+        }
+
+        this.tooltip.nativeElement.innerHTML = `
+        <h3>${d.name}</h3>
+        <p>${moment(d.startDate).format('DD/MM/YYYY')} - ${moment(d.endDate).format('DD/MM/YYYY')}</p>
+        `;
+        // figure out how to handle hist events
+        // this.handleMouseover(d.dateName, d.dateID, d.personID, d.person, false);
+      })
+      .on('mouseout', (d: any) => {
+        this.tooltip.nativeElement.style.display = 'none';
+        this.chartG.selectAll(`.historic`)
+          .transition().duration(250)
+          .attr('fill-opacity', .5);
+
+        this.handleMouseout();
+      });
 
     let dots = this.chartG.selectAll('.dots').data(filteredData);
     let currentYear = 0;
@@ -2323,7 +3056,7 @@ export class BiographicalComponent implements OnInit {
       })
       .attr('cx', 0)
       .attr('cy', 0)
-      .attr('r', radius)
+      .attr('r', 0)
       .attr('fill', '#000')
       .on('mouseover', (d: any, i: number, n: any) => {
         // if (d.hidden) return;
@@ -2382,9 +3115,24 @@ export class BiographicalComponent implements OnInit {
         offset++;
         return yPos;
       })
+      .attr('r', (d: any) => {
+        let object = this.db.getEventById(d.dateID);
+        return object ? `${Math.ceil(this.nodeSizeScale(object[this.currentNodeSizing].length)) / 2}px` : '2px';
+      })
       .attr('fill', (d: any) => {
         return this.getColorForType(d.color);
-      });
+      })
+      .attr('opacity', OPACITY.base);
+
+
+    histEvents.exit()
+      .transition().duration(250)
+      // .attr()
+      .remove();
+
+    histText.exit()
+      .transition().duration(250)
+      .remove();
 
     dots.exit()
       .transition().duration(250)
@@ -2393,7 +3141,47 @@ export class BiographicalComponent implements OnInit {
       .attr('fill', '#000')
       .remove();
 
-    d3.select('.selection').attr('fill', '#4286f4').attr('fill-opacity', .15).attr('stroke', '#fff').attr('stroke-opacity', 1);
+
+    d3.select('.selection')
+      .attr('fill', '#4286f4')
+      .attr('fill-opacity', OPACITY.fade)
+      .attr('stroke', '#fff')
+      .attr('stroke-opacity', OPACITY.full);
+  }
+
+  /**
+   * Sets the current node sizing parameter
+   * @param sizing the sizing attribute from the selection
+   */
+  updateNodeSizing(sizing: string): void {
+    this.currentNodeSizing = sizing;
+    // update the scale extent
+    let minRel = Number.MAX_VALUE;
+    let maxRel = 0;
+    // console.log(this..map((o) => { return o.objectType; }));
+
+    // Find events and get their relationship count based on current node sizing strategy
+    let eventIds = this.data.filter((o: any) => { return o.objectType === 'Event'; }).map((o: any) => { return o.dateID; });
+    let events = new Array<Event>();
+    eventIds.forEach((o: string) => {
+      events.push(this.db.getEventById(o));
+    });
+    let relArray = events.map((e: Event) => { return e[this.currentNodeSizing].length; });
+    
+    this.nodeSizeScale = d3.scaleLinear().domain(d3.extent(relArray)).range([5, 10]);
+
+    // console.log(extent);
+    d3.selectAll('.event')
+      .attr('stroke-width', (d: any) => {
+        let object = this.db.getEventById(d.dateID);
+        return object ? `${Math.ceil(this.nodeSizeScale(object[this.currentNodeSizing].length))}px` : '4px';
+      });
+
+    d3.selectAll('.dots')
+      .attr('r', (d: any) => {
+        let object = this.db.getEventById(d.dateID);
+        return object ? `${Math.ceil(this.nodeSizeScale(object[this.currentNodeSizing].length)) / 2}px` : '2px';
+      });
   }
 
   /**
@@ -2426,7 +3214,7 @@ export class BiographicalComponent implements OnInit {
     this.renderChart(newData);
   }
 
-  /**
+  /** TODO: Remove this
    * Programatically set the timeline chart brush extent
    * @param startDate start date (mapped to x coords)
    * @param endDate end date (mapped to x coords)
@@ -2440,23 +3228,26 @@ export class BiographicalComponent implements OnInit {
     d3.select('.brush').call(this.chartBrush.move, [startX, endX]);
   }
 
-  chartBrushing(): void {
-    if (!d3.event.selection) return;
-    let start = d3.event.selection[0];
-    let end = d3.event.selection[1];
+  // TODO: Deprecated ???
+  // chartBrushing(): void {
+  //   console.log('brushing');
+  //   if (!d3.event.selection) return;
+  //   let start = d3.event.selection[0];
+  //   let end = d3.event.selection[1];
 
-    let startDate = this.xChartScale.invert(start);
-    let endDate = this.xChartScale.invert(end);
+  //   let startDate = this.xChartScale.invert(start);
+  //   let endDate = this.xChartScale.invert(end);
 
 
-    this.drawDonut(this.rScale(startDate), this.rScale(endDate));
-  }
+  //   this.drawDonut(this.rScale(startDate), this.rScale(endDate));
+  // }
 
   /**
    * Event handler for the timeline brush
    * Triggered when a selection has been made
    */
   brushing(): void {
+    // console.log('brushing')
     if (!d3.event.selection) return;
     let start = d3.event.selection[0];
     let end = d3.event.selection[1];
@@ -2467,48 +3258,49 @@ export class BiographicalComponent implements OnInit {
     this.currentlySelectedMinDate = startDate;
     this.currentlySelectedMaxDate = endDate;
 
-    let exhibitionCount = 0;
-    let streetCount = 0;
-    let prizeCount = 0;
-    let memorialCount = 0;
-    let anniversaryCount = 0;
-    let conferenceCount = 0;
-    this.countByYear.forEach((c: any) => {
-      if (moment(c.key).isBetween(this.currentlySelectedMinDate, this.currentlySelectedMaxDate, 'year')) {
-        exhibitionCount += c.value['exhibition'];
-        streetCount += c.value['street'];
-        prizeCount += c.value['prize'];
-        memorialCount += c.value['memorial'];
-        anniversaryCount += c.value['anniversary'];
-        conferenceCount += c.value['conference'];
-      }
-    });
+    // let exhibitionCount = 0;
+    // let streetCount = 0;
+    // let prizeCount = 0;
+    // let memorialCount = 0;
+    // let anniversaryCount = 0;
+    // let conferenceCount = 0;
+    // this.countByYear.forEach((c: any) => {
+    //   if (moment(c.key).isBetween(this.currentlySelectedMinDate, this.currentlySelectedMaxDate, 'year')) {
+    //     exhibitionCount += c.value['exhibition'];
+    //     streetCount += c.value['street'];
+    //     prizeCount += c.value['prize'];
+    //     memorialCount += c.value['memorial'];
+    //     anniversaryCount += c.value['anniversary'];
+    //     conferenceCount += c.value['conference'];
+    //   }
+    // });
     // TODO: Provide additional stats about the selection
     // i.e., exiled vs non-exiled distribution
 
     // update radial selection
-    let width = end - start;
-    let tooltipBBox = (d3.select('#count-tooltip').node() as any).getBoundingClientRect();
+    // let width = end - start;
+    // let tooltipBBox = (d3.select('#count-tooltip').node() as any).getBoundingClientRect();
 
-    let leftPos = start + width / 2 - tooltipBBox.width / 2;
-    leftPos = leftPos < 0 ? 5 : leftPos; // check left
-    leftPos = leftPos > this.timelineChart.nativeElement.clientWidth ? this.timelineChart.nativeElement.clientWidth - width : leftPos; // check right
-    d3.select('#count-tooltip')
-      .style('left', `${leftPos}px`)
-      .style('bottom', `calc(${this.timelineChart.nativeElement.clientHeight}px + 5px)`) // 20px from tl
-      .style('opacity', 1)
-      .html(
-        `<h4>Count for ${this.displayDate(this.currentlySelectedMinDate)} - ${this.displayDate(this.currentlySelectedMaxDate)}</h4>
-              <p style="color: ${this.colors('exhibition')}">Exhibitions ${exhibitionCount}</p>
-              <p style="color: ${this.colors('street')}">Street-namings ${streetCount}</p>
-              <p style="color: ${this.colors('prize')}">Prizes ${prizeCount}</p>
-              <p style="color: ${this.colors('memorial')}">Memorials ${memorialCount}</p>
-              <p style="color: ${this.colors('anniversary')}">Anniversaries ${anniversaryCount}</p>
-              <p style="color: ${this.colors('conference')}">Conferences ${conferenceCount}</p>
-              `
-      );
+    // let leftPos = start + width / 2 - tooltipBBox.width / 2;
+    // leftPos = leftPos < 0 ? 5 : leftPos; // check left
+    // leftPos = leftPos > this.timelineChart.nativeElement.clientWidth ? this.timelineChart.nativeElement.clientWidth - width : leftPos; // check right
+    // d3.select('#count-tooltip')
+    //   .style('left', `${leftPos}px`)
+    //   .style('bottom', `calc(${this.timelineChart.nativeElement.clientHeight}px + 5px)`) // 20px from tl
+    //   .style('opacity', 1)
+    //   .html(
+    //     `<h4>Count for ${this.displayDate(this.currentlySelectedMinDate)} - ${this.displayDate(this.currentlySelectedMaxDate)}</h4>
+    //           <p style="color: ${this.colors('exhibition')}">Exhibitions ${exhibitionCount}</p>
+    //           <p style="color: ${this.colors('street')}">Street-namings ${streetCount}</p>
+    //           <p style="color: ${this.colors('prize')}">Prizes ${prizeCount}</p>
+    //           <p style="color: ${this.colors('memorial')}">Memorials ${memorialCount}</p>
+    //           <p style="color: ${this.colors('anniversary')}">Anniversaries ${anniversaryCount}</p>
+    //           <p style="color: ${this.colors('conference')}">Conferences ${conferenceCount}</p>
+    //           `
+    //   );
 
-    this.drawDonut(this.rScale(startDate), this.rScale(endDate));
+    this.rescaleTime(startDate, endDate);
+    // this.drawDonut(this.rScale(startDate), this.rScale(endDate));
   }
 
 
