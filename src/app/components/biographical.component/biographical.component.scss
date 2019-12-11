@@ -10,6 +10,14 @@ $timeline-height: 200px;
     height: 100%;
 }
 
+::ng-deep .categories {
+    cursor: pointer;
+}
+
+::ng-deep .start {
+    transform: rotate(-90deg) translateY(450px);
+}
+
 .detail {
     position: relative;
     width: 500px;
