@@ -10,58 +10,222 @@
             </div>
             <div *ngIf="selectedObject.objectType === 'Event'">
                 <mat-chip-list>
-                    <mat-chip *ngFor="let r of selectedObject.themes">{{ getThemeName(r.theme) }}</mat-chip>
+                    <mat-chip *ngFor="let r of selectedObject.themes" [style.backgroundColor]="getColorForTheme(r.theme)">{{ getThemeName(r.theme) }}</mat-chip>
                 </mat-chip-list>
                 <p>{{ displayDate(selectedObject.startDate) }} {{ selectedObject.endDate ? '-' : '' }} {{ displayDate(selectedObject.endDate) }}</p>
-
-                <div *ngFor="let person of selectedObject.peopleOrganizations">
-                    <a href="javascript:void(0)">{{ getPersonOrganizationName(person.personOrganization) }}</a>
+                <mat-accordion class="mat-expansion-panel-align">
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.peopleOrganizations.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>People/Organizations</mat-panel-title>
+                            <mat-panel-description>
+                                Related people and organizations
+                                <mat-icon>account_circle</mat-icon>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let person of selectedObject.peopleOrganizations" (click)="handleClick(person)">
+                                <mat-icon mat-list-icon>account_circle</mat-icon>
+                                <h4 mat-line>{{ getPersonOrganizationName(person.personOrganization) }}</h4>
+                                <p mat-line>{{ person.relationship }} {{ person.role ? '(' + person.role + ')' : '' }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.events.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>Events</mat-panel-title>
+                            <mat-panel-description>
+                                Related events
+                                <mat-icon>event</mat-icon>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let event of selectedObject.events">
+                                <mat-icon mat-list-icon>event</mat-icon>
+                                <h4 mat-line>{{ getEventName(event.event) }}</h4>
+                                <p mat-line>{{ event.relationship }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.historicEvents.length > 0">
+                            <mat-expansion-panel-header>
+                                <mat-panel-title>Historic Events</mat-panel-title>
+                                <mat-panel-description>
+                                    Related historic events
+                                    <mat-icon>history</mat-icon>
+                                </mat-panel-description>
+                            </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let hEvent of selectedObject.historicEvents">
+                                <mat-icon mat-list-icon>history</mat-icon>
+                                <h4 mat-line>{{ getHistoricEventName(hEvent.historicEvent) }}</h4>
+                                <p mat-line>{{ hEvent.relationship }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.locations.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>Locations</mat-panel-title>
+                            <mat-panel-description>
+                                Related locations
+                                <mat-icon>place</mat-icon>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let location of selectedObject.locations">
+                                <mat-icon mat-list-icon>place</mat-icon>
+                                <h4 mat-line>{{ getLocationName(location.location) }}</h4>
+                                <p mat-line>{{ location.relationship }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.themes.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>Themes</mat-panel-title>
+                            <mat-panel-description>
+                                Related themes
+                                <mat-icon>donut_large</mat-icon>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let theme of selectedObject.themes">
+                                <mat-icon mat-list-icon>donut_large</mat-icon>
+                                <h4 mat-line>{{ getThemeName(theme.theme) }}</h4>
+                                <p mat-line>{{ theme.relationship }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.sources.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>Sources</mat-panel-title>
+                            <mat-panel-description>
+                                    Related sources
+                                <mat-icon>collections</mat-icon>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let source of selectedObject.sources">
+                                <mat-icon mat-list-icon>collections</mat-icon>
+                                <h4 mat-line>{{ getSourceName(source.source) }}</h4>
+                                <p mat-line>{{ source.relationship }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                </mat-accordion>
                 </div>
-
-                <div *ngFor="let location of selectedObject.locations">
-                    <a href="javascript:void(0)">{{ getLocationName(location.location) }}</a>
-                </div>
-
-                <div *ngFor="let source of selectedObject.sources">
-                    <a href="javascript:void(0)">{{ getSourceName(source.source) }}</a>
-                </div>
-
-                <div *ngFor="let event of selectedObject.events">
-                    <a href="javascript:void(0)">{{ getEventName(event.event) }}</a>
-                </div>
-            </div>
             <div *ngIf="selectedObject.objectType === 'Person'">
                 <mat-chip-list>
                     <mat-chip *ngFor="let r of selectedObject.roles">{{ r }}</mat-chip>
                 </mat-chip-list>
-                <div *ngFor="let d of selectedObject.dates">
-                    <p>{{ displayDate(d.date) }} {{ d.dateName }}</p>
-                </div>
 
-                <div *ngFor="let d of selectedObject.functions">
-                    <p>{{ displayDate(d.startDate) }} - {{ displayDate((d.endDate)) }} {{ d.dateName }}</p>
-                </div>
                 <p>{{ selectedObject.bio }}</p>
-                <div *ngFor="let person of selectedObject.peopleOrganizations">
-                    <a href="javascript:void(0)">{{ getPersonOrganizationName(person.personOrganization) }}</a>
-                </div>
-                <div *ngIf="selectedObject.identifiers.length > 0">
-                    <span>More information...</span>
-                    <div *ngFor="let identifier of selectedObject.identifiers">
-                        <a [href]="identifier.url" target="_blank">{{ identifier.identifierType }}</a>
-                    </div>
-                </div>
+                
+                <mat-accordion class="mat-expansion-panel-align">
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.dates.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>Dates</mat-panel-title>
+                            <mat-panel-description>
+                                Dates
+                                <mat-icon>account_circle</mat-icon>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let date of selectedObject.dates">
+                                <mat-icon mat-list-icon>account_circle</mat-icon>
+                                <h4 mat-line>{{ date.dateName }}</h4>
+                                <p mat-line>{{ displayDate(date.date) }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.functions.length > 0">
+                            <mat-expansion-panel-header>
+                                <mat-panel-title>Dates</mat-panel-title>
+                                <mat-panel-description>
+                                    Functions
+                                    <mat-icon>account_circle</mat-icon>
+                                </mat-panel-description>
+                            </mat-expansion-panel-header>
+                            <mat-list>
+                                <mat-list-item *ngFor="let function of selectedObject.functions">
+                                    <mat-icon mat-list-icon>account_circle</mat-icon>
+                                    <h4 mat-line>{{ function.dateName }}</h4>
+                                    <p mat-line>{{ displayDate(function.startDate) }} - {{ displayDate((function.endDate)) }}</p>
+                                </mat-list-item>
+                            </mat-list>
+                        </mat-expansion-panel>
+
+                        <mat-expansion-panel opened="false" *ngIf="selectedObject.peopleOrganizations.length > 0">
+                            <mat-expansion-panel-header>
+                                <mat-panel-title>People/Organizations</mat-panel-title>
+                                <mat-panel-description>
+                                    Related people and organizations
+                                    <mat-icon>account_circle</mat-icon>
+                                </mat-panel-description>
+                            </mat-expansion-panel-header>
+                            <mat-list>
+                                <mat-list-item *ngFor="let person of selectedObject.peopleOrganizations">
+                                    <mat-icon mat-list-icon>account_circle</mat-icon>
+                                    <h4 mat-line>{{ getPersonOrganizationName(person.personOrganization) }}</h4>
+                                    <p mat-line>{{ person.relationship }}</p>
+                                </mat-list-item>
+                            </mat-list>
+                        </mat-expansion-panel>
+
+                        <mat-expansion-panel opened="false" *ngIf="selectedObject.identifiers.length > 0">
+                            <mat-expansion-panel-header>
+                                <mat-panel-title>Identifiers</mat-panel-title>
+                                <mat-panel-description>
+                                    More information...
+                                    <mat-icon>account_circle</mat-icon>
+                                </mat-panel-description>
+                            </mat-expansion-panel-header>
+                            <mat-list>
+                                <mat-list-item *ngFor="let identifier of selectedObject.identifiers">
+                                    <mat-icon mat-list-icon>account_circle</mat-icon>
+                                    <h4 mat-line>{{ identifier.identifierType }}</h4>
+                                    <a mat-line [href]="identifier.url">{{ identifier.url }}</a>
+                                </mat-list-item>
+                            </mat-list>
+                        </mat-expansion-panel>
+                </mat-accordion>
             </div>
             <div *ngIf="selectedObject.objectType === 'Location'">
-                <div *ngFor="let location of selectedObject.locations">
-                    <a href="javascript:void(0)">{{ getLocationName(location.location) }}</a>
-                </div>
-                <div *ngIf="selectedObject.identifiers.length > 0">
-                    <span>More information...</span>
-                    <div *ngFor="let identifier of selectedObject.identifiers">
-                        <a [href]="identifier.url" target="_blank">{{ identifier.identifierType }}</a>
-                    </div>
-                </div>
+                <mat-chip-list>
+                    <mat-chip *ngFor="let r of selectedObject.locationTypes">{{ r }}</mat-chip>
+                </mat-chip-list>
+
+                <mat-accordion class="mat-expansion-panel-align">
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.locations.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>Locations</mat-panel-title>
+                                <mat-panel-description>
+                                    Related locations...
+                                    <mat-icon>place</mat-icon>
+                                </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let location of selectedObject.locations">
+                                <mat-icon mat-list-icon>place</mat-icon>
+                                <h4 mat-line>{{ getLocationName(location.location) }}</h4>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.identifiers.length > 0">
+                       <mat-expansion-panel-header>
+                            <mat-panel-title>Identifiers</mat-panel-title>
+                                <mat-panel-description>
+                                    More information...
+                                    <mat-icon>account_circle</mat-icon>
+                                </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let identifier of selectedObject.identifiers">
+                                <mat-icon mat-list-icon>account_circle</mat-icon>
+                                    <h4 mat-line>{{ identifier.identifierType }}</h4>
+                                    <a mat-line [href]="identifier.url">{{ identifier.url }}</a>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                </mat-accordion>
             </div>
         </div>
     </mat-sidenav>
