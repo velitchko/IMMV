@@ -62,7 +62,7 @@ export class NetworkComponent implements AfterViewInit {
     @Inject(PLATFORM_ID) private _platformId: Object, private http: HttpClient) {
 
     this.isBrowser = isPlatformBrowser(this._platformId);
-    
+
     this.colors = new Map<string, string>();
     this.colors.set('location', '#01aef2');
     this.colors.set('personorganization', '#8ff161');
@@ -98,50 +98,52 @@ export class NetworkComponent implements AfterViewInit {
     this.mouseOver = false;
 
     this.selectedNode = null;
-    
+
     this.searchCtrl.valueChanges
       .pipe(
         debounceTime(300), // 300ms debounce
         tap(() => { this.loadingResults = true; }),
         switchMap(value => this.filterItems(value)
           .pipe(
-            finalize(() => { 
+            finalize(() => {
               this.loadingResults = false;
             }),
           )
         )
-      ).subscribe(results => { 
-        this.filteredItems = results; 
-        this.loadingResults = false; 
+      ).subscribe(results => {
+        this.filteredItems = results;
+        this.loadingResults = false;
       });
   }
 
-  ngAfterViewInit(): void {}
+  ngAfterViewInit(): void { }
 
   getCountPerYear(startDate: Date, endDate: Date): Map<string, number> {
     let countPerYear = new Map<string, number>();
 
     // initiates map with each year and a count of 1
     momentIterator(moment(startDate), moment(endDate)).each('year', (d: any) => {
-        countPerYear.set(d.year().toString(), 0);
+      countPerYear.set(d.year().toString(), 0);
     });
 
     return countPerYear;
   }
 
+  // TODO: Check this function something wrong
   populateCountByTypeAndYear(): void {
     this.countByTypeAndYear = new Map<string, Map<string, number>>();
-    let minDate = moment(this.nodes.min('startDate').startDate);
-    let maxDate = moment(this.nodes.max('endDate') ? this.nodes.max('endDate').endDate : this.nodes.max('startDate').startDate);
+    // TODO: rethink defaults if no start or end date exists
+    let minDate = moment(this.nodes.min('startDate') ? this.nodes.min('startDate').startDate : moment('01/05/1918', 'DD/MM/YYYY'));
+    let maxDate = moment(this.nodes.max('endDate') ? this.nodes.max('endDate').endDate : moment('01/05/1918', 'DD/MM/YYYY'));
 
     let map = this.getCountPerYear(minDate.toDate(), maxDate.toDate());
     this.nodes.forEach((node: any) => {
-      if(node.objectType.includes('event')) {
-        if(this.countByTypeAndYear.has(node.objectType)) {
+      if (node.objectType.includes('event')) {
+        if (this.countByTypeAndYear.has(node.objectType)) {
           let exists = this.countByTypeAndYear.get(node.objectType);
           exists.forEach((value: number, key: string) => {
             // inBetween(start, end, granularity, inclusion)
-            if(moment.utc(key).isBetween(moment(node.startDate), moment(node.endDate), 'years', '[]')) {
+            if (moment.utc(key).isBetween(moment(node.startDate), moment(node.endDate), 'years', '[]')) {
               // inc value  
               exists.set(key, exists.get(key) + 1);
             }
@@ -150,7 +152,7 @@ export class NetworkComponent implements AfterViewInit {
           // for ever new node type we should create a copy of the map
           let newMap = new Map<string, number>(map);
           newMap.forEach((value: number, key: string) => {
-            if(moment.utc(key).isBetween(moment(node.startDate), moment(node.endDate), 'years', '[]')) {
+            if (moment.utc(key).isBetween(moment(node.startDate), moment(node.endDate), 'years', '[]')) {
               // inc value  
               newMap.set(key, newMap.get(key) + 1);
             }
@@ -258,32 +260,31 @@ export class NetworkComponent implements AfterViewInit {
     this.disablePathSelection();
     this.clearHighlightedNodesLinks();
   }
-  
+
   selectedItem(item: Event | PersonOrganization | Location | Theme | Source | HistoricEvent): void {
-    console.log(item);
-    switch(item.objectType) {
-      case 'Event': 
+    switch (item.objectType) {
+      case 'Event':
         this.db.getAsEvent(item).then((success) => { this.update(success); });
         break;
-      case 'HistoricEvent': 
+      case 'HistoricEvent':
         this.db.getAsHistoricEvent(item).then((success) => { this.update(success); });
         break;
       case 'Person':
-          this.db.getAsPersonOrganization(item).then((success) => { this.update(success); });
+        this.db.getAsPersonOrganization(item).then((success) => { this.update(success); });
         break;
       case 'Organization':
-          this.db.getAsPersonOrganization(item).then((success) => { this.update(success); });
+        this.db.getAsPersonOrganization(item).then((success) => { this.update(success); });
         break;
       case 'Location':
-          this.db.getAsLocation(item).then((success) => { this.update(success); });
+        this.db.getAsLocation(item).then((success) => { this.update(success); });
         break;
       case 'Source':
-          this.db.getAsSource(item).then((success) => { this.update(success); });
+        this.db.getAsSource(item).then((success) => { this.update(success); });
         break;
-      case 'Theme': 
+      case 'Theme':
         this.db.getAsTheme(item).then((success) => { this.update(success); });
         break;
-      default: 
+      default:
         console.log('Unknown object type');
         console.log(item);
         break;
@@ -291,6 +292,7 @@ export class NetworkComponent implements AfterViewInit {
   }
 
   update(data: any): void {
+    console.log('updating network');
     if (!this.networkInitialized) {
       this.setupData(data);
       this.initNetwork();
@@ -333,6 +335,7 @@ export class NetworkComponent implements AfterViewInit {
 
   setupData(data: any): void {
     // ALL NODES (everything related to the ego node)
+    console.log('setting up');
     if (!this.checkIfNodeExists(data.objectId)) {
       let root = data;
       root['objectType'] = data.objectType.toLowerCase();
@@ -340,9 +343,23 @@ export class NetworkComponent implements AfterViewInit {
       root['label'] = `${data.name} ${this.getTotalRelationshipCount(data) ? `(${this.getTotalRelationshipCount(data)})` : ''}`;
       root['color'] = this.colors.get(data.objectType.toLowerCase());
       root['hidden'] = false;
+
+      if (root.objectType === 'person') {
+        let bDay = root.dates.find((d: any) => {
+          return d.dateName === 'Birth';
+        });
+        root.startDate = bDay.date;
+
+        let dDay = root.dates.find((d: any) => {
+          return d.dateName === 'Death';
+        });
+
+        root.endDate = dDay.date;
+      }
+
       this.nodes.add(root);
 
-      if(!this.checkIfEventExists(root.objectId) && root.startDate) {
+      if (!this.checkIfEventExists(root.objectId) && root.startDate) {
         this.events.add({
           start: root.startDate,
           end: root.endDate ? root.endDate : root.startDate,
@@ -356,46 +373,70 @@ export class NetworkComponent implements AfterViewInit {
       }
     }
     // Build data conditionally
-    if(data.objectType === 'Event') {
+    if (data.objectType === 'event') {
+      // update event relationships
       for (let i = 0; i < data.events.length; i++) {
         let e = data.events[i];
         this.addDataItems(data, e, 'event');
       }
-    }
-
-    if(data.objectType === 'Event' || data.objectType === 'Theme') {
+      // update theme relationships
       for (let i = 0; i < data.themes.length; i++) {
         let e = data.themes[i];
         this.addDataItems(data, e, 'theme');
       }
-    }
-
-    if(data.objectType === 'Event' || data.objectType === 'Location') {
+      // update location relationships
       for (let i = 0; i < data.locations.length; i++) {
         let e = data.locations[i];
         this.addDataItems(data, e, 'location')
       }
-    }
-
-    if(data.objectType === 'Event' || data.objectType === 'HistoricEvent') {
+      // update historic event relationships
       for (let i = 0; i < data.historicEvents.length; i++) {
         let e = data.historicEvents[i];
         this.addDataItems(data, e, 'historicEvent');
       }
-    }
-
-    if(data.objectType === 'Event' || data.objectType === 'Person' || data.objectType === 'Organization') {
+      // update people/organization relationships
       for (let i = 0; i < data.peopleOrganizations.length; i++) {
         let e = data.peopleOrganizations[i];
         this.addDataItems(data, e, 'personOrganization')
       }
-    }
-    if(data.objectType === 'Event' || data.objectType === 'Source') {
+      // update source relationships
       for (let i = 0; i < data.sources.length; i++) {
         let e = data.sources[i];
         this.addDataItems(data, e, 'source');
       }
     }
+
+    if (data.objectType === 'person') {
+      this.db.getEventsByPersonOrganization(data).then((success) => {
+        success.forEach((s: any) => {
+          let relationship = s.peopleOrganizations.find((e: any) => {
+            return e.personOrganization === data.objectId;
+          }).relationship;
+          let newNode = {
+            event: s,
+            relationship: relationship // TODO: Reverse relationship value (map - string like in API)
+          };
+          this.addDataItems(data, newNode, 'event');
+        });
+      });
+    }
+
+    if (data.objectType === 'location') {
+      this.db.getEventsByLocation(data).then((success) => {
+        success.forEach((s: any) => {
+          let relationship = s.locations.find((e: any) => {
+            return e.location === data.objectId;
+          }).relationship;
+          let newNode = {
+            event: s,
+            relationship: relationship // TODO: Reverse relationship value (map - string like in API)
+          };
+          this.addDataItems(data, newNode, 'event');
+        });
+      });
+    }
+
+    // TODO: Other object starting points - Organizations, Themes, Locations, Sources?
   }
 
   checkIfNodeExists(objectId: string): boolean {
@@ -456,7 +497,7 @@ export class NetworkComponent implements AfterViewInit {
       root['shape'] = 'box';
       root['hidden'] = false;
       this.nodes.add(root);
-      if(!this.checkIfEventExists(root.objectId) && root.startDate) {
+      if (!this.checkIfEventExists(root.objectId) && root.startDate) {
         this.events.add({
           start: root.startDate,
           end: root.endDate ? root.endDate : root.startDate,
@@ -470,44 +511,64 @@ export class NetworkComponent implements AfterViewInit {
       }
     }
 
-    if (data.events) {
+    if (data.objectType === 'event') {
       for (let i = 0; i < data.events.length; i++) {
         let e = data.events[i];
         this.addDataItems(data, e, 'event');
       }
-    }
-    if (data.locations) {
       for (let i = 0; i < data.locations.length; i++) {
         let e = data.locations[i];
         this.addDataItems(data, e, 'location');
       }
-    }
 
-    if (data.peopleOrganizations) {
       for (let i = 0; i < data.peopleOrganizations.length; i++) {
         let e = data.peopleOrganizations[i];
         this.addDataItems(data, e, 'personOrganization');
       }
-    }
 
-    if (data.sources) {
       for (let i = 0; i < data.sources.length; i++) {
         let e = data.sources[i];
         this.addDataItems(data, e, 'source');
       }
-    }
 
-    if (data.themes) {
       for (let i = 0; i < data.themes.length; i++) {
         let e = data.themes[i];
         this.addDataItems(data, e, 'theme');
       }
-    }
 
-    if (data.historicEvents) {
       for (let i = 0; i < data.historicEvents.length; i++) {
         let e = data.historicEvents[i];
         this.addDataItems(data, e, 'historicEvent');
+      }
+    }
+
+    if (data.objectType === 'person') {
+      this.db.getEventsByPersonOrganization(data).then((success) => {
+        success.forEach((s: any) => {
+          let relationship = s.peopleOrganizations.find((e: any) => {
+            return e.personOrganization === data.objectId;
+          }).relationship;
+          let newNode = {
+            event: s,
+            relationship: relationship // TODO: Reverse relationship value (map - string like in API)
+          };
+          this.addDataItems(data, newNode, 'event');
+        });
+      });
+
+      if (data.objectType === 'location') {
+        this.db.getEventsByLocation(data).then((success) => {
+          success.forEach((s: any) => {
+            let relationship = s.locations.find((e: any) => {
+              return e.location === data.objectId;
+            }).relationship;
+            let newNode = {
+              event: s,
+              relationship: relationship // TODO: Reverse relationship value (map - string like in API)
+            };
+            this.addDataItems(data, newNode, 'event');
+          });
+        });
       }
     }
 
@@ -526,7 +587,7 @@ export class NetworkComponent implements AfterViewInit {
       root['shape'] = 'box';
       root['hidden'] = false;
       this.nodes.add(root);
-      if(!this.checkIfEventExists(root.objectId) && root.startDate) {
+      if (!this.checkIfEventExists(root.objectId) && root.startDate) {
         this.events.add({
           start: root.startDate,
           end: root.endDate ? root.endDate : root.startDate,
@@ -540,7 +601,7 @@ export class NetworkComponent implements AfterViewInit {
       }
     }
 
-    if(this.checkIfLinkExists(parent.objectId, event.objectId)) {
+    if (this.checkIfLinkExists(parent.objectId, event.objectId)) {
       return;
     }
 
@@ -563,6 +624,13 @@ export class NetworkComponent implements AfterViewInit {
   }
 
   addDataItems(parent: any, data: any, type: string): void {
+    // TODO: Why do we need the [type] here when accessing objectID's?
+    // Refactor this function
+    console.log(parent);
+    console.log(data);
+    console.log(data[type]);
+    console.log(type);
+    console.log('----------');
     if (!this.checkIfNodeExists(data[type].objectId)) {
       // create node and add to nodes
       let node = data[type];
@@ -582,7 +650,7 @@ export class NetworkComponent implements AfterViewInit {
           id: node.objectId,
           content: node.name,
           type: (node.objectType === 'event') ? 'point' : 'background',
-          style: (node.objectType === 'event')  ? `background-color: ${this.colors.get(type.toLowerCase())}; border-radius: 20px;` :  `background-color: ${this.colors.get(type.toLowerCase())}0D;`
+          style: (node.objectType === 'event') ? `background-color: ${this.colors.get(type.toLowerCase())}; border-radius: 20px;` : `background-color: ${this.colors.get(type.toLowerCase())}0D;`
         });
       }
 
@@ -810,6 +878,12 @@ export class NetworkComponent implements AfterViewInit {
   }
 
   getMinMaxDate(): void {
+    // if no start date setup some defaults
+    if(!this.events.min('start')) {
+      this.startDate = moment('01/05/1918', 'DD/MM/YYYY').year();
+      this.endDate = moment('31/12/2018', 'DD/MM/YYYY').year();
+      return;
+    };
     this.startDate = moment(this.events.min('start').start).year();
     this.endDate = moment(this.events.max('end').end).year();
   }
