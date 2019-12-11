@@ -233,7 +233,7 @@
     <mat-sidenav-content>
         <div id="options">
             <div class="no-margin">
-                <button mat-flat-button (click)="getList()"><mat-icon>list</mat-icon> show list</button>
+                <button mat-flat-button (click)="getList()"><mat-icon>list</mat-icon> show list</button><br>
                 <button mat-flat-button (click)="clearList()"><mat-icon>clear_all</mat-icon> hide list</button>
             </div>
             <div class="no-margin">
@@ -241,16 +241,23 @@
                 <button mat-flat-button (click)="toggleMouseBehavior()"><mat-icon>{{ mouseBehavior ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> toggle mouse behavior</button> <br>
                 <button mat-flat-button (click)="toggleBrushBehavior()"><mat-icon>{{ brushBehavior ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> toggle brush visibility</button> <br>
                 <button *ngIf="dataType == 'people'" mat-flat-button (click)="showExile()"><mat-icon>{{ showExiled ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> show exile</button> <br *ngIf="dataType === 'people'">
-                <button mat-flat-button (click)="toggleNames()"><mat-icon>{{ showNames ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> show names</button>
+                <button mat-flat-button (click)="toggleNames()"><mat-icon>{{ showNames ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> show names</button><br>
+                <button mat-flat-button (click)="invertTime()"><mat-icon>{{ flipTime ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> invert time</button>
                 <!-- <button mat-flat-button (click)="updateScales()"><mat-icon>zoom_in</mat-icon> apply zoom</button> -->
             </div>
             <!-- <div>
                 <mat-slide-toggle (change)="toggleBrush()">Brush</mat-slide-toggle>
             </div> -->
-            <mat-form-field>
-                <mat-label>Event Type Filter</mat-label>
-                <mat-select placeholder="Event Type Filter by" (selectionChange)="filterEventsByType($event.value)">
+            <!-- <mat-form-field>
+                <mat-label>Topic filter</mat-label>
+                <mat-select placeholder="Filter events by topic..." (selectionChange)="filterEventsByType($event.value)">
                     <mat-option *ngFor="let e of eventTypes" [value]="e">{{ e }}</mat-option>
+                </mat-select>
+            </mat-form-field> -->
+            <mat-form-field>
+                <mat-label>Node Size</mat-label>
+                <mat-select [(value)]="currentNodeSizing" placeholder="Node Size by" (selectionChange)="updateNodeSizing($event.value)">
+                    <mat-option *ngFor="let s of nodeSizes" [value]="s">{{ s }}</mat-option>
                 </mat-select>
             </mat-form-field>
             <mat-form-field>
@@ -311,7 +318,8 @@
             <h3>{{ displayDate(currentlySelectedMaxDate) }}
                 ({{ getDuration(currentlySelectedMinDate, currentlySelectedMaxDate)}} years)</h3>
         </div>
-        <div class="chrono-filter">
+        <!-- Historic Events Filter -->
+        <!-- <div class="chrono-filter">
             <mat-form-field>
                 <input matInput placeholder="Filter by historic period" [matAutocomplete]="autoChrono" [formControl]="histFilterCtrl">
                 <button mat-button matSuffix mat-icon-button aria-label="Clear" (click)="clearChronoAutoComplete()">
@@ -324,7 +332,7 @@
                     </mat-option>
                 </mat-autocomplete>
             </mat-form-field>
-        </div>
+        </div> -->
 
     </mat-sidenav-content>
 </mat-sidenav-container>
