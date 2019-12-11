@@ -111,12 +111,12 @@
                         </mat-list>
                     </mat-expansion-panel>
                 </mat-accordion>
-                </div>
+            </div>
             <div *ngIf="selectedObject.objectType === 'Person'">
                 <mat-chip-list>
                     <mat-chip *ngFor="let r of selectedObject.roles">{{ r }}</mat-chip>
                 </mat-chip-list>
-
+                
                 <p>{{ selectedObject.bio }}</p>
                 
                 <mat-accordion class="mat-expansion-panel-align">
