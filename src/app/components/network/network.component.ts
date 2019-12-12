@@ -867,6 +867,9 @@ export class NetworkComponent implements AfterViewInit {
           size: 12,
           color: '#000'
         },
+        shapeProperties: {
+          interpolation: false
+        }
         // borderWidth: 4
       },
       edges: {
@@ -875,7 +878,11 @@ export class NetworkComponent implements AfterViewInit {
       interaction: {
         hover: true
       },
+      layout : {
+        improvedLayout: false
+      },
       physics: {
+        stabilization: false,
         forceAtlas2Based: {
           springLength: 200
         },
