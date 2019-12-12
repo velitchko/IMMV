@@ -873,29 +873,34 @@ export class NetworkComponent implements AfterViewInit {
         // borderWidth: 4
       },
       edges: {
-        width: 4
+        width: 4,
+        smooth: {
+          enabled: true,
+          roundness: .7,
+          type: 'continuous'
+        }
       },
       interaction: {
         hover: true
       },
       layout : {
-        improvedLayout: false
+        improvedLayout: true
       },
       physics: {
-        stabilization: false,
+        stabilization: true,
         // forceAtlas2Based: {
         //   springLength: 200
         // },
-        minVelocity: 0.75,
+        // minVelocity: 0.75,
         // solver: 'forceAtlas2Based'
         solver: 'barnesHut',
         barnesHut: {
             gravitationalConstant: -10000,
             springConstant: 0.04,
-            centralGravity: 1,
-            springLength: 100,
-            damping: 0.5,
-            avoidOverlap: 1,
+        //     // centralGravity: 0,
+            springLength: 200,
+        //     damping: 0.5,
+            avoidOverlap: .5,
         },
       }
     };
