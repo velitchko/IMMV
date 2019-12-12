@@ -57,6 +57,8 @@ export class NetworkComponent implements AfterViewInit {
   timelineInitialized: boolean;
   loadingResults: boolean;
 
+  relationshipMap: Map<string, string>;
+
   constructor(private db: DatabaseService,
     private snackBar: MatSnackBar,
     @Inject(PLATFORM_ID) private _platformId: Object, private http: HttpClient) {
@@ -98,6 +100,22 @@ export class NetworkComponent implements AfterViewInit {
     this.mouseOver = false;
 
     this.selectedNode = null;
+
+    this.relationshipMap = new Map<string, string>();
+    this.relationshipMap.set('isVersionOf', 'hasVersion');
+    this.relationshipMap.set('hasVersion', 'isVersionOf');
+    this.relationshipMap.set('isPartOf', 'hasPart');
+    this.relationshipMap.set('hasPart', 'isPartOf');
+    this.relationshipMap.set('isReferencedBy', 'references');
+    this.relationshipMap.set('references', 'isReferencedBy');
+    this.relationshipMap.set('isFormatOf', 'hasFormat');
+    this.relationshipMap.set('hasFormat', 'isFormatOf');
+    this.relationshipMap.set('isBasedOn', 'isBasisFor');
+    this.relationshipMap.set('isBasisFor', 'isBasedOn');
+    this.relationshipMap.set('isRequiredBy', 'requires');
+    this.relationshipMap.set('requires', 'isRequiredBy');
+    this.relationshipMap.set('isReplacedBy', 'replaces');
+    this.relationshipMap.set('replaces', 'isReplacedBy');
 
     this.searchCtrl.valueChanges
       .pipe(
@@ -333,9 +351,8 @@ export class NetworkComponent implements AfterViewInit {
     return this.events.get(id);
   }
 
-  setupData(data: any): void {
+  setupData(data: Event & PersonOrganization & Location & HistoricEvent & Source & Theme): void {
     // ALL NODES (everything related to the ego node)
-    console.log('setting up');
     if (!this.checkIfNodeExists(data.objectId)) {
       let root = data;
       root['objectType'] = data.objectType.toLowerCase();
@@ -375,46 +392,42 @@ export class NetworkComponent implements AfterViewInit {
     // Build data conditionally
     if (data.objectType === 'event') {
       // update event relationships
-      for (let i = 0; i < data.events.length; i++) {
-        let e = data.events[i];
+      data.events.forEach((e: { event: Event, relationship: string }) => {
         this.addDataItems(data, e, 'event');
-      }
+      });
       // update theme relationships
-      for (let i = 0; i < data.themes.length; i++) {
-        let e = data.themes[i];
+      data.themes.forEach((e: { theme: Theme, relationship: string }) => {
         this.addDataItems(data, e, 'theme');
-      }
+      });
       // update location relationships
-      for (let i = 0; i < data.locations.length; i++) {
-        let e = data.locations[i];
+      data.locations.forEach((e: { location: Location, relationship: string }) => {
         this.addDataItems(data, e, 'location')
-      }
+      });
       // update historic event relationships
-      for (let i = 0; i < data.historicEvents.length; i++) {
-        let e = data.historicEvents[i];
+      data.historicEvents.forEach((e: { historicEvent: HistoricEvent, relationship: string }) => {
         this.addDataItems(data, e, 'historicEvent');
-      }
+      });
       // update people/organization relationships
-      for (let i = 0; i < data.peopleOrganizations.length; i++) {
-        let e = data.peopleOrganizations[i];
+      data.peopleOrganizations.forEach((e: { personOrganization: PersonOrganization, relationship: string }) => {
         this.addDataItems(data, e, 'personOrganization')
-      }
+      });
       // update source relationships
-      for (let i = 0; i < data.sources.length; i++) {
-        let e = data.sources[i];
+      data.sources.forEach((e: { source: Source, relationship: string}) => {
         this.addDataItems(data, e, 'source');
-      }
+      });
     }
 
     if (data.objectType === 'person') {
-      this.db.getEventsByPersonOrganization(data).then((success) => {
+      this.db.getEventsByPersonOrganization(data).then((success: Array<Event>) => {
         success.forEach((s: any) => {
-          let relationship = s.peopleOrganizations.find((e: any) => {
+          let relationship = s.peopleOrganizations.find((e: { personOrganization: any, relationship: string }) => {
+            // personOrganization usually string sometimes personorganization object
             return e.personOrganization === data.objectId;
           }).relationship;
+
           let newNode = {
             event: s,
-            relationship: relationship // TODO: Reverse relationship value (map - string like in API)
+            relationship: this.relationshipMap.get(relationship)
           };
           this.addDataItems(data, newNode, 'event');
         });
@@ -422,21 +435,76 @@ export class NetworkComponent implements AfterViewInit {
     }
 
     if (data.objectType === 'location') {
-      this.db.getEventsByLocation(data).then((success) => {
-        success.forEach((s: any) => {
-          let relationship = s.locations.find((e: any) => {
+      this.db.getEventsByLocation(data).then((success: Array<Event>) => {
+        success.forEach((s: Event) => {
+          let relationship = s.locations.find((e: { location: any, relationship: string }) => {
+            // location usually string sometimes location object
             return e.location === data.objectId;
+            
           }).relationship;
+
           let newNode = {
             event: s,
-            relationship: relationship // TODO: Reverse relationship value (map - string like in API)
+            relationship: this.relationshipMap.get(relationship)
           };
           this.addDataItems(data, newNode, 'event');
         });
       });
     }
 
-    // TODO: Other object starting points - Organizations, Themes, Locations, Sources?
+    if(data.objectType === 'source') {
+      this.db.getEventsBySource(data).then((success: Array<Event>) => {
+        success.forEach((s: Event) => {
+          let relationship = s.sources.find((e: { source: any, relationship: string }) => {
+            // source usually string sometimes source object
+            return e.source === data.objectId;
+          }).relationship;
+
+          let newNode = {
+            event: s,
+            relationship: this.relationshipMap.get(relationship)
+          };
+
+          this.addDataItems(data, newNode, 'event');
+        });
+      });
+    }
+
+    if(data.objectType === 'historicevent') {
+      this.db.getEventsByHistoricEvent(data).then((success: Array<Event>) => {
+        success.forEach((s: Event) => {
+          let relationship = s.historicEvents.find((e: { historicEvent: any, relationship: string }) => {
+            // historicEvent usually string sometimes historicEvent object
+            return e.historicEvent == data.objectId;
+          }).relationship;
+
+          let newNode = {
+            event: s,
+            relationship: this.relationshipMap.get(relationship)
+          };
+
+          this.addDataItems(data, newNode, 'event');
+        });
+      });
+    }
+
+    if(data.objectType === 'theme') {
+      this.db.getEventsByTheme(data).then((success: Array<Event>) => {
+        success.forEach((s: Event) => {
+          let relationship = s.themes.find((e: { theme: any, relationship: string }) => {
+            // theme usually string sometimes theme object
+            return e.theme === data.objectId;
+          }).relationship;
+
+          let newNode = {
+            event: s,
+            relationship: this.relationshipMap.get(relationship)
+          };
+
+          this.addDataItems(data, newNode, 'event');
+        });
+      });
+    }
   }
 
   checkIfNodeExists(objectId: string): boolean {
@@ -487,7 +555,7 @@ export class NetworkComponent implements AfterViewInit {
     this.selectedNodes = new Set<any>();
   }
 
-  updateData(data: any): void {
+  updateData(data: Event & PersonOrganization & Location & HistoricEvent & Source & Theme): void {
     if (!this.checkIfNodeExists(data.objectId)) {
       let root = data;
       root['objectType'] = 'event';
@@ -511,67 +579,122 @@ export class NetworkComponent implements AfterViewInit {
       }
     }
 
-    if (data.objectType === 'event') {
-      for (let i = 0; i < data.events.length; i++) {
-        let e = data.events[i];
+     // Build data conditionally
+     if (data.objectType === 'event') {
+      // update event relationships
+      data.events.forEach((e: { event: Event, relationship: string }) => {
         this.addDataItems(data, e, 'event');
-      }
-      for (let i = 0; i < data.locations.length; i++) {
-        let e = data.locations[i];
-        this.addDataItems(data, e, 'location');
-      }
-
-      for (let i = 0; i < data.peopleOrganizations.length; i++) {
-        let e = data.peopleOrganizations[i];
-        this.addDataItems(data, e, 'personOrganization');
-      }
-
-      for (let i = 0; i < data.sources.length; i++) {
-        let e = data.sources[i];
-        this.addDataItems(data, e, 'source');
-      }
-
-      for (let i = 0; i < data.themes.length; i++) {
-        let e = data.themes[i];
+      });
+      // update theme relationships
+      data.themes.forEach((e: { theme: Theme, relationship: string }) => {
         this.addDataItems(data, e, 'theme');
-      }
-
-      for (let i = 0; i < data.historicEvents.length; i++) {
-        let e = data.historicEvents[i];
+      });
+      // update location relationships
+      data.locations.forEach((e: { location: Location, relationship: string }) => {
+        this.addDataItems(data, e, 'location')
+      });
+      // update historic event relationships
+      data.historicEvents.forEach((e: { historicEvent: HistoricEvent, relationship: string }) => {
         this.addDataItems(data, e, 'historicEvent');
-      }
+      });
+      // update people/organization relationships
+      data.peopleOrganizations.forEach((e: { personOrganization: PersonOrganization, relationship: string }) => {
+        this.addDataItems(data, e, 'personOrganization')
+      });
+      // update source relationships
+      data.sources.forEach((e: { source: Source, relationship: string}) => {
+        this.addDataItems(data, e, 'source');
+      });
     }
 
     if (data.objectType === 'person') {
-      this.db.getEventsByPersonOrganization(data).then((success) => {
+      this.db.getEventsByPersonOrganization(data).then((success: Array<Event>) => {
         success.forEach((s: any) => {
-          let relationship = s.peopleOrganizations.find((e: any) => {
+          let relationship = s.peopleOrganizations.find((e: { personOrganization: any, relationship: string }) => {
+            // personOrganization usually string sometimes personorganization object
             return e.personOrganization === data.objectId;
           }).relationship;
+
           let newNode = {
             event: s,
-            relationship: relationship // TODO: Reverse relationship value (map - string like in API)
+            relationship: this.relationshipMap.get(relationship)
           };
           this.addDataItems(data, newNode, 'event');
         });
       });
-
-      if (data.objectType === 'location') {
-        this.db.getEventsByLocation(data).then((success) => {
-          success.forEach((s: any) => {
-            let relationship = s.locations.find((e: any) => {
-              return e.location === data.objectId;
-            }).relationship;
-            let newNode = {
-              event: s,
-              relationship: relationship // TODO: Reverse relationship value (map - string like in API)
-            };
-            this.addDataItems(data, newNode, 'event');
-          });
-        });
-      }
     }
 
+    if (data.objectType === 'location') {
+      this.db.getEventsByLocation(data).then((success: Array<Event>) => {
+        success.forEach((s: Event) => {
+          let relationship = s.locations.find((e: { location: any, relationship: string }) => {
+            // location usually string sometimes location object
+            return e.location === data.objectId;
+            
+          }).relationship;
+
+          let newNode = {
+            event: s,
+            relationship: this.relationshipMap.get(relationship)
+          };
+          this.addDataItems(data, newNode, 'event');
+        });
+      });
+    }
+
+    if(data.objectType === 'source') {
+      this.db.getEventsBySource(data).then((success: Array<Event>) => {
+        success.forEach((s: Event) => {
+          let relationship = s.sources.find((e: { source: any, relationship: string }) => {
+            // source usually string sometimes source object
+            return e.source === data.objectId;
+          }).relationship;
+
+          let newNode = {
+            event: s,
+            relationship: this.relationshipMap.get(relationship)
+          };
+
+          this.addDataItems(data, newNode, 'event');
+        });
+      });
+    }
+
+    if(data.objectType === 'historicevent') {
+      this.db.getEventsByHistoricEvent(data).then((success: Array<Event>) => {
+        success.forEach((s: Event) => {
+          let relationship = s.historicEvents.find((e: { historicEvent: any, relationship: string }) => {
+            // historicEvent usually string sometimes historicEvent object
+            return e.historicEvent == data.objectId;
+          }).relationship;
+
+          let newNode = {
+            event: s,
+            relationship: this.relationshipMap.get(relationship)
+          };
+
+          this.addDataItems(data, newNode, 'event');
+        });
+      });
+    }
+
+    if(data.objectType === 'theme') {
+      this.db.getEventsByTheme(data).then((success: Array<Event>) => {
+        success.forEach((s: Event) => {
+          let relationship = s.themes.find((e: { theme: any, relationship: string }) => {
+            // theme usually string sometimes theme object
+            return e.theme === data.objectId;
+          }).relationship;
+
+          let newNode = {
+            event: s,
+            relationship: this.relationshipMap.get(relationship)
+          };
+
+          this.addDataItems(data, newNode, 'event');
+        });
+      });
+    }
 
     this.timeline.focus(this.events.map((e: any) => { return e.id; }), { animation: { duration: 250, easingFunction: 'easeInOutCubic' } });
     this.getMinMaxDate();
