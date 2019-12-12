@@ -270,10 +270,8 @@ export class NetworkComponent implements AfterViewInit {
       this.setupData(data);
       this.initNetwork();
       this.initTimeline();
-      this.populateCountByTypeAndYear();
     } else {
       this.updateData(data);
-      this.populateCountByTypeAndYear();
     }
   }
 
