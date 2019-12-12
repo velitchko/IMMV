@@ -3,6 +3,7 @@ import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import * as mongoose from 'mongoose';
 import * as path from 'path';
+import { Source } from './app/models/source';
 let EventSchema = require('./database/schemas/event');
 let HistoricEventSchema = require('./database/schemas/historicevent');
 let LocationSchema = require('./database/schemas/location');
@@ -350,7 +351,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
   });
 
   api.post('/api/v1/getRelationshipCount', (req: express.Request, res: express.Response) => { 
-    let objectType = req.body.objectType;
+    let objectType = req.body.objectType.toLowerCase();
     let objectId = req.body.objectId;
     switch(objectType) {
       case 'event': 
@@ -368,26 +369,10 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
           relCnt += result.themes.length;
           res.status(200).json({ "message": "OK", results: relCnt})
         });
-      case 'person':
-          PersonOrganizationSchema.findById({_id: mongoose.Types.ObjectId(objectId)}, (err: Error, result: any) => {
-            if(err) { 
-              console.log(err);
-              res.status(500).json({ "message": "ERROR", "error": err });
-            }
-            let relCnt = 0;
-            relCnt += result.peopleOrganizations.length;
-            let query = { peopleOrganizations: { $elemMatch: { personOrganization: objectId } } };
-            EventSchema.find(query, (err: Error, results: any) => {
-              if(err) { 
-                console.log(err);
-                return;
-              }
-              if(results) relCnt += results.length;
-              res.status(200).json({ "message": "OK", results: relCnt });
-            });
-          });
-          return;
+      // all three cases together
       case 'organization':
+      case 'person':
+      case 'personorganization':
           PersonOrganizationSchema.findById({_id: mongoose.Types.ObjectId(objectId)}, (err: Error, result: any) => {
             if(err) { 
               console.log(err);
