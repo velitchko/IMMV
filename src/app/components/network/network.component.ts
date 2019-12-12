@@ -895,8 +895,7 @@ export class NetworkComponent implements AfterViewInit {
             centralGravity: 1,
             springLength: 100,
             damping: 0.5,
-            adoivOverlap: 1,
-            
+            avoidOverlap: 1,
         },
       }
     };
