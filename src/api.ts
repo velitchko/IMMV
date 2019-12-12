@@ -349,6 +349,146 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
     });
   });
 
+  api.post('/api/v1/getRelationshipCount', (req: express.Request, res: express.Response) => { 
+    let objectType = req.body.objectType;
+    let objectId = req.body.objectId;
+    switch(objectType) {
+      case 'event': 
+        EventSchema.findById({_id: mongoose.Types.ObjectId(objectId)}, (err: Error, result: any) => {
+          if(err) { 
+            console.log(err);
+            res.status(500).json({ "message": "ERROR", "error": err });
+          }
+          let relCnt = 0;
+          relCnt += result.events.length;
+          relCnt += result.historicEvents.length;
+          relCnt += result.peopleOrganizations.length;
+          relCnt += result.sources.length;
+          relCnt += result.locations.length;
+          relCnt += result.themes.length;
+          res.status(200).json({ "message": "OK", results: relCnt})
+        });
+      case 'person':
+          PersonOrganizationSchema.findById({_id: mongoose.Types.ObjectId(objectId)}, (err: Error, result: any) => {
+            if(err) { 
+              console.log(err);
+              res.status(500).json({ "message": "ERROR", "error": err });
+            }
+            let relCnt = 0;
+            relCnt += result.peopleOrganizations.length;
+            let query = { peopleOrganizations: { $elemMatch: { personOrganization: objectId } } };
+            EventSchema.find(query, (err: Error, results: any) => {
+              if(err) { 
+                console.log(err);
+                return;
+              }
+              if(results) relCnt += results.length;
+              res.status(200).json({ "message": "OK", results: relCnt });
+            });
+          });
+          return;
+      case 'organization':
+          PersonOrganizationSchema.findById({_id: mongoose.Types.ObjectId(objectId)}, (err: Error, result: any) => {
+            if(err) { 
+              console.log(err);
+              res.status(500).json({ "message": "ERROR", "error": err });
+            }
+            
+            let relCnt = 0;
+            relCnt += result.peopleOrganizations.length;
+            let query = { peopleOrganizations: { $elemMatch: { personOrganization: objectId } } };
+            EventSchema.find(query, (err: Error, results: any) => {
+              if(err) { 
+                console.log(err);
+                return;
+              }
+              if(results) relCnt += results.length;
+              res.status(200).json({ "message": "OK", results: relCnt });
+            });
+          });
+          return;
+      case 'theme':
+          ThemeSchema.findById({_id: mongoose.Types.ObjectId(objectId)}, (err: Error, result: any) => {
+            if(err) { 
+              console.log(err);
+              res.status(500).json({ "message": "ERROR", "error": err });
+            }
+            let relCnt = 0;
+            relCnt += result.themes.length;
+            let query = { themes: { $elemMatch: { theme: objectId } } };
+            EventSchema.find(query, (err: Error, results: any) => {
+              if(err) { 
+                console.log(err);
+                return;
+              }
+              if(results) relCnt += results.length;
+              res.status(200).json({ "message": "OK", results: relCnt });
+            });
+          });
+          return;
+      case 'location':
+          LocationSchema.findById({_id: mongoose.Types.ObjectId(objectId)}, (err: Error, result: any) => {
+            if(err) { 
+              console.log(err);
+              res.status(500).json({ "message": "ERROR", "error": err });
+            }
+            let relCnt = 0;
+            relCnt += result.locations.length;
+            let query = { locations: { $elemMatch: { location: objectId } } };
+            EventSchema.find(query, (err: Error, results: any) => {
+              if(err) { 
+                console.log(err);
+                return;
+              }
+              if(results) relCnt += results.length;
+              res.status(200).json({ "message": "OK", results: relCnt });
+            });
+          });
+          return;
+      case 'historicevent':
+          HistoricEventSchema.findById({_id: mongoose.Types.ObjectId(objectId)}, (err: Error, result: any) => {
+            if(err) { 
+              console.log(err);
+              res.status(500).json({ "message": "ERROR", "error": err });
+            }
+            let relCnt = 0;
+            relCnt += result.historicEvents.length;
+            let query = { historicEvents: { $elemMatch: { historicEvent: objectId } } };
+            EventSchema.find(query, (err: Error, results: any) => {
+              if(err) { 
+                console.log(err);
+                return;
+              }
+              if(results) relCnt += results.length;
+              res.status(200).json({ "message": "OK", results: relCnt });
+            });
+          });
+          return;
+      case 'source':
+          SourceSchema.findById({_id: mongoose.Types.ObjectId(objectId)}, (err: Error, result: any) => {
+            if(err) { 
+              console.log(err);
+              res.status(500).json({ "message": "ERROR", "error": err });
+            }
+            let relCnt = 0;
+            relCnt += result.sources.length;
+            let query = { sources: { $elemMatch: { source: objectId } } };
+            EventSchema.find(query, (err: Error, results: any) => {
+              if(err) { 
+                console.log(err);
+                return;
+              }
+              if(results) relCnt += results.length;
+              res.status(200).json({ "message": "OK", results: relCnt });
+            });
+          });
+          return;
+      default: 
+        res.status(400).json({ "message": "ERROR", "error": "Object type could not be detected." });
+        return;
+    }
+  });
+
   api.post('/api/v1/getLocationsByTheme', (req: express.Request, res: express.Response) => {
     let themeId = req.body.theme;
 
