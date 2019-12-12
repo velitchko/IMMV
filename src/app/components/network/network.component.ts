@@ -965,14 +965,9 @@ export class NetworkComponent implements AfterViewInit {
   }
 
   getMinMaxDate(): void {
-    // if no start date setup some defaults
-    if(!this.events.min('start')) {
-      this.startDate = moment('01/05/1918', 'DD/MM/YYYY').year();
-      this.endDate = moment('31/12/2018', 'DD/MM/YYYY').year();
-      return;
-    };
-    this.startDate = moment(this.events.min('start').start).year();
-    this.endDate = moment(this.events.max('end').end).year();
+    let minMax = this.timeline.getItemRange();
+    this.startDate = moment(minMax.min).year();
+    this.endDate = moment(minMax.max).year();
   }
 
   initTimeline(): void {
@@ -980,9 +975,10 @@ export class NetworkComponent implements AfterViewInit {
       minHeight: '100%',
       maxHeight: '100%',
       stack: true,
+      start: moment('01/05/1918', 'DD/MM/YYYY'),
+      end: moment('31/12/2018', 'DD/MM/YYYY')
       // snap: true
     };
-
     this.timeline = new Timeline(this.timelineContainer.nativeElement, this.events, options);
 
     this.timeline.on('click', ($event: any) => {
