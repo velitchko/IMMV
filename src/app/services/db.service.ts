@@ -363,6 +363,28 @@ export class DatabaseService {
 
     }
 
+    async getRelationshipCount(objectId: string, objectType: string): Promise<any> {
+        let promise = new Promise<any>((resolve, reject) => {
+            let body = {
+                objectId: objectId,
+                objectType: objectType
+            };
+
+            this.http.post(environment.API_URL + 'getRelationshipCount/', body).subscribe(
+                (response: any) => {
+                    if(response.message === 'OK') {
+                        resolve(response.results);
+                    } else {
+                        console.log(response.message);
+                        console.log(response.err);
+                        reject(0);
+                    }
+                });
+        });
+
+        return promise;
+    }
+
     getPeople(): Array<PersonOrganization> {
         return this.people;
     }
