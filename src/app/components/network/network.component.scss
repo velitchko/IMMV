@@ -123,12 +123,14 @@ stroke: #999;
     left: 0em;
 
     .start {
-        display: flex;
-        align-self: flex-start;
+        position: absolute;
+        top: 0em;
+        left: 0.25em;
     }
 
     .end {
-        display: flex;
-        align-self: flex-end;
+        position: absolute;
+        top: 0em;
+        right: 0.25em;
     }
 }
