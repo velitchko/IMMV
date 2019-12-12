@@ -1,13 +1,8 @@
-let ThemeSchema = require('./themes');
 let EventSchema = require('./event');
 let mongoose = require('mongoose');
-let cli = require('cli-progress');
-
-let db = require('../data_schemes/db.config');
 
 mongoose.connect('mongodb://localhost/immv2');
 
-const progressBar = new cli.Bar({}, cli.Presets.shades_classic);
 
 injectTheme();
 
@@ -19,12 +14,16 @@ function injectTheme() {
         }
 
         events.forEach((e) => {
-            if(e.name.toLowerCase().includes('festwochen')) { //('1. Mai')) {
+            if(e.name.toLowerCase().includes('festwochen')) { //('1. mai')) {
+                console.log(e.name);
                 let theme = {
-                    theme: mongoose.Types.ObjectId('5d949c5334492200a542f2e3'), // 1. Mai 5d94990f34492200a542f2da
+                    theme: mongoose.Types.ObjectId('5dc291ab535e330852ea3b2a'), // 1. Mai 5dc14407535e330852ea2de6
                     relationship: 'references'
                 }
                 EventSchema.findOneAndUpdate({ _id: e._id}, { $push: { themes: theme}}, (err, done) => {
+                    if(err) {
+                        console.log(err);
+                    }
                     console.log(done.name + ' updated');
                 });
             }
