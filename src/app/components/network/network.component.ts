@@ -838,12 +838,17 @@ export class NetworkComponent implements AfterViewInit {
           this.populateCountByTypeAndYear();
         });
         return;
-      case 'personorganization':
+      case 'person':
         this.db.getAsPersonOrganization(item).then((success) => {
           this.updateData(success);
           this.populateCountByTypeAndYear();
         });
         return;
+      case 'organization': 
+        this.db.getAsPersonOrganization(item).then((success) => {
+          this.updateData(success);
+          this.populateCountByTypeAndYear();
+        });
       default: return;
     }
   }
