@@ -883,11 +883,21 @@ export class NetworkComponent implements AfterViewInit {
       },
       physics: {
         stabilization: false,
-        forceAtlas2Based: {
-          springLength: 200
-        },
+        // forceAtlas2Based: {
+        //   springLength: 200
+        // },
         minVelocity: 0.75,
-        solver: 'forceAtlas2Based'
+        // solver: 'forceAtlas2Based'
+        solver: 'barnesHut',
+        barnesHut: {
+            gravitationalConstant: -10000,
+            springConstant: 0.04,
+            centralGravity: 1,
+            springLength: 100,
+            damping: 0.5,
+            adoivOverlap: 1,
+            
+        },
       }
     };
 
