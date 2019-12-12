@@ -147,51 +147,6 @@ export class NetworkComponent implements AfterViewInit {
     return countPerYear;
   }
 
-  // TODO: Check this function something wrong
-  populateCountByTypeAndYear(): void {
-    this.countByTypeAndYear = new Map<string, Map<string, number>>();
-    // TODO: rethink defaults if no start or end date exists
-    let minDate = moment(this.nodes.min('startDate') ? this.nodes.min('startDate').startDate : moment('01/05/1918', 'DD/MM/YYYY'));
-    let maxDate = moment(this.nodes.max('endDate') ? this.nodes.max('endDate').endDate : moment('01/05/1918', 'DD/MM/YYYY'));
-
-    let map = this.getCountPerYear(minDate.toDate(), maxDate.toDate());
-    this.nodes.forEach((node: any) => {
-      if (node.objectType.includes('event')) {
-        if (this.countByTypeAndYear.has(node.objectType)) {
-          let exists = this.countByTypeAndYear.get(node.objectType);
-          exists.forEach((value: number, key: string) => {
-            // inBetween(start, end, granularity, inclusion)
-            if (moment.utc(key).isBetween(moment(node.startDate), moment(node.endDate), 'years', '[]')) {
-              // inc value  
-              exists.set(key, exists.get(key) + 1);
-            }
-          });
-        } else {
-          // for ever new node type we should create a copy of the map
-          let newMap = new Map<string, number>(map);
-          newMap.forEach((value: number, key: string) => {
-            if (moment.utc(key).isBetween(moment(node.startDate), moment(node.endDate), 'years', '[]')) {
-              // inc value  
-              newMap.set(key, newMap.get(key) + 1);
-            }
-          });
-          this.countByTypeAndYear.set(node.objectType, newMap);
-        }
-      }
-    });
-
-    // convert to array so d3 can understand the data
-    let outputArr = new Array<any>();
-    this.countByTypeAndYear.forEach((oValue: Map<string, number>, oKey: string) => {
-      let tmpArr = new Array<any>();
-      oValue.forEach((iValue: number, iKey: string) => {
-        tmpArr.push({ date: iKey, number: iValue });
-      });
-      outputArr.push({ name: oKey, values: tmpArr });
-    });
-
-  }
-
   highlightNodeType($event: string): void {
     this.clearHighlightedNodesLinks();
     this.typeSelected = true;
