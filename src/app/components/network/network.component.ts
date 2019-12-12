@@ -716,6 +716,10 @@ export class NetworkComponent implements AfterViewInit {
           type: (node.objectType === 'event') ? 'point' : 'background',
           style: (node.objectType === 'event') ? `background-color: ${this.colors.get(type.toLowerCase())}; border-radius: 20px;` : `background-color: ${this.colors.get(type.toLowerCase())}0D;`
         });
+        // update everytime we get a new event
+        this.timeline.fit();
+        // update min max dates
+        this.getMinMaxDate();
       }
 
       // create links for node and add to links
