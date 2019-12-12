@@ -45,7 +45,7 @@
     "leaflet.markercluster": "^1.4.1",
     "leaflet.polyline.snakeanim": "^0.1.1",
     "moment-iterator": "^1.0.8",
-    "mongoose": "^5.4.7",
+    "mongoose": "^5.7.8",
     "pdf-image": "^2.0.0",
     "polyline-encoded": "0.0.8",
     "rxjs": "^6.3.3",
