@@ -279,7 +279,7 @@ export class NetworkComponent implements AfterViewInit {
     this.clearHighlightedNodesLinks();
   }
 
-  selectedItem(item: Event | PersonOrganization | Location | Theme | Source | HistoricEvent): void {
+  selectedItem(item: Event & PersonOrganization & Location & Theme & Source & HistoricEvent): void {
     switch (item.objectType) {
       case 'Event':
         this.db.getAsEvent(item).then((success) => { this.update(success); });
