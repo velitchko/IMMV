@@ -334,30 +334,22 @@ export class NetworkComponent implements AfterViewInit {
     return from(this.db.findObjects(filterValue));
   }
 
-  getTotalRelationshipCount(object: any) {
-    let count = 0;
-
-    if (object.events) count += object.events.length;
-    if (object.locations) count += object.locations.length;
-    if (object.historicEvents) count += object.historicEvents.length;
-    if (object.themes) count += object.themes.length;
-    if (object.sources) count += object.sources.length;
-    if (object.peopleOrganizations) count += object.peopleOrganizations.length;
-
-    return count;
+  getTotalRelationshipCount(object: Event | PersonOrganization | Location | HistoricEvent | Source | Theme): Promise<any> {
+    return this.db.getRelationshipCount(object.objectId, object.objectType);
   }
 
   checkIfEventExists(id: string): boolean {
     return this.events.get(id);
   }
 
-  setupData(data: Event & PersonOrganization & Location & HistoricEvent & Source & Theme): void {
+  async setupData(data: Event & PersonOrganization & Location & HistoricEvent & Source & Theme): Promise<any> {
     // ALL NODES (everything related to the ego node)
     if (!this.checkIfNodeExists(data.objectId)) {
       let root = data;
       root['objectType'] = data.objectType.toLowerCase();
       root['id'] = data.objectId;
-      root['label'] = `${data.name} ${this.getTotalRelationshipCount(data) ? `(${this.getTotalRelationshipCount(data)})` : ''}`;
+      let count = await this.getTotalRelationshipCount(data);
+      root['label'] = `${data.name} (${count})`;
       root['color'] = this.colors.get(data.objectType.toLowerCase());
       root['hidden'] = false;
 
@@ -555,12 +547,13 @@ export class NetworkComponent implements AfterViewInit {
     this.selectedNodes = new Set<any>();
   }
 
-  updateData(data: Event & PersonOrganization & Location & HistoricEvent & Source & Theme): void {
+  async updateData(data: Event & PersonOrganization & Location & HistoricEvent & Source & Theme): Promise<any> {
     if (!this.checkIfNodeExists(data.objectId)) {
       let root = data;
       root['objectType'] = 'event';
       root['id'] = root.objectId;
-      root['label'] = `${root.name} ${this.getTotalRelationshipCount(root) ? `(${this.getTotalRelationshipCount(root)})` : ''})`;
+      let count = await this.getTotalRelationshipCount(root);
+      root['label'] = `${root.name} ${count})`;
       root['color'] = this.colors.get('event');
       root['shape'] = 'box';
       root['hidden'] = false;
@@ -580,7 +573,7 @@ export class NetworkComponent implements AfterViewInit {
     }
 
      // Build data conditionally
-     if (data.objectType === 'event') {
+      if (data.objectType === 'event') {
       // update event relationships
       data.events.forEach((e: { event: Event, relationship: string }) => {
         this.addDataItems(data, e, 'event');
@@ -700,12 +693,13 @@ export class NetworkComponent implements AfterViewInit {
     this.getMinMaxDate();
   }
 
-  addEvent(event: Event, parent: any): void {
+  async addEvent(event: Event, parent: any): Promise<any> {
     if (!this.checkIfNodeExists(event.objectId)) {
       let root = event;
       root['objectType'] = 'event';
       root['id'] = root.objectId;
-      root['label'] = `${root.name} ${this.getTotalRelationshipCount(root) ? `(${this.getTotalRelationshipCount(root)})` : ''})`;
+      let count = await this.getTotalRelationshipCount(root);
+      root['label'] = `${root.name} (${count})`;
       root['color'] = this.colors.get('event');
       root['shape'] = 'box';
       root['hidden'] = false;
@@ -746,13 +740,14 @@ export class NetworkComponent implements AfterViewInit {
     });
   }
 
-  addDataItems(parent: any, data: any, type: string): void {
+  async addDataItems(parent: any, data: any, type: string): Promise<any> {
     if (!this.checkIfNodeExists(data[type].objectId)) {
       // create node and add to nodes
       let node = data[type];
       node['objectType'] = type.toLowerCase();
       node['id'] = data[type].objectId;
-      node['label'] = `${data[type].name} ${this.getTotalRelationshipCount(data[type]) ? `(${this.getTotalRelationshipCount(data[type])})` : ''}`;
+      let count = await this.getTotalRelationshipCount(data[type]);
+      node['label'] = `${data[type].name} (${count})`;
       node['color'] = this.colors.get(type.toLowerCase());
       node['hidden'] = false;
       this.nodes.add(node);
