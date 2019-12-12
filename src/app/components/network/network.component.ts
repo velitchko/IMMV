@@ -747,13 +747,6 @@ export class NetworkComponent implements AfterViewInit {
   }
 
   addDataItems(parent: any, data: any, type: string): void {
-    // TODO: Why do we need the [type] here when accessing objectID's?
-    // Refactor this function
-    console.log(parent);
-    console.log(data);
-    console.log(data[type]);
-    console.log(type);
-    console.log('----------');
     if (!this.checkIfNodeExists(data[type].objectId)) {
       // create node and add to nodes
       let node = data[type];
