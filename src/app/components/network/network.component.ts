@@ -758,19 +758,16 @@ export class NetworkComponent implements AfterViewInit {
       case 'event':
         this.db.getAsEvent(item).then((success) => {
           this.updateData(success);
-          this.populateCountByTypeAndYear();
         });
         return;
       case 'historicevent':
         this.db.getAsHistoricEvent(item).then((success) => {
           this.updateData(success);
-          this.populateCountByTypeAndYear();
         });
         return;
       case 'location':
         this.db.getAsLocation(item).then((success) => {
           this.updateData(success);
-          this.populateCountByTypeAndYear();
         });
         return;
       case 'theme':
@@ -781,25 +778,21 @@ export class NetworkComponent implements AfterViewInit {
         // get themes too
         this.db.getAsTheme(item).then((success) => {
           this.updateData(success);
-          this.populateCountByTypeAndYear();
         });
         return;
       case 'source':
         this.db.getAsSource(item).then((success) => {
           this.updateData(success);
-          this.populateCountByTypeAndYear();
         });
         return;
       case 'person':
         this.db.getAsPersonOrganization(item).then((success) => {
           this.updateData(success);
-          this.populateCountByTypeAndYear();
         });
         return;
       case 'organization': 
         this.db.getAsPersonOrganization(item).then((success) => {
           this.updateData(success);
-          this.populateCountByTypeAndYear();
         });
       default: return;
     }
