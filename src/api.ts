@@ -369,6 +369,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
           relCnt += result.themes.length;
           res.status(200).json({ "message": "OK", results: relCnt})
         });
+        break;
       // all three cases together
       case 'organization':
       case 'person':
@@ -378,7 +379,6 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
               console.log(err);
               res.status(500).json({ "message": "ERROR", "error": err });
             }
-            
             let relCnt = 0;
             relCnt += result.peopleOrganizations.length;
             let query = { peopleOrganizations: { $elemMatch: { personOrganization: objectId } } };
@@ -391,7 +391,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
               res.status(200).json({ "message": "OK", results: relCnt });
             });
           });
-          return;
+          break;
       case 'theme':
           ThemeSchema.findById({_id: mongoose.Types.ObjectId(objectId)}, (err: Error, result: any) => {
             if(err) { 
@@ -410,7 +410,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
               res.status(200).json({ "message": "OK", results: relCnt });
             });
           });
-          return;
+          break;
       case 'location':
           LocationSchema.findById({_id: mongoose.Types.ObjectId(objectId)}, (err: Error, result: any) => {
             if(err) { 
@@ -429,7 +429,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
               res.status(200).json({ "message": "OK", results: relCnt });
             });
           });
-          return;
+          break;
       case 'historicevent':
           HistoricEventSchema.findById({_id: mongoose.Types.ObjectId(objectId)}, (err: Error, result: any) => {
             if(err) { 
@@ -448,7 +448,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
               res.status(200).json({ "message": "OK", results: relCnt });
             });
           });
-          return;
+          break;
       case 'source':
           SourceSchema.findById({_id: mongoose.Types.ObjectId(objectId)}, (err: Error, result: any) => {
             if(err) { 
@@ -467,10 +467,10 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
               res.status(200).json({ "message": "OK", results: relCnt });
             });
           });
-          return;
+          break;
       default: 
         res.status(400).json({ "message": "ERROR", "error": "Object type could not be detected." });
-        return;
+        break;
     }
   });
 
