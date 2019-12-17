@@ -694,7 +694,6 @@ export class NetworkComponent implements AfterViewInit {
   }
 
   async addDataItems(parent: any, data: any, type: string): Promise<any> {
-    if (!this.checkIfNodeExists(data[type].objectId)) {
       // create node and add to nodes
       let node = data[type];
       node['objectType'] = type.toLowerCase();
@@ -703,11 +702,11 @@ export class NetworkComponent implements AfterViewInit {
       node['label'] = `${data[type].name} (${count})`;
       node['color'] = this.colors.get(type.toLowerCase());
       node['hidden'] = false;
-      this.nodes.add(node);
+      this.nodes.update(node);
 
       // create event from node and add to events (TL)
       if ((node.objectType === 'event' || node.objectType === 'historicevent') && node.startDate) {
-        this.events.add({
+        this.events.update({
           start: node.startDate,
           end: node.endDate ? node.endDate : node.startDate,
           title: node.name,
@@ -723,8 +722,7 @@ export class NetworkComponent implements AfterViewInit {
       }
 
       // create links for node and add to links
-      if (this.checkIfLinkExists(parent.objectId, data[type].objectId)) return;
-      this.links.add({
+      this.links.update({
         source: data,
         from: parent.objectId,
         target: data[type],
@@ -736,21 +734,6 @@ export class NetworkComponent implements AfterViewInit {
           align: 'middle'
         }
       });
-    } else {
-      if (this.checkIfLinkExists(parent.objectId, data[type].objectId)) return;
-      this.links.add({
-        source: data,
-        from: parent.objectId,
-        target: data[type],
-        to: data[type].objectId,
-        label: data.relationship,
-        color: this.colors.get(type.toLowerCase()),
-        hidden: false,
-        font: {
-          align: 'middle'
-        }
-      });
-    }
   }
 
   lookupItem(item: any): void {
