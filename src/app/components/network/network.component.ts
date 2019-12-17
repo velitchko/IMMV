@@ -846,6 +846,17 @@ export class NetworkComponent implements AfterViewInit {
     });
 
     this.network.on('click', ($event: any) => {
+      let node = this.nodes.get($event.nodes[0]);
+      
+      if(!node) return;
+
+      // TODO: Open detail panel and populate with node details
+      // If node details are not available (i.e., node is related to something we were looking for)
+        // look up the node details (db.services)
+      
+    })
+
+    this.network.on('click', ($event: any) => {
       // path selection
       if (this.pathSelection && $event.nodes.length > 0) {
         this.selectedNodes.add($event.nodes[0]);
