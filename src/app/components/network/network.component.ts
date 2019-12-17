@@ -749,9 +749,12 @@ export class NetworkComponent implements AfterViewInit {
         });
         return;
       case 'location':
-        this.db.getAsLocation(item).then((success) => {
-          this.updateData(success);
+        this.db.getEventsByLocation(item).then((success) => {
+          success.forEach((s: Event) => { this.addEvent(s, item); });
         });
+        // this.db.getAsLocation(item).then((success) => {
+        //   this.updateData(success);
+        // });
         return;
       case 'theme':
         // reverse lookup related events
