@@ -526,7 +526,7 @@ export class NetworkComponent implements AfterViewInit {
     }
 
      // Build data conditionally
-      if (data.objectType === 'event') {
+      if (data.objectType.toLowerCase() === 'event') {
       // update event relationships
       data.events.forEach((e: { event: Event, relationship: string }) => {
         this.addDataItems(data, e, 'event');
@@ -553,7 +553,7 @@ export class NetworkComponent implements AfterViewInit {
       });
     }
 
-    if (data.objectType === 'person') {
+    if (data.objectType.toLowerCase() === 'person') {
       this.db.getEventsByPersonOrganization(data).then((success: Array<Event>) => {
         success.forEach((s: any) => {
           let relationship = s.peopleOrganizations.find((e: { personOrganization: any, relationship: string }) => {
@@ -570,7 +570,7 @@ export class NetworkComponent implements AfterViewInit {
       });
     }
 
-    if (data.objectType === 'location') {
+    if (data.objectType.toLowerCase() === 'location') {
       this.db.getEventsByLocation(data).then((success: Array<Event>) => {
         success.forEach((s: Event) => {
           let relationship = s.locations.find((e: { location: any, relationship: string }) => {
@@ -588,7 +588,7 @@ export class NetworkComponent implements AfterViewInit {
       });
     }
 
-    if(data.objectType === 'source') {
+    if(data.objectType.toLowerCase() === 'source') {
       this.db.getEventsBySource(data).then((success: Array<Event>) => {
         success.forEach((s: Event) => {
           let relationship = s.sources.find((e: { source: any, relationship: string }) => {
@@ -606,7 +606,7 @@ export class NetworkComponent implements AfterViewInit {
       });
     }
 
-    if(data.objectType === 'historicevent') {
+    if(data.objectType.toLowerCase() === 'historicevent') {
       this.db.getEventsByHistoricEvent(data).then((success: Array<Event>) => {
         success.forEach((s: Event) => {
           let relationship = s.historicEvents.find((e: { historicEvent: any, relationship: string }) => {
@@ -624,7 +624,7 @@ export class NetworkComponent implements AfterViewInit {
       });
     }
 
-    if(data.objectType === 'theme') {
+    if(data.objectType.toLowerCase() === 'theme') {
       this.db.getEventsByTheme(data).then((success: Array<Event>) => {
         success.forEach((s: Event) => {
           let relationship = s.themes.find((e: { theme: any, relationship: string }) => {
