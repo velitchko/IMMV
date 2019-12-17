@@ -677,14 +677,14 @@ export class NetworkComponent implements AfterViewInit {
 
     let label = event.themes.find((e: any) => {
       return e.theme === parent.objectId;
-    }).relationship;
+    });
 
     this.links.add({
       source: parent,
       from: parent.objectId,
       target: event,
       to: event.objectId,
-      label: label,
+      label: label ? label.relationship : '',
       color: this.colors.get('theme'),
       hidden: false,
       font: {
