@@ -67,7 +67,10 @@ export class NetworkComponent implements AfterViewInit {
 
     this.colors = new Map<string, string>();
     this.colors.set('location', '#01aef2');
+    // all 3 possibilities
     this.colors.set('personorganization', '#8ff161');
+    this.colors.set('person', '#8ff161');
+    this.colors.set('organization', '#8ff161');
     this.colors.set('event', '#fff400');
     this.colors.set('theme', '#fa4c71');
     this.colors.set('source', '#ffb400');
