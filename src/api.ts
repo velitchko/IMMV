@@ -120,6 +120,8 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
       }
       if (event) {
         res.status(200).json({ "message": 'Document ' + event._id + ' found.', data: event });
+      } else {
+        res.status(404).json({ "message": 'Document ' + req.params.id + ' not found' });
       }
     });
   });
@@ -132,6 +134,8 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
       }
       if (historicEvent) {
         res.status(200).json({ "message": 'Document ' + historicEvent._id + ' found.', data: historicEvent });
+      } else {
+        res.status(404).json({ "message": 'Document ' + req.params.id + ' not found' });
       }
     });
   });
@@ -144,6 +148,8 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
       }
       if (personOrganization) {
         res.status(200).json({ "message": 'Document ' + personOrganization._id + ' found.', data: personOrganization });
+      } else {
+        res.status(404).json({ "message": 'Document ' + req.params.id + ' not found' });
       }
     });
   });
@@ -156,6 +162,8 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
       }
       if (location) {
         res.status(200).json({ "message": 'Document ' + location._id + ' found.', data: location });
+      } else {
+        res.status(404).json({ "message": 'Document ' + req.params.id + ' not found' });
       }
     });
   });
@@ -168,6 +176,8 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
       }
       if (source) {
         res.status(200).json({ "message": 'Document ' + source._id + ' found.', data: source });
+      } else {
+        res.status(404).json({ "message": 'Document ' + req.params.id + ' not found' });
       }
     });
   });
@@ -180,6 +190,8 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
       }
       if (theme) {
         res.status(200).json({ "message": 'Document ' + theme._id + ' found.', data: theme });
+      } else {
+        res.status(404).json({ "message": 'Document ' + req.params.id + ' not found' });
       }
     });
   });
