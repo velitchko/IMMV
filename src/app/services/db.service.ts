@@ -235,6 +235,7 @@ export class DatabaseService {
 
         return Promise.all(promiseArr).then((success) => {
             success.forEach((s: any) => {
+                if(!s) return;
                 switch (s.type) {
                     case 'themes':
                         event.themes.push({ theme: s.entry, relationship: s.relationship });
