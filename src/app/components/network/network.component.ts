@@ -504,6 +504,8 @@ export class NetworkComponent implements AfterViewInit {
   }
 
   async updateData(data: Event & PersonOrganization & Location & HistoricEvent & Source & Theme): Promise<any> {
+    if(!data) return;
+    console.log('updating data');
     if (!this.checkIfNodeExists(data.objectId)) {
       let root = data;
       root['objectType'] = 'event';
