@@ -869,7 +869,7 @@ export class NetworkComponent implements AfterViewInit {
       // If node details are not available (i.e., node is related to something we were looking for)
         // look up the node details (db.services)
       
-    })
+    });
 
     this.network.on('click', ($event: any) => {
       // path selection
