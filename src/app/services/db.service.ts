@@ -82,8 +82,14 @@ export class DatabaseService {
                             type: endPoint
                         });
                     } else {
-                        reject('No data in response');
+                        resolve();
+                        // reject('No data in response');
                     }
+                }, (error: any) => {
+                    console.log('Object could not be resolved');
+                    console.log(error);
+                    resolve();
+                    // reject('No data in response');
                 });
         });
 
