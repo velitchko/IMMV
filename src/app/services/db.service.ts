@@ -260,6 +260,9 @@ export class DatabaseService {
                 }
             });
             return event;
+        }, 
+        (reject: any) => {
+            console.log(reject);
         }).catch((err) => {
             console.log(err);
             return null;
