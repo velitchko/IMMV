@@ -742,47 +742,55 @@ export class NetworkComponent implements AfterViewInit {
   lookupItem(item: any): void {
     switch (item.objectType) {
       case 'event':
-        this.db.getAsEvent(item).then((success) => {
+        this.db.getAsEvent(item).then((success: any) => {
           this.updateData(success);
         });
+        this.db.getEventsByEvent(item).then((success: Array<Event>) => {
+          success.forEach((s: Event) => { this.addEvent(s, item); });
+        })
         return;
       case 'historicevent':
-        this.db.getAsHistoricEvent(item).then((success) => {
+        this.db.getAsHistoricEvent(item).then((success: any) => {
           this.updateData(success);
+        });
+        this.db.getEventsByHistoricEvent(item).then((success: Array<Event>) => {
+          success.forEach((s: Event) => { this.addEvent(s, item); });
         });
         return;
       case 'location':
-        this.db.getEventsByLocation(item).then((success) => {
+        this.db.getAsLocation(item).then((success: any) => {
+          this.updateData(success);
+        });
+        this.db.getEventsByLocation(item).then((success: Array<Event>) => {
           success.forEach((s: Event) => { this.addEvent(s, item); });
         });
-        // this.db.getAsLocation(item).then((success) => {
-        //   this.updateData(success);
-        // });
         return;
       case 'theme':
-        // reverse lookup related events
-        this.db.getEventsByTheme(item).then((success) => {
-          success.forEach((s: Event) => { this.addEvent(s, item); });
-        });
-        // get themes too
-        this.db.getAsTheme(item).then((success) => {
+        this.db.getAsTheme(item).then((success: any) => {
           this.updateData(success);
+        });
+        this.db.getEventsByTheme(item).then((success: Array<Event>) => {
+          success.forEach((s: Event) => { this.addEvent(s, item); });
         });
         return;
       case 'source':
-        this.db.getAsSource(item).then((success) => {
+        this.db.getAsSource(item).then((success: any) => {
           this.updateData(success);
+        });
+        this.db.getEventsBySource(item).then((success: Array<Event>) => {
+          success.forEach((s: Event) => { this.addEvent(s, item); });
         });
         return;
       case 'person':
-        this.db.getAsPersonOrganization(item).then((success) => {
+      case 'organization': 
+      case 'personorganization':
+        this.db.getAsPersonOrganization(item).then((success: any) => {
           this.updateData(success);
+        });
+        this.db.getEventsByPersonOrganization(item).then((success: Array<Event>) => {
+          success.forEach((s: Event) => { this.addEvent(s, item); });
         });
         return;
-      case 'organization': 
-        this.db.getAsPersonOrganization(item).then((success) => {
-          this.updateData(success);
-        });
       default: return;
     }
   }
