@@ -855,7 +855,6 @@ export class NetworkComponent implements AfterViewInit {
 
     this.network.on('doubleClick', ($event: any) => {
       let node = this.nodes.get($event.nodes[0]);
-
       if (!node) return;
       this.lookupItem(node);
     });
