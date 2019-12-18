@@ -825,11 +825,15 @@ export class NetworkComponent implements AfterViewInit {
       interaction: {
         hover: true
       },
-      // layout : {
-      //   improvedLayout: true
-      // },
+      layout : {
+        improvedLayout: false,
+        randomSeed: 191006
+      },
       physics: {
-        stabilization: true,
+        stabilization: {
+          iterations: 987,
+          updateInterval: 100
+      },
         // forceAtlas2Based: {
         //   springLength: 200
         // },
@@ -838,11 +842,11 @@ export class NetworkComponent implements AfterViewInit {
         solver: 'barnesHut',
         barnesHut: {
         //     gravitationalConstant: -10000,
-        //     springConstant: 0.04,
+            springConstant: 0.04,
         // //     // centralGravity: 0,
             springLength: 200,
-        // //     damping: 0.5,
-        //     avoidOverlap: .5,
+            damping: 0.5,
+            avoidOverlap: .5,
         },
       }
     };
