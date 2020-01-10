@@ -5,6 +5,7 @@ import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { LightboxComponent } from '../lightbox/lightbox.component';
+import { DatabaseService } from 'src/app/services/db.service';
 
 @Component({
   selector: 'app-carousel',
@@ -35,7 +36,8 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     @Inject(PLATFORM_ID) private _platformId: Object,
     @Inject('WINDOW') private window: any,
-    public lightbox: MatDialog
+    public lightbox: MatDialog,
+    private db: DatabaseService
   ) {
     this.currentSlide = 0;
     this.slides = new Array<any>();
@@ -87,6 +89,13 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
     // console.log(this.slideOffset);
   }
 
+  hasDomain(url: string): boolean {
+    let match = url.match(/:\/\/(www[0-9]?\.)?(.[^/:]+)/i);
+    if ( match != null && match.length > 2 && typeof match[2] === 'string' && match[2].length > 0 ) true;
+
+    return false;
+  }
+
   loopSlides(): any {
     if (this.destroyed) return;
     setTimeout(() => {
@@ -101,6 +110,13 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
     this.slides = new Array<any>();
     this.source.identifiers.forEach((i: any) => {
       let safeUrl = this.getUrlIfLocalFile(i);
+      if(this.isPDF(safeUrl) && !this.hasDomain(i.url)) {
+        this.db.getPDFAsImage(i.url).then((success: any) => {
+          console.log(success);
+          // TODO: After getting the images 
+          // Create a slide per each image?
+        });
+      }
       let addToSlide = safeUrl !== '' && (!this.isAudio(safeUrl) || !this.isImage(safeUrl) || !this.isPDF(safeUrl) || !this.isVideo(safeUrl));
       // console.log(addToSlide, safeUrl, i.url);
       if (addToSlide) {
