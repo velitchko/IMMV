@@ -56,7 +56,7 @@ export class DatabaseService {
                 page: page
             };
 
-            this.http.post(`${environment.API_URL}`, { body: body })
+            this.http.post(`${environment.API_URL}getAsImage`, body)
                 .subscribe((response: any) => {
                     if(response.message === "OK") {
                         resolve(response.results);
