@@ -645,10 +645,10 @@ export class MapComponent implements AfterViewInit {
    * Returns svg map marker as string
    * @return string - SVG of a marker as string
    */
-  getSVGIcon(): string {
+  getSVGIcon(color?: string): string {
     let svg = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25">
-        <path d="M23.2,6.3A12.3,12.3,0,0,0,18.7,1.81,12.08,12.08,0,0,0,12.5.15,12.08,12.08,0,0,0,6.3,1.81,12.3,12.3,0,0,0,1.81,6.3,12.08,12.08,0,0,0,.15,12.5a12.08,12.08,0,0,0,1.66,6.2,12.3,12.3,0,0,0,4.5,4.49,12.08,12.08,0,0,0,6.2,1.66,12.08,12.08,0,0,0,6.2-1.66,12.3,12.3,0,0,0,4.49-4.49,12.08,12.08,0,0,0,1.66-6.2A12.08,12.08,0,0,0,23.2,6.3Z"/>
+        <circle cx="10" cy="10" r="10" fill="${color ? color : 'black'}" fill-opacity="0.5"">
       </svg>
     `;
     return svg;
@@ -659,10 +659,11 @@ export class MapComponent implements AfterViewInit {
    * @param events (optional) - array of events
    */
   createMarkers(events?: Array<Event>): void {
+    let color = ''; // TODO: Get color from some service (based on event property - main theme related)
     let markerIcon = L.divIcon({
       iconSize: [25, 25], // size of the icon
       className: 'default-map-marker',
-      html: this.getSVGIcon(),
+      html: this.getSVGIcon(color),
     });
 
     let eventCollection = events ? events : this.items;
@@ -671,7 +672,7 @@ export class MapComponent implements AfterViewInit {
       if (g && (g.lat && g.lng)) {
 
         let popup = L.popup({ autoPan: false, className: 'default-map-marker' }) // could be better solution for this -> issue is when mo a marker that is @ boundary map moves which closes marker which moves map which opens marker etc.
-                     .setContent(this.getHTMLTooltip(i));
+                      .setContent(this.getHTMLTooltip(i));
 
         let marker = L.marker([g.lat, g.lng], { icon: markerIcon })
                       .on('click', this.handleClick())
