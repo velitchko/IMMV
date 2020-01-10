@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Observable } from 'rxjs';
-import { startWith, map } from 'rxjs/operators';
 import { DatabaseService } from '../../services/db.service';
 import { MusicMapService } from '../../services/musicmap.service';
 import { Event } from '../../models/event';
@@ -10,6 +9,8 @@ import { PersonOrganization } from '../../models/person.organization';
 import { Location } from '../../models/location';
 import { Source } from '../../models/source';
 import { Theme } from '../../models/theme';
+import { map, switchMap, startWith, debounceTime, tap, finalize } from 'rxjs/operators';
+import { from } from 'rxjs';
 
 @Component({
   selector: 'app-search',
@@ -17,6 +18,9 @@ import { Theme } from '../../models/theme';
   styleUrls: ['search.component.scss']
 })
 
+/**
+ * TODO: Use input/output to emit events when actions are performed on the search component
+ */
 export class SearchComponent {
   searchCtrl: FormControl;
   filteredItems: Observable<Array<any>>;
@@ -28,13 +32,13 @@ export class SearchComponent {
 
   showSearch: boolean = false;
   displayClear: boolean = false;
+  loadingResults: boolean = false;
 
   constructor(private db: DatabaseService, private mms: MusicMapService) {
     this.items = new Array<any>();
     this.results = new Array<string>();
     this.objectTypes = new Map<string, string>();
 
-    this.getData();
 
     this.objectTypes.set('event', 'event');
     this.objectTypes.set('historicevent', 'history');
@@ -45,13 +49,107 @@ export class SearchComponent {
     this.objectTypes.set('organization', 'domain');
 
     this.searchCtrl = new FormControl();
-    this.filteredItems = this.searchCtrl.valueChanges
+    
+    // TODO: Replace using filteredItems observable
+    // reconsider what the results array is for.
+    this.searchCtrl.valueChanges
       .pipe(
-        startWith(''),
-        map((item: any) => {
-          return item ? this.filterItems(item) : this.items.slice();
-        })
-      );
+        debounceTime(300), // 300ms debounce
+        tap(() => { this.loadingResults = true; }),
+        switchMap(value => this.filterItems(value)
+          .pipe(
+            finalize(() => {
+              this.loadingResults = false;
+            }),
+          )
+        )
+      ).subscribe(results => {
+        let grouped = this.groupBy(results, 'objectType');
+        let groupedArr = [];
+
+        if(grouped['Event']) {
+          groupedArr.push({
+            name: 'Events',
+            results: grouped['Event'].sort((a: Event, b: Event) => {
+              return a.name.localeCompare(b.name);
+            })
+          });
+        }
+
+        if(grouped['HistoricEvent']) {
+          groupedArr.push({
+            name: 'Historic Events',
+            results: grouped['HistoricEvent'].sort((a: HistoricEvent, b: HistoricEvent) => {
+              return a.name.localeCompare(b.name);
+            })
+          });
+        }
+
+        if(grouped['Location']) {
+          groupedArr.push({
+            name: 'Locations',
+            results: grouped['Location'].sort((a: Location, b: Location) => {
+              return a.name.localeCompare(b.name);
+            })
+          });
+        }
+
+        if(grouped['Source']) {
+          groupedArr.push({
+            name: 'Sources',
+            results: grouped['Source'].sort((a: Source, b: Source) => {
+              return a.name.localeCompare(b.name);
+            })
+          });
+        }
+
+        if(grouped['Person']) {
+          groupedArr.push({
+            name: 'People',
+            results: grouped['Person'].sort((a: PersonOrganization, b: PersonOrganization) => {
+              return a.name.localeCompare(b.name);
+            })
+          });
+        }
+
+        if(grouped['Organization']) {
+          groupedArr.push({
+            name: 'Organizations',
+            results: grouped['Organization'].sort((a: PersonOrganization, b: PersonOrganization) => {
+              return a.name.localeCompare(b.name);
+            })
+          });
+        }
+
+        if(grouped['Theme']) {
+          groupedArr.push({
+            name: 'Themes',
+            results: grouped['Theme'].sort((a: Source, b: Source) => {
+              return a.name.localeCompare(b.name);
+            })
+          });
+        }
+        this.loadingResults = false;
+        this.results = groupedArr;
+      });
+    // this.filteredItems = this.searchCtrl.valueChanges
+    //   .pipe(
+    //     startWith(''),
+    //     map((item: any) => {
+    //       return item ? this.filterItems(item) : this.items.slice();
+    //     })
+    //   );
+  }
+
+  groupBy(objectArray: Array<any>, property: string): Object {
+    return objectArray.reduce((acc: Array<any>, obj: any) => {
+      let key = obj[property];
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(obj);
+      return acc;
+    }, {});
   }
 
   /**
@@ -63,6 +161,13 @@ export class SearchComponent {
     data.forEach((s: any) => {
       this.items.push({ object: s, type: type });
     });
+  }
+
+  
+  filterItems(value: string): Observable<Array<any>> {
+    const filterValue = value.toLowerCase();
+    // use from operator (rxjs) to convert promise to observable
+    return from(this.db.findObjects(filterValue));
   }
 
   /**
@@ -137,18 +242,49 @@ export class SearchComponent {
     this.mms.setSelectedEvents(this.results);
   }
 
+  selectedItem(item: any): void {
+    console.log('item has been selected');
+    console.log(item);
+
+    switch(item.objectType) {
+      case 'Event':
+        console.log('Event');
+        break;
+      case 'HistoricEvent':
+        console.log('Historic Event');
+        break;
+      case 'Person':
+      case 'Organization':
+      case 'PersonOrganization':
+        console.log('P O or PO');
+        break;
+      case 'Theme':
+        console.log('Theme');
+        break;
+      case 'Location':
+        console.log('Location');
+        break;
+      case 'Source':
+        console.log('Source');
+        break;
+      default:
+        console.log('Unknown object type');
+        break;
+      
+    }
+  }
   /**
    * Performs filtering on items based on the specificed type (searchType)
    * @param name - the name value we are searching for
    * @return results - array of results matching the name
    */
-  filterItems(name: string): Array<any> {
-    this.displayClear = true;
-    let results = this.items.filter((item: any) => {
-      return item.object.name.toLowerCase().includes(name.toLowerCase());
-    });
-    return results;
-  }
+  // filterItems(name: string): Array<any> {
+  //   this.displayClear = true;
+  //   let results = this.items.filter((item: any) => {
+  //     return item.object.name.toLowerCase().includes(name.toLowerCase());
+  //   });
+  //   return results;
+  // }
 
   /**
    * Toggles the searchbars visibility
