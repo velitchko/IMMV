@@ -592,7 +592,7 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
     if (!filePath) {
       res.status(500).json({ "message": "ERROR", "error": "No file path provided" });
     }
-    let file = path.resolve(`${UPLOAD_DIR_PATH}/${filePath}`);
+    let file = path.resolve(`${filePath}`);
     let pdfImage = new PDFImage(file);
     if (req.body.page !== null && req.body.page !== undefined) {
       let page = parseInt(req.body.page);
