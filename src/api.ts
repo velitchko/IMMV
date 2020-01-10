@@ -3,7 +3,7 @@ import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import * as mongoose from 'mongoose';
 import * as path from 'path';
-import { Source } from './app/models/source';
+import * as fs from 'fs';
 let EventSchema = require('./database/schemas/event');
 let HistoricEventSchema = require('./database/schemas/historicevent');
 let LocationSchema = require('./database/schemas/location');
@@ -567,29 +567,37 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
 
   // GET uploaded files
   api.get('/api/v1/uploads/:id', (req: express.Request, res: express.Response) => {
-    if (req.params.id) {
-      console.log(path.resolve(`${UPLOAD_DIR_PATH}/${req.params.id}`));
-      res.status(200).sendFile(path.resolve(`${UPLOAD_DIR_PATH}/${req.params.id}`));
+    if (req.params.id) {      
+      if(fs.existsSync(path.resolve(`${UPLOAD_DIR_PATH}/${req.params.id}`))) {
+        res.status(200).sendFile(path.resolve(`${UPLOAD_DIR_PATH}/${req.params.id}`));  
+        return;
+      }
+      if(fs.existsSync(path.resolve(`${UPLOAD_DIR_PATH}/${encodeURI(req.params.id)}`))) {
+        res.status(200).sendFile(path.resolve(`${UPLOAD_DIR_PATH}/${encodeURI(req.params.id)}`));  
+        return;
+      }
+      if(fs.existsSync(path.resolve(`${UPLOAD_DIR_PATH}/${decodeURI(req.params.id)}`))) {
+        res.status(200).sendFile(path.resolve(`${UPLOAD_DIR_PATH}/${decodeURI(req.params.id)}`));  
+        return;
+      }
     } else {
       res.status(404).json({ "message": `${req.params.id} does not exist.` });
+      return;
     }
   });
 
   // Convert pdf to image and return paths
-  // TODO: replace immv_beta in the split with the correct directory
-  // TODO: test if the returned paths are correct
   api.post('/api/v1/getAsImage', (req: express.Request, res: express.Response) => {
     let filePath = req.body.path;
     if (!filePath) {
       res.status(500).json({ "message": "ERROR", "error": "No file path provided" });
     }
     let file = path.resolve(`${UPLOAD_DIR_PATH}/${filePath}`);
-
     let pdfImage = new PDFImage(file);
     if (req.body.page !== null && req.body.page !== undefined) {
       let page = parseInt(req.body.page);
       pdfImage.convertPage(page).then((image: any) => {
-        let result = `${path.resolve(image.split('/immv_beta/')[1])}`;
+        let result = image.split('/immv-app/uploads/')[1];
         res.status(200).json({ "message": "OK", "results": result });
       }).catch((err: Error) => {
         console.log('ERROR');
@@ -600,7 +608,8 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
       pdfImage.convertFile().then((images: any) => {
         let result = new Array<string>();
         images.forEach((p: string) => {
-          result.push(`${path.resolve(p.split('/immv_beta/')[1])}`);
+          let imageFileName = p.split('/immv-app/uploads/')[1];
+          result.push(imageFileName);
         });
         res.status(200).json({ "message": "OK", "results": result });
       }).catch((err: Error) => {
