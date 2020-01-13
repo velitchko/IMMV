@@ -119,17 +119,21 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
             this.slides.push({
               url: `${environment.API_URL}uploads/${s}`,
               title: i.title,
-              copyright: i.copyright
+              copyright: i.copyright,
+              type: 'image'
             });
           });
         });
       } else {
         let addToSlides = (this.getDomain(safeUrl) === this.getDomain(environment.APP_URL));
+        let type = safeUrl.split('.').pop();
+
         if(addToSlides) {
           this.slides.push({
             url: safeUrl,
             title: i.title,
-            copyright: i.copyright
+            copyright: i.copyright,
+            type: type
           });
         }
       }
