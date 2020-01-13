@@ -149,7 +149,7 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
     if (i.url.startsWith('uploads/')) {
       return `${environment.API_URL}${i.url}`;
     } else {
-      if (i.url.match(/\.(jpeg|jpg|gif|png|webp|webm|ogg|mp4|mp3|wave|wav|pdf)$/) != null) {
+      if (i.url.toLowerCase().match(/\.(jpeg|jpg|gif|png|webp|webm|ogg|mp4|mp3|wave|wav|pdf)$/) != null) {
         return i.url;
       }
     }
@@ -158,15 +158,15 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   isImage(url: any): boolean {
-    return url.match(/\.(jpeg|jpg|gif|png|webp)$/) != null;
+    return url.toLowerCase().match(/\.(jpeg|jpg|gif|png|webp)$/) != null;
   }
 
   isVideo(url: any): boolean {
-    return url.match(/\.(webm|ogg|mp4|wave|wav)$/) != null;
+    return url.toLowerCase().match(/\.(webm|ogg|mp4|wave|wav)$/) != null;
   }
 
   isAudio(url: any): boolean {
-    return url.match(/\.(mp3|wave|wav)$/) != null;
+    return url.toLowerCase().match(/\.(mp3|wave|wav)$/) != null;
   }
 
   isPDF(url: any): boolean {
