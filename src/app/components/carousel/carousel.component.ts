@@ -129,15 +129,15 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  pause(): void {
-    this.paused = true;
-    this.window.cancelAnimationFrame(this.currentFrame);
-  }
+  // pause(): void {
+  //   this.paused = true;
+  //   this.window.cancelAnimationFrame(this.currentFrame);
+  // }
 
-  play(): void {
-    this.paused = false;
-    this.loopSlides();
-  }
+  // play(): void {
+  //   this.paused = false;
+  //   this.loopSlides();
+  // }
 
   getUrlIfLocalFile(i: any): string {
     if (i.url.startsWith('uploads/')) {
