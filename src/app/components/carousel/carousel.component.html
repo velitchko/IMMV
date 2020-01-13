@@ -5,19 +5,10 @@
     </div>
 </div>
 <div class="carousel" *ngIf="!loadingContent && slides.length !== 0" #carouselComponent>
-    <div class="carousel-arrows previous" #prevArrow>
-        <button mat-icon-button (click)="previousSlide()"><mat-icon>chevron_left</mat-icon></button>
-    </div>
     <ul class="carousel-slides" #slideContainer>
         <li *ngFor="let slide of slides; let idx = index" class="slide" (click)="open(slides, idx)">
-                <div class="slide-inner">
-                    <h2 class="slide-title">{{ slide.title }} {{ idx }} </h2>
-                    <!-- TODO: Bug is somewhere here it starts from slide 2 and doesnt display first 2 -->
-                    <!-- object type should work for images/videos/pdfs coming from server (excl. external resources) -->
-                        <div>
-                            <object [data]="slide.url | safeURL" autoplay="0" autostart="0"></object>
-                        </div>
-                </div>
+            <object [data]="slide.url | safeURL"></object>
+            <h2 class="slide-title">{{ slide.title }} {{ idx }} {{ slide.type }} </h2>
         </li>
     </ul>
     <div class="carousel-arrows next" #nextArrow>
