@@ -15,10 +15,10 @@
         <button mat-icon-button (click)="nextSlide()"><mat-icon>chevron_right</mat-icon></button>
     </div>
 </div>
-<div class="carousel" *ngIf="slides.length === 0">
+<div class="carousel" *ngIf="slides.length === 0" #carouselComponent>
     <div class="carousel-slides" #slideContainer>
-        <div class="slide-inner active">
-            <p class="no-content">No media found.</p>
+        <div class="no-content">
+            <p>No media found.</p>
         </div>
     </div>
 </div>
