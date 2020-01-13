@@ -110,21 +110,27 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
     this.slides = new Array<any>();
     this.source.identifiers.forEach((i: any) => {
       let safeUrl = this.getUrlIfLocalFile(i);
-      if(this.isPDF(safeUrl) && !this.hasDomain(i.url)) {
+      if(!safeUrl) return;
+
+      if(this.isPDF(safeUrl) && this.getDomain(safeUrl) === this.getDomain(environment.APP_URL)) {
         this.db.getPDFAsImage(i.url).then((success: any) => {
-          console.log(success);
-          // TODO: After getting the images 
-          // Create a slide per each image?
+          success.forEach((s: string) => {
+            this.slides.push({
+              url: `${environment.API_URL}uploads/${s}`,
+              title: i.title,
+              copyright: i.copyright
+            });
+          });
         });
-      }
-      let addToSlide = safeUrl !== '' && (!this.isAudio(safeUrl) || !this.isImage(safeUrl) || !this.isPDF(safeUrl) || !this.isVideo(safeUrl));
-      // console.log(addToSlide, safeUrl, i.url);
-      if (addToSlide) {
-        this.slides.push({
-          url: safeUrl,
-          title: i.title,
-          copyright: i.copyright
-        });
+      } else {
+        let addToSlides = (this.getDomain(safeUrl) === this.getDomain(environment.APP_URL));
+        if(addToSlides) {
+          this.slides.push({
+            url: safeUrl,
+            title: i.title,
+            copyright: i.copyright
+          });
+        }
       }
     });
   }
