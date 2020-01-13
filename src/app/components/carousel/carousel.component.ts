@@ -184,15 +184,15 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   update(direction: string): void {
-    let slideContainer = this.slideContainer.nativeElement;
+    if(this.slides.length < 2) return; // Do nothing
     if (direction === 'next') {
-      slideContainer.style.transform = `translateX(${-1 * this.currentSlide * this.slideOffset}px)`;
+      this.slideContainer.nativeElement.style.transform = `translateX(${-1 * this.currentSlide * this.slideOffset}px)`;
     }
     if (direction === 'previous') {
       if (this.currentSlide === 0) {
-        slideContainer.style.transform = `translateX(${-1 * (this.slides.length - 2) * this.slideOffset}px)`
+        this.slideContainer.nativeElement.style.transform = `translateX(${-1 * (this.slides.length - 2) * this.slideOffset}px)`
       } else {
-        slideContainer.style.transform = `translateX(${-1 * (this.currentSlide - 1) * this.slideOffset}px)`;
+        this.slideContainer.nativeElement.style.transform = `translateX(${-1 * (this.currentSlide - 1) * this.slideOffset}px)`;
       }
     }
   }
