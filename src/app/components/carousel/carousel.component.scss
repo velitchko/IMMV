@@ -4,26 +4,36 @@
     position: relative;
     margin: 0em;
     padding: 0em;
+    top: 0em;
+    left: 0em;
 }
+
 .carousel-slides {
     height: 100%;
-    // overflow: hidden;
+    max-width: 100%;
+    min-width: 100%;
     list-style: none;
     display: flex;
     flex-direction: row;
-    justify-content: center;
-    align-items: center;
+    // justify-content: center;
+    // align-items: center;
     margin: 0 auto;
-    padding: 0;
-    transition: all 0.5s ease-in-out;
+    padding: 0em;
+    transition: all 0.5s ease-out;
 }
 .slide {
-    position: relative;
-    z-index: 0;
     min-width: 100%;
-    height: 100%;
-    left: 0px; // centers the slides 
-    top: 0px;
+    min-height: 100%;
+    padding: 0em;
+    margin: 0 auto;
+    left: 0em; // centers the slides 
+    top: 0em;
+
+    object {
+        padding: 0em;
+        height: 100%;
+        width: 100%;;
+    }
 }
 .slide-title {
     color: #f1f1f1;
@@ -31,58 +41,46 @@
     position: absolute;
     bottom: 0em;
     padding: 0.25em;
-    /* opacity: 0.7; */
-
+    width: 100%;
 }
 .carousel-arrows {
-    background-color: white;
-    opacity: 0.5;
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    flex: 0 1 auto;
-    justify-content: center;
-    align-items: center;
     position: absolute;
     z-index: 1;
 }
 
-.active {
-    height: 100%;
-    transition: all 0.5s ease-in-out;
-    opacity: 1;
-}
-.inactive {
-    height: 100%;
-    transition: all 0.5s ease-in-out;
-    opacity: 0.7;
-}
+// .active {
+//     height: 100%;
+//     transition: all 0.5s ease-in-out;
+//     opacity: 1;
+// }
+// .inactive {
+//     height: 100%;
+//     transition: all 0.5s ease-in-out;
+//     opacity: 0.7;
+// }
 
-.slide-inner {
-    width: 100%;
-    height: 100%;
+// .slide-inner {
+//     width: 100%;
+//     height: 100%;
 
-    > div {
-        height: 100%;
-    }
+//     > div {
+//         height: 100%;
+//     }
 
-    div > video,
-    div > img,
-    div > object {
-        width: 100%;
-        height: 100%;
-        object-fit: fit;
-    }
+//     div > video,
+//     div > img,
+//     div > object {
+//         width: 100%;
+//         height: 100%;
+//         object-fit: fit;
+//     }
 
-}
+// }
 
 ::ng-deep .loader {
     display: flex;
     flex-direction: column;
     flex: 0 1 auto;
-    justify-content: center;
-    align-content: center;
-    align-items: center;
 }
 
 ::ng-deep .spinner {
@@ -90,17 +88,16 @@
     height: 250px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
 }
 
 .no-content {
-    font-size: 4em;
-    color: lightgray;
-    text-align: center;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
+    width: 75%;
+    height: 100%;
+    margin: 0 auto;
+    
+    p {
+        font-size: 4em;
+        color: lightgray;
+    }
 }
 
