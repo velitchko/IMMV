@@ -88,7 +88,6 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
   onResize(): void {
     if (!this.carousel || !this.carousel.nativeElement) return;
     this.slideOffset = this.carousel.nativeElement.scrollWidth;
-    // console.log(this.slideOffset);
   }
 
   getDomain(url: string): string {
