@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ViewChild, AfterViewInit, Inject, SimpleChanges, OnDestroy } from '@angular/core';
+import { Component, OnInit, Input, ViewChild, AfterViewInit, Inject, SimpleChanges, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Source } from '../../models/source';
 import { environment } from '../../../environments/environment';
 import { PLATFORM_ID } from '@angular/core';
@@ -36,6 +36,7 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     @Inject(PLATFORM_ID) private _platformId: Object,
     @Inject('WINDOW') private window: any,
+    private cd: ChangeDetectorRef,
     public lightbox: MatDialog,
     private db: DatabaseService
   ) {
@@ -134,6 +135,8 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }
     });
+
+    this.cd.detectChanges();
   }
 
   // pause(): void {
