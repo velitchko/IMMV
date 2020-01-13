@@ -21,8 +21,8 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() height: number;
   // @Input() width: number;
   // @Input() height: number;
-  @Input() autoplay: number;
-  @Input() autoplaySpeed: number;
+  // @Input() autoplay: number;
+  // @Input() autoplaySpeed: number;
 
   currentSlide: number;
   loadingContent = true;
@@ -50,7 +50,7 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.paused = true;
     // this.loopSlides.bind(null);
-    this.window.cancelAnimationFrame(this.currentFrame);
+    // this.window.cancelAnimationFrame(this.currentFrame);
     this.window.removeEventListener('resize', this.onResize);
     // this.loopSlides = undefined;
     this.destroyed = true;
@@ -60,10 +60,10 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
       this.currentSlide = 0;
       this.createSlides();
       this.loadingContent = false;
-      if (this.isBrowser) {
-        if (this.autoplay) this.loopSlides();
+      // if (this.isBrowser) {
+        // if (this.autoplay) this.loopSlides();
         //this.window.addEventListener('resize', this.onResize.bind(this));
-      }
+      // }
     }
   }
 
@@ -80,7 +80,7 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
     this.next.nativeElement.style.right = `${20}px`;
     this.previous.nativeElement.style.left = `${20}px`;
 
-    if (!this.autoplaySpeed) this.autoplaySpeed = 5000;
+    // if (!this.autoplaySpeed) this.autoplaySpeed = 5000;
   }
 
   onResize(): void {
@@ -96,15 +96,15 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
     return false;
   }
 
-  loopSlides(): any {
-    if (this.destroyed) return;
-    setTimeout(() => {
-      if (!this.paused) {
-        this.nextSlide();
-      }
-      this.currentFrame = this.window.requestAnimationFrame(this.loopSlides.bind(this));
-    }, this.autoplaySpeed);
-  }
+  // loopSlides(): any {
+  //   if (this.destroyed) return;
+  //   setTimeout(() => {
+  //     if (!this.paused) {
+  //       this.nextSlide();
+  //     }
+  //     this.currentFrame = this.window.requestAnimationFrame(this.loopSlides.bind(this));
+  //   }, this.autoplaySpeed);
+  // }
 
   createSlides(): void {
     this.slides = new Array<any>();
@@ -196,14 +196,14 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
   * @param e - event with data that we will display in the modal
   */
   open(e: any, idx: number): void {
-    this.pause();
+    // this.pause();
     let lightboxRef = this.lightbox.open(LightboxComponent, {
       width: '55%',
       data: e,
     });
     lightboxRef.componentInstance.currentIdx = idx;
     lightboxRef.afterClosed().subscribe(() => {
-      this.play();
+      // this.play();
     });
   }
 }
