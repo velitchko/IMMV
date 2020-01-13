@@ -89,11 +89,11 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
     // console.log(this.slideOffset);
   }
 
-  hasDomain(url: string): boolean {
+  getDomain(url: string): string {
     let match = url.match(/:\/\/(www[0-9]?\.)?(.[^/:]+)/i);
-    if ( match != null && match.length > 2 && typeof match[2] === 'string' && match[2].length > 0 ) true;
+    if ( match != null && match.length > 2 && typeof match[2] === 'string' && match[2].length > 0 ) return match[2];
 
-    return false;
+    return '';
   }
 
   // loopSlides(): any {
