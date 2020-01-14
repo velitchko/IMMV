@@ -4,19 +4,9 @@ import { PersonOrganization } from '../../models/person.organization';
 import { Event } from '../../models/event';
 import { Location } from '../../models/location';
 import { Source } from '../../models/source';
-import { Theme } from '../../models/theme';
-import { LocationService } from '../../services/location.service';
-import { EventService } from '../../services/event.service';
-import { ThemeService } from '../../services/themes.service';
-import { SourceService } from '../../services/sources.service';
-import { PersonOrganizationService } from '../../services/people.organizations.service';
-import { MiniMapComponent } from '../minimap/minimap.component';
-import { MusicMapService } from '../../services/musicmap.service';
 import * as URL from 'url';
 import { LightboxComponent } from '../lightbox/lightbox.component';
-import { resolve } from 'bluebird';
-import { promise } from 'protractor';
-
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-previewpanel',
@@ -36,7 +26,7 @@ export class PreviewComponent {
   loadingSource = true;
   loadingTheme = true;
 
-  constructor(private mms: MusicMapService, public lightbox: MatDialog) {
+  constructor(private ts: ThemeService, public lightbox: MatDialog) {
     this.eventMedia = new Source();
   }
 
@@ -99,7 +89,7 @@ export class PreviewComponent {
    * @return string - hex color
    */
   getColorForCategory(category: string): string {
-    return this.mms.getColorAssignmentForCategory(category);
+    return this.ts.getColorForTheme(category);
   }
 
   /**
