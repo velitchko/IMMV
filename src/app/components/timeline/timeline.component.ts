@@ -2,7 +2,7 @@ import { Component, Input, Inject, OnChanges, SimpleChanges, ElementRef, ViewChi
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { MusicMapService } from '../../services/musicmap.service';
-// import { ColorService } from '../../services/color.service';
+import { ThemeService } from '../../services/theme.service';
 import { Event } from '../../models/event';
 import * as d3 from 'd3';
 import { DataSet, Timeline } from 'vis';
@@ -48,10 +48,11 @@ export class TimelineComponent implements OnChanges {
   minHeight = 20;
 
   constructor(@Inject(PLATFORM_ID) private _platformId: Object,
-              @Inject('WINDOW') private window: any,
-              private mms: MusicMapService,
-              public dialog: MatDialog
-            ) {
+    @Inject('WINDOW') private window: any,
+    private mms: MusicMapService,
+    private ts: ThemeService,
+    public dialog: MatDialog
+  ) {
     this.currentEventInterval = new Array<Date>();
     this.currentlySelectedItems = new Array<any>();
     this.isBrowser = isPlatformBrowser(this._platformId);

@@ -1,8 +1,6 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { EventService } from '../../services/event.service';
-import { SourceService } from '../../services/sources.service';
 import { Source } from '../../models/source';
 
 @Component({
@@ -19,8 +17,7 @@ export class DashboardComponent implements OnInit {
   source: Source;
 
   constructor(@Inject(PLATFORM_ID) private _platformId: Object,
-              @Inject('WINDOW') private window: any,
-              private ss: SourceService) {
+              @Inject('WINDOW') private window: any) {
     this.loading = false;
     this.isBrowser = isPlatformBrowser(this._platformId);
     this.breakpoint = 2;
