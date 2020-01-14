@@ -1,19 +1,19 @@
 import { Component, OnInit, Input, Inject, SimpleChanges, ComponentFactoryResolver, Injector, ApplicationRef, ComponentRef, AfterViewChecked, AfterViewInit } from '@angular/core';
-import { PLATFORM_ID } from '@angular/core';
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
-import { environment } from '../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
+import { PLATFORM_ID } from '@angular/core';
+import * as D3 from 'd3';
+import { environment } from '../../../environments/environment';
 import { Event } from '../../models/event';
 import { MusicMapService } from '../../services/musicmap.service';
 import { ModalDialogComponent } from '../modal/modal.component';
-import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { Geodata } from '../../models/location';
 import { MapClusterTooltipComponent } from '../map-cluster-tooltip/map-cluster-tooltip.component';
-import * as D3 from 'd3';
-import { DatabaseService } from 'src/app/services/db.service';
+import { DatabaseService } from '../../services/db.service';
+import { ThemeService } from '../../services/theme.service';
 
 declare var L: any;
-declare var d3: any;
 
 @Component({
   selector: 'app-map',
@@ -45,7 +45,7 @@ export class MapComponent implements AfterViewInit {
   temporaryMarkerGroup: any; // backbuffer with markers - we swap between mainMarkerGroup and temporaryMarkerGroup
   heatmapMarkerGroup: any; // holds our heatmap
   // observables
-  
+
   currentEventInterval: Array<Date>;
   currentlySelectedEvents: Array<string>;
   currentlyHighlightedEvent: any;
@@ -61,6 +61,7 @@ export class MapComponent implements AfterViewInit {
     private appRef: ApplicationRef,
     private injector: Injector,
     private db: DatabaseService,
+    private ts: ThemeService,
     private http: HttpClient) {
     // have to check if we are client
     // else window is not defined errors
@@ -82,72 +83,72 @@ export class MapComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-      // only initiate map on browser side
-      this.isMarkerSelected = false;
-      if (this.isBrowser) {
+    // only initiate map on browser side
+    this.isMarkerSelected = false;
+    if (this.isBrowser) {
 
-        this.createMap();
-        this.createMarkers();
-        this.createHeatMap();
-        
-        // Event Selected 
-        this.mms.currentlySelectedEvent.subscribe((ev: string) => {
-          if (!ev) {
-            this.map.removeLayer(this.mainMarkerGroup);
-            this.map.removeLayer(this.musicLayerGroup);
-            this.map.removeLayer(this.heatmapLayerGroup);
-            this.map.removeLayer(this.tagCloudLayerGroup);
-            this.map.removeLayer(this.temporaryMarkerGroup);
-            
-            this.temporaryMarkerGroup = L.featureGroup();
+      this.createMap();
+      this.createMarkers();
+      this.createHeatMap();
 
-            this.map.addLayer(this.mainMarkerGroup);
-            // we are good to set the isMarkerSelected to false now
-            this.isMarkerSelected = false;
-          }
-          // should run once if a marker is clicked
-          if (ev && !this.isMarkerSelected) {
-            // if event is passed and we have a map
-            // this means a marker was clicked to see details
-            this.isMarkerSelected = true;
-            
-            this.map.removeLayer(this.mainMarkerGroup);
-            this.map.removeLayer(this.musicLayerGroup);
-            this.map.removeLayer(this.heatmapLayerGroup);
-            this.map.removeLayer(this.tagCloudLayerGroup);
+      // Event Selected 
+      this.mms.currentlySelectedEvent.subscribe((ev: string) => {
+        if (!ev) {
+          this.map.removeLayer(this.mainMarkerGroup);
+          this.map.removeLayer(this.musicLayerGroup);
+          this.map.removeLayer(this.heatmapLayerGroup);
+          this.map.removeLayer(this.tagCloudLayerGroup);
+          this.map.removeLayer(this.temporaryMarkerGroup);
 
-            this.createDetailMarkers(ev);
-          }
-        });
+          this.temporaryMarkerGroup = L.featureGroup();
 
-        // Event Highlighted
-        this.mms.currentlyHighlightedItem.subscribe((highlight: any) => {
-          this.currentlyHighlightedEvent = highlight;
-          this.currentlyHighlightedEvent ? this.highlightMarkers() : this.unhighlightMarkers();
-            // if its a singular item i.e. from timeline or something
-            // just use the this.currentlyHighlightedEvent within the function
-        });
+          this.map.addLayer(this.mainMarkerGroup);
+          // we are good to set the isMarkerSelected to false now
+          this.isMarkerSelected = false;
+        }
+        // should run once if a marker is clicked
+        if (ev && !this.isMarkerSelected) {
+          // if event is passed and we have a map
+          // this means a marker was clicked to see details
+          this.isMarkerSelected = true;
 
-        // comes from search
-        this.mms.currentlySelectedEvents.subscribe((events: Array<any>) => {
-            this.currentlySelectedEvents = events;
-            this.currentlySelectedEvents ? this.highlightMarkers(this.currentlySelectedEvents) : this.unhighlightMarkers();
-            // if there are multiple events pass the array to the 
-            // following function for highlighting
-        });
+          this.map.removeLayer(this.mainMarkerGroup);
+          this.map.removeLayer(this.musicLayerGroup);
+          this.map.removeLayer(this.heatmapLayerGroup);
+          this.map.removeLayer(this.tagCloudLayerGroup);
 
-        // comes from timeline
-        this.mms.currentEventInterval.subscribe((dates: Array<Date>) => {
-          if (!dates) return;
-          if (dates[0]) {
-            this.currentEventInterval[0] = dates[0];
-          }
-          if (dates[1]) {
-            this.currentEventInterval[1] = dates[1];
-          }
-          this.updateMarkers();
-        });
-      }
+          this.createDetailMarkers(ev);
+        }
+      });
+
+      // Event Highlighted
+      this.mms.currentlyHighlightedItem.subscribe((highlight: any) => {
+        this.currentlyHighlightedEvent = highlight;
+        this.currentlyHighlightedEvent ? this.highlightMarkers() : this.unhighlightMarkers();
+        // if its a singular item i.e. from timeline or something
+        // just use the this.currentlyHighlightedEvent within the function
+      });
+
+      // comes from search
+      this.mms.currentlySelectedEvents.subscribe((events: Array<any>) => {
+        this.currentlySelectedEvents = events;
+        this.currentlySelectedEvents ? this.highlightMarkers(this.currentlySelectedEvents) : this.unhighlightMarkers();
+        // if there are multiple events pass the array to the 
+        // following function for highlighting
+      });
+
+      // comes from timeline
+      this.mms.currentEventInterval.subscribe((dates: Array<Date>) => {
+        if (!dates) return;
+        if (dates[0]) {
+          this.currentEventInterval[0] = dates[0];
+        }
+        if (dates[1]) {
+          this.currentEventInterval[1] = dates[1];
+        }
+        this.updateMarkers();
+      });
+    }
   }
 
 
@@ -183,11 +184,11 @@ export class MapComponent implements AfterViewInit {
 
     // setup groups
     this.temporaryMarkerGroup = L.layerGroup();
-    
+
     this.mainMarkerGroup.on('clusterclick', this.handleClusterClick());
     this.mainMarkerGroup.on('clustermouseover', this.handleClusterMouseOver());
     this.mainMarkerGroup.on('clustermouseout', this.handleClusterMouseOut());
-    
+
     // layer groups that contain marker/heatmap/tagcloud layers
     this.markerLayerGroup = L.layerGroup([this.mainMarkerGroup]);
     this.musicLayerGroup = L.layerGroup([]);
@@ -218,7 +219,7 @@ export class MapComponent implements AfterViewInit {
     this.map.on('click', this.handleMapClick.bind(this));
     this.map.on('popupclose', this.handlePopUpClose.bind(this));
     this.map.on('zoomend', () => { this.mainMarkerGroup.refreshClusters(); });
-    
+
     this.initialized = true;
   }
 
@@ -241,16 +242,16 @@ export class MapComponent implements AfterViewInit {
       width: '50%',
       data: e
     });
-    dialogRef.afterClosed().subscribe((result: any) => {});
+    dialogRef.afterClosed().subscribe((result: any) => { });
   }
-  
+
   unhighlightMarkers(): void {
     this.mainMarkerGroup.eachLayer((layer: any) => {
-      if(layer._icon) L.DomUtil.removeClass(layer._icon, 'selected');
+      if (layer._icon) L.DomUtil.removeClass(layer._icon, 'selected');
     });
 
   }
-  
+
   resetMapMarkers(): void {
     this.map.removeLayer(this.temporaryMarkerGroup);
     this.map.addLayer(this.mainMarkerGroup);
@@ -262,38 +263,38 @@ export class MapComponent implements AfterViewInit {
    * @param fromMap     - boolean if called from map
    */
   highlightMarkers(events?: Array<string>): void {
-    if(!events) {
+    if (!events) {
       // if no events array provided we are looking for only one item
       this.mainMarkerGroup.eachLayer((layer: any) => {
-        if(layer._icon) L.DomUtil.removeClass(layer._icon, 'selected');
-        if(layer.objectId === this.currentlyHighlightedEvent) {
-          if(layer._icon) {
+        if (layer._icon) L.DomUtil.removeClass(layer._icon, 'selected');
+        if (layer.objectId === this.currentlyHighlightedEvent) {
+          if (layer._icon) {
             // single marker
-             L.DomUtil.addClass(layer._icon, 'selected'); 
-             return;
+            L.DomUtil.addClass(layer._icon, 'selected');
+            return;
           } else {
             // cluster
             let cluster = this.mainMarkerGroup.getVisibleParent(layer);
-            if(cluster) { 
+            if (cluster) {
               cluster.spiderfy();
               cluster.getAllChildMarkers().forEach((child: any) => {
-                if(child._icon) L.DomUtil.removeClass(child._icon, 'selected');
-                if(child.objectId === this.currentlyHighlightedEvent) {
-                  if(child._icon) {
+                if (child._icon) L.DomUtil.removeClass(child._icon, 'selected');
+                if (child.objectId === this.currentlyHighlightedEvent) {
+                  if (child._icon) {
                     L.DomUtil.addClass(child._icon, 'selected');
                     return;
                   }
                 }
-              });              
+              });
             }
           }
-         }
+        }
       });
     } else {
-      if(events.length === 0) return;
+      if (events.length === 0) return;
       events.forEach((event: string) => {
         this.mainMarkerGroup.eachLayer((layer: any) => {
-          if(layer.objectId === event) {
+          if (layer.objectId === event) {
             this.temporaryMarkerGroup.addLayer(layer);
           }
         });
@@ -419,7 +420,7 @@ export class MapComponent implements AfterViewInit {
    */
   handleClick(): (e: any) => void {
     return (e: any) => {
-        this.mms.setSelectedEvent(e.target.objectId);
+      this.mms.setSelectedEvent(e.target.objectId);
     }
   }
 
@@ -440,7 +441,7 @@ export class MapComponent implements AfterViewInit {
     let tempMarkers = new Array<any>();
     let wayPoints = new Array<any>();
     // MAIN LOCATION
-    if(event.geodata) {
+    if (event.geodata) {
       let mainPopup = L.popup({ autoPan: false, autoClose: false }) // could be better solution for this -> issue is when mo a marker that is @ boundary map moves which closes marker which moves map which opens marker etc.
         .setContent(event.geodata.streetName + (event.geodata.streetNumber ? ' ' + event.geodata.streetNumber : '') + (event.geodata.districtNumber ? ' ' + event.geodata.districtNumber : ''));
       let mainMarker = L.marker([+event.geodata.lat, +event.geodata.lng], { icon: markerIcon })
@@ -648,10 +649,28 @@ export class MapComponent implements AfterViewInit {
   getSVGIcon(color?: string): string {
     let svg = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25">
-        <circle cx="10" cy="10" r="10" fill="${color ? color : 'black'}" fill-opacity="0.5"">
+        <circle cx="10" cy="10" r="10" fill="${color ? color : 'black'}">
       </svg>
     `;
     return svg;
+  }
+
+  getMarkerIcon(event: Event): any {
+    // black magic .toString() to avoid typescript complaints
+    let color: string;
+    event.themes.forEach((t: any) => {
+      if (this.ts.isMainTheme(t.theme)) {
+        color = this.ts.getColorForTheme(t.theme);
+      }
+    });
+
+    let markerIcon = L.divIcon({
+      iconSize: [25, 25], // size of the icon
+      className: 'default-map-marker',
+      html: this.getSVGIcon(color), // cast to string
+    });
+
+    return markerIcon;
   }
 
   /**
@@ -659,26 +678,19 @@ export class MapComponent implements AfterViewInit {
    * @param events (optional) - array of events
    */
   createMarkers(events?: Array<Event>): void {
-    let color = ''; // TODO: Get color from some service (based on event property - main theme related)
-    let markerIcon = L.divIcon({
-      iconSize: [25, 25], // size of the icon
-      className: 'default-map-marker',
-      html: this.getSVGIcon(color),
-    });
-
     let eventCollection = events ? events : this.items;
     for (let i of eventCollection) {
       let g = i.geodata;
       if (g && (g.lat && g.lng)) {
 
         let popup = L.popup({ autoPan: false, className: 'default-map-marker' }) // could be better solution for this -> issue is when mo a marker that is @ boundary map moves which closes marker which moves map which opens marker etc.
-                      .setContent(this.getHTMLTooltip(i));
+          .setContent(this.getHTMLTooltip(i));
 
-        let marker = L.marker([g.lat, g.lng], { icon: markerIcon })
-                      .on('click', this.handleClick())
-                      .on('mouseover', this.handleMouseOver())
-                      .on('mouseout', this.handleMouseOut())
-                      .bindPopup(popup);
+        let marker = L.marker([g.lat, g.lng], { icon: this.getMarkerIcon(i) })
+          .on('click', this.handleClick())
+          .on('mouseover', this.handleMouseOver())
+          .on('mouseout', this.handleMouseOut())
+          .bindPopup(popup);
 
         marker.objectId = i.objectId;
         marker.name = i.name;
