@@ -95,6 +95,10 @@ export class MusicMapComponent implements AfterViewInit {
     }
   }
 
+  getMainThemes(): any {
+    return [...this.ts.colors];
+  }
+
   /**
    * Update the aggregation type for the overview tl
    * @param type - the type of aggregation
