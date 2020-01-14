@@ -74,12 +74,7 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnDestroy {
     this.slideContainer.nativeElement.style.width = `100%`;
     this.slideContainer.nativeElement.style.height = this.height ? `${this.height}px` : `600px`;
     this.slideContainer.nativeElement.style.transform = 'translateX(0)px'; // default
-    this.previous.nativeElement.style.top = `${this.carousel.nativeElement.clientHeight / 2 - 20}px`;
-    this.next.nativeElement.style.top = `${this.carousel.nativeElement.clientHeight / 2 - 20}px`;
-
-    this.next.nativeElement.style.right = `${10}px`;
-    this.previous.nativeElement.style.left = `${10}px`;
-
+  
     // Update ul width to reflect width of all slides
     this.slideContainer.nativeElement.style.width = this.slides.length * 672 + 'px';
     // if (!this.autoplaySpeed) this.autoplaySpeed = 5000;
