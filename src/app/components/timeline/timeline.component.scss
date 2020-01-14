@@ -53,6 +53,10 @@
   border: none;
 }
 
+::ng-deep .vis-item {
+  border-color: inherit;
+}
+
 ::ng-deep .vis-tooltip {
   padding: 20px;
   background-color: white !important;
