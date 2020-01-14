@@ -12,7 +12,7 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 @Component({
   selector: 'app-timeline',
   templateUrl: './timeline.component.html',
-  styleUrls: [ './timeline.component.scss' ]
+  styleUrls: ['./timeline.component.scss']
 })
 
 export class TimelineComponent implements OnChanges {
@@ -34,7 +34,7 @@ export class TimelineComponent implements OnChanges {
   overviewTimeline: any;
   MAX_Y: number = 0;
   timeline: Timeline;
-  
+
   aggregationType: string;
 
   highlightedItem: any;
@@ -59,47 +59,47 @@ export class TimelineComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if(changes) {
-      if(this.isBrowser) {
+    if (changes) {
+      if (this.isBrowser) {
         this.setupData();
         this.createTimeline();
 
         this.mms.currentlySelectedEvent.subscribe((event: string) => {
         });
-     
-        this.mms.currentAggregationItem.subscribe(( type: string) => {
-          if(!type) return;
+
+        this.mms.currentAggregationItem.subscribe((type: string) => {
+          if (!type) return;
           this.aggregationType = type;
-          this.window.requestAnimationFrame( () => {
+          this.window.requestAnimationFrame(() => {
             this.updateOverviewTL();
           });
         });
-        
+
         // subscribe to changes of the currently highlighted item
         this.mms.currentlyHighlightedItem.subscribe((highlight: any) => {
           this.highlightedItem = highlight;
-          if(this.timeline) {
+          if (this.timeline) {
             this.highlightItem();
           }
         });
         // subscribe to changes in currently selected items
         this.mms.currentlySelectedEvents.subscribe((events: Array<any>) => {
           this.currentlySelectedItems = events;
-          
-          if(this.timeline) {
+
+          if (this.timeline) {
             this.updateEvents();
           }
         });
         // subscribe to changes of the time interval
         this.mms.currentEventInterval.subscribe((dates: Array<Date>) => {
-          if(!dates) return;
-          if(dates[0]) {
+          if (!dates) return;
+          if (dates[0]) {
             this.currentEventInterval[0] = dates[0];
           }
-          if(dates[1]) {
+          if (dates[1]) {
             this.currentEventInterval[1] = dates[1];
           }
-          if(this.timeline) {
+          if (this.timeline) {
             this.timeline.setWindow(this.currentEventInterval[0], this.currentEventInterval[1]);
           }
         });
@@ -108,11 +108,11 @@ export class TimelineComponent implements OnChanges {
   }
 
   updateEvents(): void {
-    if(this.currentlySelectedItems.length === 0) return; 
+    if (this.currentlySelectedItems.length === 0) return;
 
     let removed = new Array<string>();
     this.eventsDataSet.forEach((event: any) => {
-      if(!this.currentlySelectedItems.includes(event.id)) {
+      if (!this.currentlySelectedItems.includes(event.id)) {
         removed.push(event.id);
       }
     });
@@ -139,14 +139,21 @@ export class TimelineComponent implements OnChanges {
     // this.themeDistribution = new Map<string,any>();
 
     this.groupsDataSet = new DataSet();
-    this.groupsDataSet.add({ id: 0, content: ''});
-    this.groupsDataSet.add({ id: 1, content: ''})
+    this.groupsDataSet.add({ id: 0, content: '' });
+    this.groupsDataSet.add({ id: 1, content: '' })
 
-   // range meaning interval default unless we detect otherwise
-    for(let i of this.items) {
-    // if its a subevent we do not want to display an entry in the timeline
-      if(!i.startDate ) continue;
+    // range meaning interval default unless we detect otherwise
+    this.items.forEach((i: Event) => {
+      // if its a subevent we do not want to display an entry in the timeline
+      if (!i.startDate) return;
 
+      let color;
+      i.themes.forEach((t: any) => {
+        if (this.ts.isMainTheme(t.theme)) {
+          color = this.ts.getColorForTheme(t.theme);
+        }
+      });
+  
       let type = 'point';
       let dateDiff = this.dateDifference(i.startDate, i.endDate);
 
@@ -165,11 +172,17 @@ export class TimelineComponent implements OnChanges {
         sources: i.sources,
         themes: i.themes,
         locations: i.locations,
-        // className: i.geodata.length !== 0 ? 'has-location' : 'no-location'
+        color: color,
+        style: `
+          color: ${color};
+          border-color: ${color};
+          `
+          // TODO: Conditionally set background-color property based on type of event
+          // 'point' vs 'range'
       };
-      if(i.endDate) dataitem['end'] = i.endDate;
+      if (i.endDate) dataitem['end'] = i.endDate;
       this.eventsDataSet.add(dataitem);
-    }
+    });
   }
 
   /**
@@ -179,7 +192,7 @@ export class TimelineComponent implements OnChanges {
    * @return result - difference between dates in days (floored)
    */
   dateDifference(a: Date, b: Date): number {
-    if(!b) return;
+    if (!b) return;
     // a and b are javascript Date objects
     let _MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -195,7 +208,7 @@ export class TimelineComponent implements OnChanges {
    * @return string - the HTML as string
    */
   getHTMLTooltip(e: Event): string {
-      //  <i class=\"material-icons\">domain</i>${e.organizations.length}
+    //  <i class=\"material-icons\">domain</i>${e.organizations.length}
     return `<div class=\"tooltip\">
     <h3>${e.name}</h3>
     ${this.mms.prettyPrintDate(e.startDate, false)}${this.mms.prettyPrintDate(e.endDate, true)}
@@ -229,9 +242,9 @@ export class TimelineComponent implements OnChanges {
    */
   getTimelineIds(recordIdArr: Array<any>): Array<any> {
     let ids = new Array<any>();
-    for(let r of recordIdArr) {
-      this.eventsDataSet.forEach( (d: any) => {
-        if(+r === +d.id && d.type !== 'background') {
+    for (let r of recordIdArr) {
+      this.eventsDataSet.forEach((d: any) => {
+        if (+r === +d.id && d.type !== 'background') {
           ids.push(+d.id);
         }
       });
@@ -244,7 +257,7 @@ export class TimelineComponent implements OnChanges {
    * Sorts the items array based on start date
    */
   sortByDate(): void {
-    this.items.sort( (a: any, b: any) => {
+    this.items.sort((a: any, b: any) => {
       // need to use .valueOf to perform Date object arithmetic in typescript
       return new Date(b.startDate).valueOf() - new Date(a.startDate).valueOf();
     }).reverse(); // reversal needed so first element has earliest starting date
@@ -257,19 +270,19 @@ export class TimelineComponent implements OnChanges {
     // define output domain (range)
     this.x = d3.scaleTime().range([0, this.width]);
     this.x2 = d3.scaleTime().range([0, this.width]),
-    this.y = d3.scaleLinear().range([this.height, 0]);
+      this.y = d3.scaleLinear().range([this.height, 0]);
     this.xAxis = d3.axisBottom(this.x).tickFormat(d3.timeFormat("%Y"));
     // define domains (input range)
     this.x.domain(d3.extent(this.items, (d: any) => {
       return d.startDate;
     }));
     // add 1 year padding to x domain left and right
-    this.x.domain(d3.extent([ this.mms.startDate, this.mms.endDate ]));
+    this.x.domain(d3.extent([this.mms.startDate, this.mms.endDate]));
 
     this.x2.domain(this.x.domain());
-    if(!resize) {
+    if (!resize) {
       this.mms.updateEventInterval(this.x.domain());
-     // this.distribution = this.computeDistribution(this.x.domain()[0], this.x.domain()[1]); // min / max date
+      // this.distribution = this.computeDistribution(this.x.domain()[0], this.x.domain()[1]); // min / max date
     }
     // FIXME: this.themeDistributions calculated after scales are made
     // should calculate it before and pass max y (count of themes)
@@ -281,12 +294,12 @@ export class TimelineComponent implements OnChanges {
    * @param e - event with data that we will display in the modal
    */
   openDialog(e: Event): void {
-    if(!e) return;
+    if (!e) return;
     let dialogRef = this.dialog.open(ModalDialogComponent, {
       width: '50%',
       data: e
     });
-    dialogRef.afterClosed().subscribe( (result) => {
+    dialogRef.afterClosed().subscribe((result) => {
       //console.log(result);
     });
   }
@@ -299,8 +312,8 @@ export class TimelineComponent implements OnChanges {
     this.svg.append('defs').append('clipPath')
       .attr('id', 'clip')
       .append('rect')
-      .attr('width',  this.width)
-      .attr('height',  this.height);
+      .attr('width', this.width)
+      .attr('height', this.height);
 
     // append overview and detail groups to svg 
     this.overview = this.svg.append('g')
@@ -325,7 +338,7 @@ export class TimelineComponent implements OnChanges {
 
     this.overview.append('g')
       .attr('class', 'axis axis--x')
-      .attr('transform', 'translate(0,' + this.height/2 + ')') //
+      .attr('transform', 'translate(0,' + this.height / 2 + ')') //
       .call(this.xAxis);
 
 
@@ -347,12 +360,12 @@ export class TimelineComponent implements OnChanges {
     // setup SVG dimensions and margins
     this.svg.attr('width', this.window.innerWidth);
     this.svg.attr('height', 65);
-    let overviewMargin = {top: 0, right: 5, bottom: 0, left: 5};
+    let overviewMargin = { top: 0, right: 5, bottom: 0, left: 5 };
     this.width = +this.svg.attr('width') - overviewMargin.left - overviewMargin.right;
     this.height = +this.svg.attr('height');
-    if(!resize) {
+    if (!resize) {
       // preprocessing
-      for(let i of this.items) {
+      for (let i of this.items) {
         i = this.type(i);
       }
 
@@ -364,7 +377,7 @@ export class TimelineComponent implements OnChanges {
 
     // append HTML elements to svg
     this.createElements(overviewMargin, resize);
-    if(!resize) {
+    if (!resize) {
       // create detail timeline
       let options = {
         showTooltips: true,
@@ -375,11 +388,12 @@ export class TimelineComponent implements OnChanges {
         autoResize: true,
         showCurrentTime: false,
         groupOrder: 'group',
-      //  showMinorLabels: false,
+        //  showMinorLabels: false,
         maxHeight: '100%', // map ~ 55vh
-        minHeight:  '100%',
-        zoomMax: 	3153600000000, // 100 years in ms
+        minHeight: '100%',
+        zoomMax: 3153600000000, // 100 years in ms
         zoomMin: 604800000, // 7 days in ms
+        cluster: true
         // stack: false, // default = true
         //verticalScroll: true,
       };
@@ -397,7 +411,7 @@ export class TimelineComponent implements OnChanges {
    */
   rangeChanged(): (properties: any) => void {
     return (properties: any) => {
-      if(!properties.byUser) return;
+      if (!properties.byUser) return;
       let dates = new Array<Date>();
       dates.push(this.timeline.getWindow().start);
       dates.push(this.timeline.getWindow().end);
@@ -418,15 +432,15 @@ export class TimelineComponent implements OnChanges {
    * @return the event we found with that record id
    */
   findEvent(recordId: string): Event {
-    let foundEvent = this.items.filter( (e: Event) => {
-      if(recordId === e.objectId) {
+    let foundEvent = this.items.filter((e: Event) => {
+      if (recordId === e.objectId) {
         return e;
       }
     });
     return foundEvent[0];
   }
 
-  eventMouseOut(): (properties?: any) => void { 
+  eventMouseOut(): (properties?: any) => void {
     return (properties: any) => {
       this.timeline.setSelection(null);
       this.mms.setHighlight(null);
@@ -468,12 +482,12 @@ export class TimelineComponent implements OnChanges {
     // Step3: return data
     let result = new Array<any>();
     let count = 0;
-    for(let d = minDate; d < maxDate; ) {
+    for (let d = minDate; d < maxDate;) {
       count = 0;
       this.items.forEach((e: Event) => {
-        if(this.mms.checkIfInRange(d, e, aggregation)) {
+        if (this.mms.checkIfInRange(d, e, aggregation)) {
           e.themes.forEach((t: any) => {
-            if(t.theme.name === theme) {
+            if (t.theme.name === theme) {
               count++;
             }
           })
@@ -483,16 +497,16 @@ export class TimelineComponent implements OnChanges {
       this.MAX_Y = this.MAX_Y > count ? this.MAX_Y : count;
       // bi-monthly?
       // quarterly?
-      if(aggregation === 'Yearly') {
+      if (aggregation === 'Yearly') {
         d.setFullYear(d.getFullYear() + 1);
-      } else if(aggregation === 'Monthly') {
+      } else if (aggregation === 'Monthly') {
         d.setDate(d.getDate() + 1);
       } else {
         // default
         d.setFullYear(d.getFullYear() + 1); //d.setMonth(d.getMonth() + 1);
       }
       //if(count > 0) { -- alow for custom threshold?
-      result.push({date: new Date(d), count: count});
+      result.push({ date: new Date(d), count: count });
       //}
     }
     return result;
@@ -505,8 +519,8 @@ export class TimelineComponent implements OnChanges {
   updateOverviewTL(): void {
     console.log('updating TL');
     let themes = new Array<string>();
-    for(let e of this.items) {
-      for(let l of e.themes) {
+    for (let e of this.items) {
+      for (let l of e.themes) {
         themes.push(l.theme.name);
       }
     }
@@ -559,9 +573,9 @@ export class TimelineComponent implements OnChanges {
     return () => {
       if (!d3.event.sourceEvent || (d3.event.sourceEvent && d3.event.sourceEvent.type === 'zoom')) return; // ignore brush-by-zoom and changes from detail timeline
       let s = d3.event.selection || this.x2.range();
-      let newDomain = s.map(this.x2.invert,  this.x2); // we do not want to rewrite this.x.domain() because it leads to weird things
+      let newDomain = s.map(this.x2.invert, this.x2); // we do not want to rewrite this.x.domain() because it leads to weird things
 
-      if(this.timeline) {
+      if (this.timeline) {
         this.timeline.setWindow(newDomain[0], newDomain[1]);
       }
       // this.svg.select('.zoom')
@@ -576,7 +590,7 @@ export class TimelineComponent implements OnChanges {
    */
   type(d: Event): any {
     d.startDate = new Date(d.startDate);
-    if(d.endDate) d.endDate = new Date(d.endDate);
+    if (d.endDate) d.endDate = new Date(d.endDate);
     return d;
   }
 }
