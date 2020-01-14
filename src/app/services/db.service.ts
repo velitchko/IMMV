@@ -566,6 +566,25 @@ export class DatabaseService {
         return promise;
     }
 
+    async getAllMainThemes(): Promise<any> {
+        let promise = new Promise<any>((resolve, reject) => {
+            this.http.get(`${environment.API_URL}getMainThemes`).subscribe((response: any) => {
+                if(response.message === 'OK') {
+                    let results = new Array<any>();
+                    response.results.forEach((r: any) => {
+                        results.push(this.getAsSimpleTheme(r));
+                    })
+                    resolve(results);
+                } else {
+                    reject();
+                }
+                
+            })
+        });
+
+        return promise;
+    }
+
     getAsSimpleTheme(json: any): Theme {
         let theme = new Theme();
 
