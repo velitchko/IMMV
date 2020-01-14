@@ -46,6 +46,15 @@
 .carousel-arrows {
     position: absolute;
     z-index: 1;
+    top: calc(50% - 40px);
+
+    &.next {
+        right: 10px;
+    }
+
+    &.previous {
+        left: 10px;
+    }
 }
 
 // .active {
