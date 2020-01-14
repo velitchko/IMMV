@@ -196,6 +196,19 @@ export function createApi(distPath: string, ngSetupOptions: NgSetupOptions) {
     });
   });
 
+  api.get('/api/v1/getMainThemes', (req: express.Request, res: express.Response) => {
+    let query = { themeTypes: { $in: ['Main Topics'] } }
+    
+    ThemeSchema.find(query, (err: Error, themes: Array<any>) => {
+      if(err) {
+        console.log(err);
+        res.status(404).json({ "message": 'No themes found' });
+      }
+
+      res.status(200).json({ "message": "OK", results: themes});
+    });
+  });
+
   /**
   FIND
   **/
