@@ -5,11 +5,6 @@ import { Event } from '../../models/event';
 import { Location } from '../../models/location';
 import { Source } from '../../models/source';
 import { Theme } from '../../models/theme';
-import { LocationService } from '../../services/location.service';
-import { EventService } from '../../services/event.service';
-import { ThemeService } from '../../services/themes.service';
-import { SourceService } from '../../services/sources.service';
-import { PersonOrganizationService } from '../../services/people.organizations.service';
 import { MiniMapComponent } from '../minimap/minimap.component';
 import * as URL from 'url';
 import { LightboxComponent } from '../lightbox/lightbox.component';
@@ -31,11 +26,6 @@ export class ModalDialogComponent {
 
   constructor(public dialogRef: MatDialogRef<ModalDialogComponent>,
               @Inject(MAT_DIALOG_DATA) public data: any,
-              private ls: LocationService,
-              private es: EventService,
-              private ps: PersonOrganizationService,
-              private ts: ThemeService,
-              private ss: SourceService,
               public lightbox: MatDialog) {
               this._albums = new Array<any>();
             }
@@ -88,13 +78,13 @@ export class ModalDialogComponent {
     let promiseArr = new Array<Promise<any>>();
     for(let s of sources) {
       //console.log(`looking for ${s.name}`);
-      promiseArr.push(this.ss.findSource(s.name));
+      // promiseArr.push(this.ss.findSource(s.name));
     }
     Promise.all(promiseArr).then( (results) => {
       console.log('sources');
       console.log(results);
       console.log('------------');
-      this.es.addSources(results, eventId);
+      // this.es.addSources(results, eventId);
       for(let r of results) {
         for(let f of r.files) {
           let album = {
@@ -118,17 +108,17 @@ export class ModalDialogComponent {
     let promiseArr = new Array<Promise<any>>();
     for(let e of events) {
       console.log(e.name);
-      promiseArr.push(this.es.findEvent(e.name)
-      .catch( (err) => {
-        console.log('error in promise');
-        console.log(err);
-      }));
+      // promiseArr.push(this.es.findEvent(e.name)
+      // .catch( (err) => {
+      //   console.log('error in promise');
+      //   console.log(err);
+      // }));
     }
     Promise.all(promiseArr).then( (results) => {
       console.log('events');
       console.log(results);
       console.log('------------');
-      this.es.addRelatedEvents(results, eventId);
+      // this.es.addRelatedEvents(results, eventId);
       this.loadingEvent = false;
     });
   }
@@ -142,13 +132,13 @@ export class ModalDialogComponent {
   getThemes(themes: Theme[], eventId: string) {
     let promiseArr = new Array<Promise<any>>();
     for(let t of themes) {
-      promiseArr.push(this.ts.findTheme(t.names[0].name));
+      // promiseArr.push(this.ts.findTheme(t.names[0].name));
     }
     Promise.all(promiseArr).then( (results) => {
       console.log('themes');
       console.log(results);
       console.log('------------');
-      this.es.addThemes(results, eventId);
+      // this.es.addThemes(results, eventId);
       this.loadingTheme = false;
     });
   }
@@ -163,13 +153,13 @@ export class ModalDialogComponent {
     let promiseArr = new Array<Promise<any>>();
     console.log(locations);
     for(let l of locations) {
-      promiseArr.push(this.ls.findLocation(l.names[0].name));
+      // promiseArr.push(this.ls.findLocation(l.names[0].name));
     }
     Promise.all(promiseArr).then( (results) => {
       console.log('locations');
       console.log(results);
       console.log('------------');
-      this.es.addLocations(results, eventId);
+      // this.es.addLocations(results, eventId);
       this.loadingLocation = false;
     });
   }
@@ -185,7 +175,7 @@ export class ModalDialogComponent {
 
     for(let p of people) {
       //console.log(p.names);
-      promiseArr.push(this.ps.findPerson(p.names[0].name));
+      // promiseArr.push(this.ps.findPerson(p.names[0].name));
     }
     Promise.all(promiseArr).then( (results) => {
       console.log('people');
@@ -205,7 +195,7 @@ export class ModalDialogComponent {
    */
   peopleOrOrganizations(results: Array<any>, eventId: string): void {
     let peopleOrOrganizations = new Array<{ personOrganization: PersonOrganization, relationship: string}>();
-    this.es.addPeopleOrganizations(peopleOrOrganizations, eventId);
+    // this.es.addPeopleOrganizations(peopleOrOrganizations, eventId);
   }
 
   /**
@@ -251,7 +241,7 @@ export class ModalDialogComponent {
 
     for(let o of organizations) {
       //console.log(p.names);
-      promiseArr.push(this.ps.findOrganization(o.names[0].name));
+      // promiseArr.push(this.ps.findOrganization(o.names[0].name));
     }
     Promise.all(promiseArr).then( (results) => {
       console.log('organizations');

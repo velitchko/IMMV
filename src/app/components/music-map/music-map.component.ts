@@ -1,5 +1,4 @@
 import { Component, AfterViewInit, ViewChild } from '@angular/core';
-// import { EventService } from '../../services/event.service'; deprecated
 import { Event } from '../../models/event';
 import { HistoricEvent } from '../../models/historic.event';
 import { MapComponent } from '../map/map.component';
@@ -7,10 +6,9 @@ import { TimelineComponent } from '../timeline/timeline.component';
 import { ModalDialogComponent } from '../modal/modal.component';
 import { SearchComponent } from '../search/search.component';
 import { MusicMapService } from '../../services/musicmap.service';
-import { ThemeService } from '../../services/themes.service';
-// import { ColorService } from '../../services/color.service';
 import { MapValuesPipe } from '../../pipes/map.pipe/map.pipe';
-import { DatabaseService } from 'src/app/services/db.service';
+import { DatabaseService } from '../../services/db.service';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-music-map',
@@ -46,7 +44,7 @@ export class MusicMapComponent implements AfterViewInit {
   selectedEntries: Array<any>;
   eventToBeDisplayed: Event;
 
-  constructor(private db: DatabaseService, private mms: MusicMapService) {
+  constructor(private db: DatabaseService, private ts: ThemeService, private mms: MusicMapService) {
     this.events = new Array<Event>();
     this.historicEvents = new Array<HistoricEvent>();
 

@@ -2,10 +2,7 @@ import { Component, OnInit, Inject, Input, AfterViewInit, OnChanges, SimpleChang
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../../environments/environment';
-import { EventService } from '../../services/event.service';
 import { Geodata } from '../../models/location';
-import { MusicMapService } from '../../services/musicmap.service';
-import { LocationService } from '../../services/location.service';
 
 declare var L: any;
 
@@ -20,10 +17,7 @@ export class MiniMapComponent implements AfterViewInit {
   isBrowser: boolean;
   markers: Array<any>;
 
-  constructor(@Inject(PLATFORM_ID) private _platformId: Object,
-              private es: EventService,
-              private mms: MusicMapService,
-              private ls: LocationService) {
+  constructor(@Inject(PLATFORM_ID) private _platformId: Object) {
     // have to check if we are client
     // else window is not defined errors
     this.isBrowser = isPlatformBrowser(this._platformId);

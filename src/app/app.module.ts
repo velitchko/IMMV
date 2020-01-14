@@ -25,15 +25,11 @@ import { TimelineComponent } from './components/timeline/timeline.component';
 import { PeopleTimelineComponent } from './components/people-timeline/people-timeline.component';
 import { BiographicalComponent } from './components/biographical.component/biographical.component';
 // Services
-import { EventService } from './services/event.service';
-import { LocationService } from './services/location.service';
-import { PersonOrganizationService } from './services/people.organizations.service';
-import { SourceService } from './services/sources.service';
-import { ThemeService } from './services/themes.service';
 import { MusicMapService } from './services/musicmap.service';
 import { GoogleService } from './services/google.service';
-// import { ColorService } from './services/color.service';
 import { DatabaseService } from './services/db.service';
+import { ThemeService } from './services/theme.service';
+import { GeoLocationService } from './services/geolocation.service';
 // Resize module
 import { AngularResizedEventModule } from 'angular-resize-event';
 // Pipes
@@ -146,13 +142,9 @@ export const APP_ID = 'my-app';
     MapClusterTooltipComponent
   ],
   providers: [
-    EventService,
-    LocationService,
-    PersonOrganizationService,
-    SourceService,
     ThemeService,
     MusicMapService,
-    // ColorService,
+    GeoLocationService,
     GoogleService,
     DatabaseService,
     MapValuesPipe,

@@ -3,8 +3,6 @@ import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { Event } from '../../models/event';
 import { Theme } from '../../models/theme';
-import { ThemeService } from '../../services/themes.service';
-import { EventService } from '../../services/event.service';
 import { MusicMapService } from '../../services/musicmap.service';
 // import { ColorService } from '../../services/color.service';
 import * as D3 from 'd3';
@@ -41,8 +39,6 @@ export class ThemeComponent implements OnInit {
   colors: Array<any>;
   constructor(@Inject(PLATFORM_ID) private _platformId: Object,
               @Inject('WINDOW') private window: any,
-              private ts: ThemeService,
-              private es: EventService,
               private mms: MusicMapService,
               // private cs: ColorService
               ) {
@@ -71,27 +67,27 @@ export class ThemeComponent implements OnInit {
   ngOnInit(): void { }
 
   ngAfterViewInit(): void {
-    if(!this.es.getEvents().length) {
-      this.es.getAllEvents().then(
-        (success) => {
-          //  console.log(success);
-          this.events = this.es.getEvents();
-          //console.log(this.events);
-          this.loading = false;
-          this.computeDistribution();
-          this.createWordCloud();
-        },
-        (error) => {
-          console.log(error);
-        });
-      } else {
-        this.events = this.es.getEvents();
-        // we gucci
-        console.log('already loaded');
-        this.loading = false;
-        this.computeDistribution();
-        this.createWordCloud();
-      }
+    // if(!this.es.getEvents().length) {
+    //   this.es.getAllEvents().then(
+    //     (success) => {
+    //       //  console.log(success);
+    //       this.events = this.es.getEvents();
+    //       //console.log(this.events);
+    //       this.loading = false;
+    //       this.computeDistribution();
+    //       this.createWordCloud();
+    //     },
+    //     (error) => {
+    //       console.log(error);
+    //     });
+    //   } else {
+    //     this.events = this.es.getEvents();
+    //     // we gucci
+    //     console.log('already loaded');
+    //     this.loading = false;
+    //     this.computeDistribution();
+    //     this.createWordCloud();
+    //   }
   }
 
 
@@ -114,7 +110,7 @@ export class ThemeComponent implements OnInit {
         }
     );
 
-    this.mms.setColorAssignment(colorAssignmentMap);
+    // this.mms.setColorAssignment(colorAssignmentMap);
   }
 
   computeDistribution(): any {
