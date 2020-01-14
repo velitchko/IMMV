@@ -53,6 +53,9 @@
         <mat-drawer-content>
           <app-map [items]="events" class="music-map"></app-map>
           <app-timeline [items]="events" class="music-timeline"></app-timeline>
+          <div class="theme-legend">
+            <div class="theme-chips" [matTooltip]="theme[0]" *ngFor="let theme of getMainThemes()" [style.backgroundColor]="theme[1]"></div>
+          </div>
         </mat-drawer-content>
       </mat-drawer-container>
       <div class="drawer-button">
