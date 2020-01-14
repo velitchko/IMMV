@@ -46,6 +46,23 @@
   z-index: 1;
 }
 
+.theme-legend {
+  position: absolute;
+  z-index: 999999;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: row;
+  top: calc(100% - 440px);
+}
+
+.theme-chips {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
 //   .drawer-option:hover {
 //     /* background-color:  rgba(attr(color), 0.5); - pray this is supported in the future.... */
 //   }
