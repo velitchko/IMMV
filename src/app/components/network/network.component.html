@@ -1,0 +1,37 @@
+<mat-sidenav-container>
+    <mat-sidenav #previewdrawer mode="side" class="preview-drawer-content">
+        <div class="preview-drawer-button">
+            <button class="menu-icon" mat-icon-button (click)="closePreviewDrawer()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+        <app-previewpanel *ngIf="eventToBeDisplayed" [event]="eventToBeDisplayed"></app-previewpanel>
+    </mat-sidenav>
+    <mat-sidenav-content>
+        <div class="network-controls">
+            <button mat-raised-button [color]="pathSelection ? 'primary' : ''" (click)="enablePathSelection()"><mat-icon>timeline</mat-icon></button>
+            <button mat-raised-button (click)="displayPathSelection()"><mat-icon>check</mat-icon></button>
+            <button mat-raised-button (click)="disablePathSelection()"><mat-icon>clear</mat-icon></button>
+            <button mat-raised-button color="warn" (click)="resetPathSelection()"><mat-icon>refresh</mat-icon></button>
+        </div>
+        <div class="wrapper">
+            <div class="controls">
+                <app-search (itemSelected)="update($event)"></app-search>
+                <div id="legend">
+                        <mat-chip-list>
+                            <mat-chip *ngFor="let c of legendColor" selected="true" [style.backgroundColor]="c.color" (click)="highlightNodeType(c.display)">{{ c.display }}</mat-chip>
+                            <mat-chip [style.backgroundColor]="'#515151'" (click)="clearHighlightedNodesLinks()" selected="true"><mat-icon>close</mat-icon></mat-chip>
+                        </mat-chip-list>
+                    </div>
+            </div>
+            <div id="people-wrapper">
+                <div id="network" #network></div>
+                <div id="timeline" #timeline></div>
+                <div class="legend" *ngIf="networkInitialized">
+                    <div class="start">{{ startDate }}</div>
+                    <div class="end">{{ endDate }}</div>
+                </div>
+            </div>
+        </div>
+    </mat-sidenav-content>
+</mat-sidenav-container>

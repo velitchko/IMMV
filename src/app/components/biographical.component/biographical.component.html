@@ -1,0 +1,341 @@
+<mat-sidenav-container class="container">
+    <mat-sidenav #sidenav mode="side" [opened]="objectSelected">
+        <!-- Details about selected person -->
+        <div class="detail" *ngIf="selectedObject">
+            <button id="close-btn" mat-icon-button (click)="closePersonDetails()">
+                <mat-icon>close</mat-icon>
+            </button>
+            <div class="person-details">
+                <h3>{{ selectedObject.name }}</h3>
+            </div>
+            <div *ngIf="selectedObject.objectType === 'Event'">
+                <mat-chip-list>
+                    <mat-chip *ngFor="let r of selectedObject.themes" [style.backgroundColor]="getColorForTheme(r.theme)">{{ getThemeName(r.theme) }}</mat-chip>
+                </mat-chip-list>
+                <p>{{ displayDate(selectedObject.startDate) }} {{ selectedObject.endDate ? '-' : '' }} {{ displayDate(selectedObject.endDate) }}</p>
+                <mat-accordion class="mat-expansion-panel-align">
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.peopleOrganizations.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>People/Organizations</mat-panel-title>
+                            <mat-panel-description>
+                                Related people and organizations
+                                <mat-icon>account_circle</mat-icon>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let person of selectedObject.peopleOrganizations" (click)="handleClick(person)">
+                                <mat-icon mat-list-icon>account_circle</mat-icon>
+                                <h4 mat-line>{{ getPersonOrganizationName(person.personOrganization) }}</h4>
+                                <p mat-line>{{ person.relationship }} {{ person.role ? '(' + person.role + ')' : '' }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.events.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>Events</mat-panel-title>
+                            <mat-panel-description>
+                                Related events
+                                <mat-icon>event</mat-icon>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let event of selectedObject.events">
+                                <mat-icon mat-list-icon>event</mat-icon>
+                                <h4 mat-line>{{ getEventName(event.event) }}</h4>
+                                <p mat-line>{{ event.relationship }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.historicEvents.length > 0">
+                            <mat-expansion-panel-header>
+                                <mat-panel-title>Historic Events</mat-panel-title>
+                                <mat-panel-description>
+                                    Related historic events
+                                    <mat-icon>history</mat-icon>
+                                </mat-panel-description>
+                            </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let hEvent of selectedObject.historicEvents">
+                                <mat-icon mat-list-icon>history</mat-icon>
+                                <h4 mat-line>{{ getHistoricEventName(hEvent.historicEvent) }}</h4>
+                                <p mat-line>{{ hEvent.relationship }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.locations.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>Locations</mat-panel-title>
+                            <mat-panel-description>
+                                Related locations
+                                <mat-icon>place</mat-icon>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let location of selectedObject.locations">
+                                <mat-icon mat-list-icon>place</mat-icon>
+                                <h4 mat-line>{{ getLocationName(location.location) }}</h4>
+                                <p mat-line>{{ location.relationship }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.themes.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>Themes</mat-panel-title>
+                            <mat-panel-description>
+                                Related themes
+                                <mat-icon>donut_large</mat-icon>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let theme of selectedObject.themes">
+                                <mat-icon mat-list-icon>donut_large</mat-icon>
+                                <h4 mat-line>{{ getThemeName(theme.theme) }}</h4>
+                                <p mat-line>{{ theme.relationship }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.sources.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>Sources</mat-panel-title>
+                            <mat-panel-description>
+                                    Related sources
+                                <mat-icon>collections</mat-icon>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let source of selectedObject.sources">
+                                <mat-icon mat-list-icon>collections</mat-icon>
+                                <h4 mat-line>{{ getSourceName(source.source) }}</h4>
+                                <p mat-line>{{ source.relationship }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                </mat-accordion>
+            </div>
+            <div *ngIf="selectedObject.objectType === 'Person'">
+                <mat-chip-list>
+                    <mat-chip *ngFor="let r of selectedObject.roles">{{ r }}</mat-chip>
+                </mat-chip-list>
+                
+                <p>{{ selectedObject.bio }}</p>
+                
+                <mat-accordion class="mat-expansion-panel-align">
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.dates.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>Dates</mat-panel-title>
+                            <mat-panel-description>
+                                Dates
+                                <mat-icon>account_circle</mat-icon>
+                            </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let date of selectedObject.dates">
+                                <mat-icon mat-list-icon>account_circle</mat-icon>
+                                <h4 mat-line>{{ date.dateName }}</h4>
+                                <p mat-line>{{ displayDate(date.date) }}</p>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.functions.length > 0">
+                            <mat-expansion-panel-header>
+                                <mat-panel-title>Dates</mat-panel-title>
+                                <mat-panel-description>
+                                    Functions
+                                    <mat-icon>account_circle</mat-icon>
+                                </mat-panel-description>
+                            </mat-expansion-panel-header>
+                            <mat-list>
+                                <mat-list-item *ngFor="let function of selectedObject.functions">
+                                    <mat-icon mat-list-icon>account_circle</mat-icon>
+                                    <h4 mat-line>{{ function.dateName }}</h4>
+                                    <p mat-line>{{ displayDate(function.startDate) }} - {{ displayDate((function.endDate)) }}</p>
+                                </mat-list-item>
+                            </mat-list>
+                        </mat-expansion-panel>
+
+                        <mat-expansion-panel opened="false" *ngIf="selectedObject.peopleOrganizations.length > 0">
+                            <mat-expansion-panel-header>
+                                <mat-panel-title>People/Organizations</mat-panel-title>
+                                <mat-panel-description>
+                                    Related people and organizations
+                                    <mat-icon>account_circle</mat-icon>
+                                </mat-panel-description>
+                            </mat-expansion-panel-header>
+                            <mat-list>
+                                <mat-list-item *ngFor="let person of selectedObject.peopleOrganizations">
+                                    <mat-icon mat-list-icon>account_circle</mat-icon>
+                                    <h4 mat-line>{{ getPersonOrganizationName(person.personOrganization) }}</h4>
+                                    <p mat-line>{{ person.relationship }}</p>
+                                </mat-list-item>
+                            </mat-list>
+                        </mat-expansion-panel>
+
+                        <mat-expansion-panel opened="false" *ngIf="selectedObject.identifiers.length > 0">
+                            <mat-expansion-panel-header>
+                                <mat-panel-title>Identifiers</mat-panel-title>
+                                <mat-panel-description>
+                                    More information...
+                                    <mat-icon>account_circle</mat-icon>
+                                </mat-panel-description>
+                            </mat-expansion-panel-header>
+                            <mat-list>
+                                <mat-list-item *ngFor="let identifier of selectedObject.identifiers">
+                                    <mat-icon mat-list-icon>account_circle</mat-icon>
+                                    <h4 mat-line>{{ identifier.identifierType }}</h4>
+                                    <a mat-line [href]="identifier.url">{{ identifier.url }}</a>
+                                </mat-list-item>
+                            </mat-list>
+                        </mat-expansion-panel>
+                </mat-accordion>
+            </div>
+            <div *ngIf="selectedObject.objectType === 'Location'">
+                <mat-chip-list>
+                    <mat-chip *ngFor="let r of selectedObject.locationTypes">{{ r }}</mat-chip>
+                </mat-chip-list>
+
+                <mat-accordion class="mat-expansion-panel-align">
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.locations.length > 0">
+                        <mat-expansion-panel-header>
+                            <mat-panel-title>Locations</mat-panel-title>
+                                <mat-panel-description>
+                                    Related locations...
+                                    <mat-icon>place</mat-icon>
+                                </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let location of selectedObject.locations">
+                                <mat-icon mat-list-icon>place</mat-icon>
+                                <h4 mat-line>{{ getLocationName(location.location) }}</h4>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                    <mat-expansion-panel opened="false" *ngIf="selectedObject.identifiers.length > 0">
+                       <mat-expansion-panel-header>
+                            <mat-panel-title>Identifiers</mat-panel-title>
+                                <mat-panel-description>
+                                    More information...
+                                    <mat-icon>account_circle</mat-icon>
+                                </mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <mat-list>
+                            <mat-list-item *ngFor="let identifier of selectedObject.identifiers">
+                                <mat-icon mat-list-icon>account_circle</mat-icon>
+                                    <h4 mat-line>{{ identifier.identifierType }}</h4>
+                                    <a mat-line [href]="identifier.url">{{ identifier.url }}</a>
+                            </mat-list-item>
+                        </mat-list>
+                    </mat-expansion-panel>
+                </mat-accordion>
+            </div>
+        </div>
+    </mat-sidenav>
+
+    <mat-sidenav-content>
+        <div id="options">
+            <div class="no-margin">
+                <button mat-flat-button (click)="getList()"><mat-icon>list</mat-icon> show list</button><br>
+                <button mat-flat-button (click)="clearList()"><mat-icon>clear_all</mat-icon> hide list</button>
+            </div>
+            <div class="no-margin">
+                <button mat-flat-button (click)="clearTimeSelection()"><mat-icon>refresh</mat-icon> clear selection</button> <br>
+                <button mat-flat-button (click)="toggleMouseBehavior()"><mat-icon>{{ mouseBehavior ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> toggle mouse behavior</button> <br>
+                <button mat-flat-button (click)="toggleBrushBehavior()"><mat-icon>{{ brushBehavior ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> toggle brush visibility</button> <br>
+                <button *ngIf="dataType == 'people'" mat-flat-button (click)="showExile()"><mat-icon>{{ showExiled ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> show exile</button> <br *ngIf="dataType === 'people'">
+                <button mat-flat-button (click)="toggleNames()"><mat-icon>{{ showNames ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> show names</button><br>
+                <button mat-flat-button (click)="invertTime()"><mat-icon>{{ flipTime ? 'radio_button_checked' : 'radio_button_unchecked'}}</mat-icon> invert time</button>
+                <!-- <button mat-flat-button (click)="updateScales()"><mat-icon>zoom_in</mat-icon> apply zoom</button> -->
+            </div>
+            <!-- <div>
+                <mat-slide-toggle (change)="toggleBrush()">Brush</mat-slide-toggle>
+            </div> -->
+            <!-- <mat-form-field>
+                <mat-label>Topic filter</mat-label>
+                <mat-select placeholder="Filter events by topic..." (selectionChange)="filterEventsByType($event.value)">
+                    <mat-option *ngFor="let e of eventTypes" [value]="e">{{ e }}</mat-option>
+                </mat-select>
+            </mat-form-field> -->
+            <mat-form-field>
+                <mat-label>Node Size</mat-label>
+                <mat-select [(value)]="currentNodeSizing" placeholder="Node Size by" (selectionChange)="updateNodeSizing($event.value)">
+                    <mat-option *ngFor="let s of nodeSizes" [value]="s">{{ s }}</mat-option>
+                </mat-select>
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>Order by</mat-label>
+                <mat-select [(value)]="currentOrder" placeholder="Order by" (selectionChange)="updateOrder()">
+                    <mat-option *ngFor="let o of ordering" [value]="o">{{ o }}</mat-option>
+                </mat-select>
+            </mat-form-field>
+            <mat-form-field>
+                    <mat-label>Group by</mat-label>
+                    <mat-select [(value)]="currentGrouping" placeholder="Group by" (selectionChange)="updateGroup()">
+                        <mat-option *ngFor="let o of grouping" [value]="o">{{ o }}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+            <div id="autocomplete">
+                <mat-form-field>
+                    <input matInput placeholder="Person/Location" [matAutocomplete]="auto" [formControl]="objectCtrl">
+                    <button mat-button matSuffix mat-icon-button aria-label="Clear" (click)="clearAutoComplete()">
+                        <mat-icon>close</mat-icon>
+                    </button>
+                    <mat-autocomplete #auto="matAutocomplete">
+                        <mat-option *ngFor="let person of filteredObjects | async" [value]="person.name" (click)="displayPersonDetails(person.name)">
+                            <span>{{ person.name }}</span> 
+                        </mat-option>
+                    </mat-autocomplete>
+                </mat-form-field>
+                <mat-form-field>
+                    <button mat-button matPrefix mat-icon-button (click)="saveConfig()">
+                        <mat-icon>code</mat-icon>
+                    </button>
+                    <input matInput type="text" id="config-url" placeholder="Config URL" #configInput>
+                </mat-form-field>
+            </div>
+        </div>
+        <div id="wrapper">
+            <div id="timeline-radial" #timelineRadial></div>
+            <div id="timeline-chart" #timelineChart></div>
+            <div id="people">
+                <mat-accordion>
+                    <mat-expansion-panel *ngFor="let p of currentlySelectedPeople">
+                        <mat-expansion-panel-header class="people-headers-align">
+                            <mat-panel-title><b>{{ p.name }}</b></mat-panel-title>
+                            <mat-panel-description>{{ p.events.length }} events</mat-panel-description>
+                        </mat-expansion-panel-header>
+                        <button mat-flat-button (click)="displayPersonDetails(p.name)"><mat-icon>info</mat-icon> Details</button>
+                        <div *ngFor="let e of p.events">    
+                            <div class="event-dot" [ngStyle]="{'background-color': getColorForType(e.color)}" [matTooltip]="e.color"></div>
+                            <h4 class="event-header">{{ e.dateName }}</h4>
+                            <p>({{ displayDate(e.startDate) }} - {{ displayDate(e.endDate) }})</p>
+                        </div>
+                    </mat-expansion-panel>
+                </mat-accordion>
+            </div>
+        </div>
+        <div id="date-extent">
+            <h3>{{ displayDate(currentlySelectedMinDate) }}</h3>
+            <h3>&nbsp; - &nbsp;</h3>
+            <h3>{{ displayDate(currentlySelectedMaxDate) }}
+                ({{ getDuration(currentlySelectedMinDate, currentlySelectedMaxDate)}} years)</h3>
+        </div>
+        <!-- Historic Events Filter -->
+        <!-- <div class="chrono-filter">
+            <mat-form-field>
+                <input matInput placeholder="Filter by historic period" [matAutocomplete]="autoChrono" [formControl]="histFilterCtrl">
+                <button mat-button matSuffix mat-icon-button aria-label="Clear" (click)="clearChronoAutoComplete()">
+                    <mat-icon>close</mat-icon>
+                </button>
+                <mat-autocomplete #autoChrono="matAutocomplete">
+                    <mat-option *ngFor="let histEv of filteredHistEvents | async" [value]="histEv.name" (click)="chronoFilter(histEv)">
+                        <span>{{ histEv.name }}</span> |
+                        <small>{{ displayDate(histEv.startDate) }} -  {{ displayDate(histEv.endDate) }}</small>
+                    </mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+        </div> -->
+
+    </mat-sidenav-content>
+</mat-sidenav-container>
+
+<div id="tooltip" #tooltip></div>
+<div id="count-tooltip"></div>

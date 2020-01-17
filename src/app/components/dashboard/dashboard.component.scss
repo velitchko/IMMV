@@ -1,0 +1,43 @@
+.dashboard-carousel {
+    height: 600px;
+}
+
+.dashboard-navigation {
+    position: relative;
+    bottom: 2em;
+    right: 1em;
+    float: right;
+    & a {
+        padding: 0.5em;
+    }
+}
+
+.dashboard-content-wrapper {
+    position: relative;
+    margin: 1em;
+}
+
+// .dashboard-content-grid {
+
+// }
+
+.dashboard-content-tile {
+    height: auto;
+
+    a {
+        color: black;
+    }
+
+    a:visited {
+        color: gray;
+    }
+}
+
+::ng-deep .dashboard-content-tile {
+    .mat-figure {
+        flex-direction: column;
+        text-align: center;
+        padding: 0.15em;
+    }
+}
+

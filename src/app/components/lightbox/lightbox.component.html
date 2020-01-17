@@ -1,0 +1,22 @@
+<div class="lightbox-wrapper" [style.height]="getHeight() + 'px'">
+    <div *ngIf="data.length > 1">
+      <button mat-icon-button id="lightbox-previous" (click)="previous()"><mat-icon>chevron_left</mat-icon></button>
+      <button mat-icon-button id="lightbox-next" (click)="next()"><mat-icon>chevron_right</mat-icon></button>
+    </div>
+    <button id="lightbox-close" mat-icon-button (click)="close()"><mat-icon>close</mat-icon></button>
+    <h2 mat-dialog-title>{{ data[currentIdx].title }}</h2>
+    <div class="lightbox-content" mat-dialog-content>
+      <!-- TODO: USE <object></object> for all media -->
+      <img *ngIf="isImage(data[currentIdx].url)" class="lightbox-element" [src]="data[currentIdx].url"/>
+      <video *ngIf="isVideo(data[currentIdx].url)" class="lightbox-element" controls>
+        <source [src]="data[currentIdx].url" type="video/mp4">
+      </video>
+      <!--<a *ngIf="isPDF(data[currentIdx].type)" [href]="data[currentIdx].url" target="_blank"><mat-icon>picture_as_pdf</mat-icon></a> -->
+      <!-- <pdf-viewer *ngIf="isPDF(data[currentIdx].type)" [src]="data[currentIdx].url" [render-text]="true" style="display: block;"></pdf-viewer> -->
+      <!-- arrows for pages in pdf -->
+      <span>{{ data[currentIdx].copyright }}</span>
+    </div>
+  </div>
+  <div class="lightbox-overlay">
+  </div>
+  
