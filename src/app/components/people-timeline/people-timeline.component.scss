@@ -1,0 +1,23 @@
+.search {
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: row;
+    justify-content: center;
+    align-content: center;
+    
+    .mat-form-field {
+        width: 600px;
+    }
+}
+
+::ng-deep .exile {
+    background-color: #e3bb59;
+}
+
+::ng-deep .vis-item .vis-background {
+    background-color: rgba(220, 220, 220, 0.4) !important;
+}
+
+::ng-deep .vis-item .vis-range {
+    border-radius: 20px;
+}

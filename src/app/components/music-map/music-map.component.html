@@ -1,0 +1,66 @@
+<div class="loader" *ngIf="loading">
+  <div class="spinner">
+    <mat-spinner></mat-spinner>
+    <p class="spinner-text">Getting musical events for you...</p>
+  </div>
+</div>
+
+<div *ngIf="!loading" class="music-map-wrapper">
+  <!-- very special drawer - need to set zindex correctly depending on opened or closed -->
+  <!-- otherwise drawer overlaps map and tl and cannot select or interact -->
+  <app-search></app-search>
+
+  <mat-sidenav-container>
+    <mat-sidenav #previewdrawer mode="side" class="preview-drawer-content">
+      <!-- Internal of the side panel-->
+      <div class="preview-drawer-button">
+        <button class="menu-icon" mat-icon-button (click)="closePreviewDrawer()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <app-previewpanel *ngIf="eventToBeDisplayed" [event]="eventToBeDisplayed"></app-previewpanel>
+    </mat-sidenav>
+    <!-- Main Page content -->
+    <mat-sidenav-content>
+      <app-map [items]="events" class="music-map"></app-map>
+      <app-timeline [items]="events" class="music-timeline"></app-timeline>
+      <!-- <mat-chip-list aria-label="Theme Selection" class="theme-legend">
+        <mat-chip *ngFor="let theme of getMainThemes()" [style.backgroundColor]="theme[1]"
+          (selectionChange)="selectTheme(theme[0])">
+          {{ theme[0] }}
+          <mat-icon matChipRemove *ngIf="themeSelected" (click)="deselectTheme()">cancel</mat-icon>
+        </mat-chip>
+      </mat-chip-list> -->
+      <!--- TIMELINE OPTIONS -->
+      <div [ngClass]="{ 'open' : showTLOptions }" class="timeline-controls">
+        <mat-form-field> <input matInput [(ngModel)]="selectedStartDate" (dateChange)="updateSelectedInterval()"
+            [matDatepicker]="startDate" placeholder="Start date">
+          <button mat-button *ngIf="selectedStartDate" matSuffix mat-icon-button aria-label="Clear"
+            (click)="clearStartDate()">
+            <mat-icon>close</mat-icon>
+          </button>
+          <mat-datepicker-toggle matSuffix [for]="startDate"></mat-datepicker-toggle>
+          <mat-datepicker #startDate></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field>
+          <input matInput [(ngModel)]="selectedEndDate" (dateChange)="updateSelectedInterval()"
+            [matDatepicker]="endDate" placeholder="End date">
+          <button mat-button *ngIf="selectedEndDate" matSuffix mat-icon-button aria-label="Clear"
+            (click)="clearEndDate()">
+            <mat-icon>close</mat-icon>
+          </button>
+          <mat-datepicker-toggle matSuffix [for]="endDate"></mat-datepicker-toggle>
+          <mat-datepicker #endDate></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-select placeholder="Event aggregation...">
+            <mat-option *ngFor="let ao of aggregationOptions" [value]="ao" (click)="updateAggregation(ao)">
+              {{ ao }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+
+</div>

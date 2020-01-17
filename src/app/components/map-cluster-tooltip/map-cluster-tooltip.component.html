@@ -1,0 +1,10 @@
+<mat-list *ngIf="dataProcessed">
+    <div *ngFor="let e of eventsOut; last as last">
+      <mat-list-item>
+        <div [innerHTML]="e.svg | safeHTML"></div>
+        <a class="cluster-tooltip-text" href="javascript:void(0)" (click)="openPreviewPanel(e.event)"><p>{{ e.event.name }}</p></a>
+      </mat-list-item>
+      <mat-divider *ngIf="!last"></mat-divider>
+    </div>
+  </mat-list>
+  

@@ -1,0 +1,25 @@
+#minimap {
+    width: 100%;
+    height: 250px;
+  }
+  
+  ::ng-deep .leaflet-control-attribution {
+    display: none;
+  }
+  
+  ::ng-deep .default-map-marker > svg {
+    fill: #97b0f8;
+    transition: fill 0.5s ease-in-out;
+  }
+  
+  ::ng-deep .minimap .leaflet-popup-content-wrapper {
+    background-color: white;
+    min-height: auto;
+    color: rgba(0,0,0,.87);
+    font-family: 'Roboto, monospace';
+    border-radius: 2px !important;
+    border: none !important;
+    box-shadow: 0 11px 15px -7px rgba(0,0,0,.2),
+                0 24px 38px 3px rgba(0,0,0,.14),
+                0 9px 46px 8px rgba(0,0,0,.12);
+  }

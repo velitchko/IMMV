@@ -1,0 +1,260 @@
+$timeline-height: 200px;
+
+.container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+::ng-deep .categories {
+    cursor: pointer;
+}
+
+::ng-deep .start {
+    transform: rotate(-90deg) translateY(450px);
+}
+
+.detail {
+    position: relative;
+    width: 500px;
+    margin-top: 0em;
+    margin-left: .5em;
+    margin-right: .5em;
+}
+
+::ng-deep .historic-text {
+    font-family: 'Font Awesome 5 Free';
+    cursor: pointer;
+}
+
+.mat-expansion-panel-align .mat-expansion-panel-header-title,
+.mat-expansion-panel-align .mat-expansion-panel-header-description {
+    flex-basis: 0;
+}
+
+.mat-expansion-panel-align .mat-expansion-panel-header-description {
+    justify-content: space-between;
+    align-items: center;
+}
+
+
+.person-details {
+    position: relative;
+    margin-top: 4em;
+}
+
+.chrono-filter {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    position: absolute;
+    top: 8em;
+    left: 1em;
+
+    > mat-form-field {
+        width: 100%;
+    }
+}
+
+#close-btn {
+    position: absolute;
+    top: -3.8em;
+    right: 0em;
+}
+
+#wrapper {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+#count-tooltip {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: auto;
+    height: auto;
+    opacity: 0;
+    z-index: 1050;
+    transition: all .25s ease-in-out;
+    // border: 1px solid #777777;
+    background-color: white;
+    border-radius: 5px;
+    padding: .5em;
+}
+::ng-deep #count-tooltip > p {
+    margin: 0;
+}
+
+.filter-radio-group {
+    display: flex;
+    flex-direction: column;
+    margin: 15px 0;
+}
+
+#timeline-radial {
+    width: 100%;
+    height: calc(100% - #{$timeline-height});
+    position: relative;
+    top: -1em;
+    // overflow: hidden;
+}
+
+#timeline-chart {
+    width: 100%;
+    height: $timeline-height;
+    position: absolute;
+    bottom: 0em;
+}
+
+::ng-deep .aka {
+    color: gray;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+}
+
+::ng-deep .category,
+::ng-deep .type-dots  {
+    cursor: pointer;
+}
+
+#people {
+    position: absolute;
+    top: 0em;
+    right: 0em;
+    padding-left: .5em;
+    padding-right: .5em;
+    background-color: white;
+    max-height: calc(100% - #{$timeline-height});
+    overflow-y: scroll;
+    width: 400px;
+}
+
+
+#options {
+    position: absolute;
+    top: 5em;
+    left: 2em;
+    z-index: 1000;
+    width: auto;
+    max-width: 350px;
+}
+.no-margin {
+    margin: 0 !important;
+}
+
+#brush-holder {
+    position: absolute;
+    top: 80%;
+    z-index: 1000;
+}
+
+::ng-deep rect .selection {
+    fill: #4286f4 !important;
+    fill-opacity: 0.15 !important;
+    stroke: #fff !important;
+    stroke-opacity: 1 !important;
+}
+
+::ng-deep .people-headers-align > .mat-content {
+    justify-content: space-between;
+}
+
+::ng-deep .mat-content > mat-panel-title, .mat-content > mat-panel-description {
+    flex: 0 0 auto;
+}
+
+::ng-deep .event-dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    position: absolute;
+    margin-top: 2px;
+}
+
+::ng-deep .event {
+    cursor: pointer;
+}
+
+::ng-deep .event-header {
+    margin-left: 30px;
+}
+// #map-holder {
+//     width: 100%;
+//     height: 40%;
+
+//     position: relative;
+// }
+
+#tooltip {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    min-width: 250px;
+    width: auto;
+    height: auto;
+    background: white;
+    padding: .5em;
+    z-index: 1000;
+}
+
+::ng-deep .zoom {
+    cursor: move;
+    fill: none;
+    pointer-events: all;
+}
+
+::ng-deep #brush-holder svg {
+    overflow: visible;
+}
+
+::ng-deep .reorder {
+    cursor: grabbing;
+}
+
+::ng-deep #brush-holder g > .tick {
+    font-size: 14px;
+}
+
+// ::ng-deep .after-death {
+//     stroke: #efefef;   
+// }
+
+// ::ng-deep .circle-axis {
+    // fill: none;
+    // stroke: #efefef;
+// }
+
+// ::ng-deep #arc-selection {
+//     opacity: .25;
+// }
+
+#date-extent {
+    position: absolute;
+    bottom: 200px;
+    right: 2em;
+    display: flex;
+    flex-direction: row;
+    user-select: none;
+}
+
+#date-extent h3 {
+    opacity: .25;
+}
+
+#role-holder {
+    position: absolute;
+    top: 0em;
+    left: 0em;
+    z-index: 1000;
+}
