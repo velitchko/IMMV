@@ -3,7 +3,7 @@ The project’s focus is the valorisation and the mediation of the capabilities 
 
 
 ## Dependencies
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 6.0.0.
+This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 9.0.0-rc.
 
 This project uses [MongoDB](https://www.mongodb.com/) for the database.
 
@@ -18,7 +18,7 @@ Demo can be found online at [immv-app](http://immv-app.cvast.tuwien.ac.at)
 git clone https://github.com/velitchko/IMMV.git immv
 cd immv
 npm install
-npm start
+npm run dev
 ```
 
 ## Bulding (Production)
@@ -28,7 +28,7 @@ Run `npm run build:prod` for a production build.
 
 
 ```shell
-npm build:prod
+npm run build:prod
 ```
 
 ## Building (Development)
@@ -38,14 +38,14 @@ Two different dev servers are provided:
 * The [SPA](https://en.wikipedia.org/wiki/Single-page_application) dev server which is a [webpack dev server](https://github.com/webpack/webpack-dev-server) (build `browser` target only).
 
 SPA dev server can be useless (or "broken"): it depends on your server implementation.
-Run `npm run dev` (or `npx ng-udkc`) for an universal dev server. Navigate to [http://localhost:4000/](http://localhost:4000/).
+Run `npm run dev` for an universal dev server. Navigate to [http://localhost:4200/](http://localhost:4200/).
 
 
-Run `npm run dev:spa` (or `npx ng serve --hmr`) for a SPA dev server Navigate to [http://localhost:4200/](http://localhost:4200/).
+Run `npm run dev:spa` for a SPA dev server Navigate to [http://localhost:4200/](http://localhost:4200/).
 
 The app will automatically reload if you change any of the browser source files.
 
-Note: the universal dev server provide an SPA mode too if you navigate to the `index.html`: [http://localhost:4000/index.html](http://localhost:4000/index.html).
+Note: the universal dev server provide an SPA mode too if you navigate to the `index.html`: [http://localhost:4200/index.html](http://localhost:4200/index.html).
 
 ```shell
 npm run dev
