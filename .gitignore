@@ -1,0 +1,6 @@
+# Build dir
+dist
+# Node modules
+node_modules
+#uploads
+uploads

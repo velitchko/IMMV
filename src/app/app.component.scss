@@ -1,0 +1,104 @@
+/* AppComponent's private CSS styles */
+h1 {
+    font-size: 1.2em;
+    color: #999;
+    margin-bottom: 0;
+}
+h2 {
+    font-size: 2em;
+    margin-top: 0;
+    padding-top: 0;
+}
+nav a {
+    padding: 5px 10px;
+    text-decoration: none;
+    margin-top: 10px;
+    display: inline-block;
+    background-color: #eee;
+    border-radius: 4px;
+}
+nav a:visited, a:link {
+    color: #607D8B;
+}
+nav a:hover {
+    color: #039be5;
+    background-color: #CFD8DC;
+}
+nav a.active {
+    color: #039be5;
+}
+
+::ng-deep html * {
+    font-family: 'Roboto', sans-serif;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.is-mobile .toolbar {
+    position: fixed;
+    /* Make sure the toolbar will stay on top of the content as it scrolls past. */
+    z-index: 2;
+}
+
+h1.app-name {
+    margin-left: 8px;
+}
+
+/* Style the toolbar so we create more space for visualizations */
+.toolbar {
+    position: fixed;
+    top: 0em;
+    z-index: 5;
+    background-color: transparent !important;
+    width: auto !important;
+}
+
+.sidenav-container {
+    /* When the sidenav is not fixed, stretch the sidenav container to fill the available space. This
+     causes `<mat-sidenav-content>` to act as our scrolling element for desktop layouts. */
+    flex: 1;
+}
+
+* >>> .app-wrapper {
+    margin: 0em;
+    padding: 0em;
+}
+/* tooltip for svgs
+* >>> .tooltip {
+} */
+
+.menu-icon {
+    color: black;
+}
+.main-navigation {
+    margin-top: 5em;
+    margin-left: 0.5em;
+    padding-right: 0.5em;
+}
+
+.is-mobile .sidenav-container {
+    /* When the sidenav is fixed, don't constrain the height of the sidenav container. This allows the
+    `<body>` to be our scrolling element for mobile layouts. */
+    flex: 1 0 auto;
+}
+
+.mat-list-menu-icon {
+    margin-right: 0.25em;
+}
+
+/* Stick to bottom for the side-nav help and about kind of like a footer */
+.stick-to-bottom {
+    bottom: 0em;
+    position: fixed;
+    /**width: 100%; **/
+    margin-left: 0.5em;
+    padding-right: 0.5em;
+}

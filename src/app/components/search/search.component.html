@@ -1,0 +1,39 @@
+<button class="search-button" [ngClass]="{ 'open' : showSearch }" (click)="toggleSearchBar()">
+  <mat-icon>keyboard_arrow_down</mat-icon>
+</button>
+<form class="search-bar" [ngClass]="{ 'open' : showSearch }">
+  <!-- default search would be for events -->
+  <!-- unless specificed otherwise by the searchType -->
+  <!-- <div class="search-icons-wrapper">
+      <span class="search-icon-wrapper" *ngFor="let st of searchTypes" (click)="setSearchType(st)">
+        <mat-icon class="search-icon" [ngClass]="{'selected': st.selected}">{{ st.icon }}</mat-icon>
+      </span>
+    </div> -->
+  <mat-form-field class="search-wrapper">
+    <input class="search-input" matInput placeholder="Search..." [matAutocomplete]="autoGroup" [formControl]="searchCtrl"
+      #search>
+    <button mat-button *ngIf="displayClear" matSuffix mat-icon-button aria-label="Clear" (click)="clearSearch()">
+      <mat-icon>close</mat-icon>
+    </button>
+    <mat-autocomplete #autoGroup="matAutocomplete">
+      <!-- Group results by object type and display names -->
+      <mat-option *ngIf="loadingResults" class="is-loading">
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      </mat-option>
+      <ng-container *ngIf="!loadingResults">
+      <mat-optgroup *ngFor="let group of results" [label]="group.name">
+        <mat-option *ngFor="let item of group.results" [value]="item.name" (onSelectionChange)="selectedItem(item)">
+          {{ item.name }}
+        </mat-option>
+      </mat-optgroup>
+      </ng-container>
+      <!-- <div *ngFor="let i of filteredItems | async">
+        <mat-option [value]="i.object.name" (onSelectionChange)="highlightEvent(i)">
+          <mat-icon class="results-icon">{{ objectTypes.get(i.type) }}</mat-icon>
+          {{ i.object.name }}
+        </mat-option>
+      </div> -->
+    </mat-autocomplete>
+
+  </mat-form-field>
+</form>
