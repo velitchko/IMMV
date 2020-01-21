@@ -90,7 +90,8 @@ export class PreviewComponent {
    * @return string - hex color
    */
   getColorForCategory(category: Theme): string {
-    return this.ts.getColorForTheme(category.objectId);
+    let color = this.ts.getColorForTheme(category.objectId);
+    return color ? color : 'lightgray';
   }
 
   /**
