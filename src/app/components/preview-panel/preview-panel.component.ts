@@ -8,6 +8,7 @@ import { Theme } from '../../models/theme';
 import * as URL from 'url';
 import { LightboxComponent } from '../lightbox/lightbox.component';
 import { ThemeService } from '../../services/theme.service';
+import { DatabaseService } from 'src/app/services/db.service';
 
 @Component({
   selector: 'app-previewpanel',
@@ -20,6 +21,8 @@ export class PreviewComponent {
   eventLoaded: boolean = false;
   eventMedia: Source;
 
+  objects: Array<any>;
+
   loadingLocation = true;
   loadingOrganization = true;
   loadingPeople = true;
@@ -27,12 +30,18 @@ export class PreviewComponent {
   loadingSource = true;
   loadingTheme = true;
 
-  constructor(private ts: ThemeService, public lightbox: MatDialog) {
+  constructor(private ts: ThemeService, 
+              private db: DatabaseService,
+              public lightbox: MatDialog) {
     this.eventMedia = new Source();
+    console.log('initializing object array');
+    console.log(this.objects);
+    this.objects = new Array<any>();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes && this.event) {
+      this.objects.push(this.event);
       this.eventLoaded = true;
       this.eventMedia = new Source();
       this.event.sources.forEach((s: any) => {
@@ -45,21 +54,37 @@ export class PreviewComponent {
 
 
   goToPerson(p: PersonOrganization): void {
-    console.log('should navigate to ');
-    console.log(p);
+    this.objects.push(p);
   }
 
-  goToEvent(e: Event): void {
-    console.log('should navigate to ');
-    console.log(e);
+  goToEvent(event: Event): void {
+    // TODO: Loading indicator
+    this.db.getAsEvent(event).then((success: any) => {
+      // update event object
+      this.objects.push(success);
+      this.event = this.objects[this.objects.length - 1];
+      // update sources
+      this.eventMedia = new Source();
+      this.event.sources.forEach((s: any) => {
+        s.source.identifiers.forEach((m: any) => {
+          this.eventMedia.identifiers.push(m);
+        });
+      });
+    });
   }
 
   goToLocation(l: Location): void {
-
+    this.objects.push(l);
   }
 
   goToSource(s: Source): void {
+    this.objects.push(s);
+  }
 
+  goBack(): void {
+    if(this.objects.length === 1) return; // dont pop with 1 element
+    this.objects.pop();
+    this.event = this.objects[this.objects.length - 1];
   }
 
   /**
