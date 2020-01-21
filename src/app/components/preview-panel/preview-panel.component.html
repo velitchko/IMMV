@@ -2,6 +2,9 @@
     <app-carousel [source]="eventMedia" [height]="400"></app-carousel>
 </div>
 <div class="previewpanel-container" *ngIf="eventLoaded && event">
+  <div class="back-button">
+    <mat-icon (click)="goBack()">arrow_back</mat-icon>
+  </div>
   <h2>{{ event.name }}</h2>
   <p>{{ prettyPrintDate(event.startDate, false) }}{{ prettyPrintDate(event.endDate, true) }}</p>
   <div class="location-container" *ngIf="event.routes.length !== 0">
@@ -44,9 +47,13 @@
         </mat-panel-title>
       </mat-expansion-panel-header>
       <div>
-        <div *ngFor="let e of event.events">
-          <a href="javascript:void(0)" (click)="goToEvent(e)">{{ e.event.name }}</a>
-        </div>
+        <mat-list dense>
+          <mat-list-item *ngFor="let event of event.events">
+            <mat-icon matListIcon>event</mat-icon>
+            <a href="javascript:void(0)" [title]="event.event.name" (click)="goToEvent(event.event)" matLine>{{ event.event.name }}</a>
+            <p matLine>{{ event.relationship }}</p>
+          </mat-list-item>
+        </mat-list>
       </div>
       </mat-expansion-panel>
     </mat-accordion>
