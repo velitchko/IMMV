@@ -35,9 +35,7 @@ export class PreviewComponent {
   constructor(private ts: ThemeService, 
               private db: DatabaseService,
               public lightbox: MatDialog) {
-    this.eventMedia = new Source();
-    console.log('initializing object array');
-    console.log(this.objects);
+    this.objectMedia = new Source();
     this.objects = new Array<any>();
   }
 
