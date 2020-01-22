@@ -51,6 +51,8 @@ export class PreviewComponent {
       });
     }
   }
+  // TODO: goToHistoricEvent() ? 
+  // TODO: goToTheme() ?
 
   goToPerson(p: PersonOrganization): void {
     this.db.getAsPersonOrganization(p).then((success: any) => {
