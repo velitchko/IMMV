@@ -102,7 +102,7 @@ export class PreviewComponent {
   goBack(): void {
     if(this.objects.length === 1) return; // dont pop with 1 element
     this.objects.pop();
-    this.event = this.objects[this.objects.length - 1];
+    this.object = this.objects[this.objects.length - 1];
   }
 
   /**
