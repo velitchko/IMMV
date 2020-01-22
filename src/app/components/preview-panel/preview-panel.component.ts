@@ -187,6 +187,37 @@ export class PreviewComponent {
     return (separator ? ' - ' : '') + date.getDate() + '/' + (date.getMonth() + 1) + '/' + date.getFullYear();
   }
 
+  getStartAndEndDates(dates: Array<any>, type: string): string {
+    let displayDates = '';
+    if(type === 'Person') {
+      let bday = dates.find((d: any) => {
+        return d.dateName === 'Birth';
+      });
+  
+      let dday = dates.find((d: any) => {
+        return d.dateName === 'Death';
+      });
+
+      displayDates = this.prettyPrintDate(moment(bday.date).toDate());
+      if(dday) displayDates += this.prettyPrintDate(moment(dday.date).toDate(), true);
+    }
+
+    if(type === 'Organization') {
+      let founding = dates.find((d: any) => {
+        return d.dateName === 'Founding';
+      });
+  
+      let liquidation = dates.find((d: any) => {
+        return d.dateName === 'Liquidation';
+      });
+
+      displayDates = this.prettyPrintDate(moment(founding.date).toDate());
+      if(liquidation) displayDates += this.prettyPrintDate(moment(liquidation.date).toDate(), true);
+    }
+
+    return displayDates;
+  }
+
   /**
    * Returns host name from a URL
    * @param url - URL string
