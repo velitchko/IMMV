@@ -1,107 +1,189 @@
 <div class="preview-carousel" *ngIf="objectLoaded && objectMedia">
     <app-carousel [source]="objectMedia" [height]="400"></app-carousel>
 </div>
-<div class="previewpanel-container" *ngIf="eventLoaded && event">
+<div class="previewpanel-container" *ngIf="objectLoaded && object">
   <div class="back-button">
     <mat-icon (click)="goBack()">arrow_back</mat-icon>
   </div>
-  <h2>{{ event.name }}</h2>
-  <p>{{ prettyPrintDate(event.startDate, false) }}{{ prettyPrintDate(event.endDate, true) }}</p>
-  <div class="location-container" *ngIf="event.routes.length !== 0">
-    <ul class="location-list" *ngFor="let rs of event.routes">
-      <li style="padding-right: 1em;"><mat-icon style="transform: scale(1.5);">location_on</mat-icon></li>
-      <li class="location-item" *ngFor="let r of rs" [matTooltip]="r.streetName + (r.streetNumber ? ' ' + r.streetNumber : '') + (r.districtNumber ? ', ' + r.districtNumber : '')" matTooltipPosition="above">    
-        <span class="location-line"></span>
-      </li>
-    </ul>
-  </div>
-  <div class="dialog-themes">
-    <mat-chip-list>
-      <mat-chip *ngFor="let t of event.themes" selected="true" color="primary" [style.backgroundColor]="getColorForCategory(t.theme)">{{ t.theme.name }}</mat-chip>
-    </mat-chip-list>
-  </div>
-  <div class="dialog-people" *ngIf="event.peopleOrganizations.length">
-    <mat-accordion>
-      <mat-expansion-panel hideToggle="false">
-      <mat-expansion-panel-header>
-        <mat-panel-title>
-          <mat-icon>account_circle</mat-icon>
-          <span style="padding-top: 0.25em; padding-left:1em;">Related People/Organizations:</span>
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-      <div>
-        <div *ngFor="let p of event.peopleOrganizations">
-          <a href="javascript:void(0)" (click)="goToPerson(p)">{{ p.personOrganization.name }}</a>
+  <!-- Events -->
+  <div *ngIf="object.objectType === 'Event'">
+    <h2>{{ object.name }}</h2>
+    <p>{{ prettyPrintDate(object.startDate, false) }}{{ prettyPrintDate(object.endDate, true) }}</p>
+    <div class="location-container" *ngIf="object.routes.length !== 0">
+      <ul class="location-list" *ngFor="let rs of object.routes">
+        <li style="padding-right: 1em;"><mat-icon style="transform: scale(1.5);">location_on</mat-icon></li>
+        <li class="location-item" *ngFor="let r of rs" [matTooltip]="r.streetName + (r.streetNumber ? ' ' + r.streetNumber : '') + (r.districtNumber ? ', ' + r.districtNumber : '')" matTooltipPosition="above">    
+          <span class="location-line"></span>
+        </li>
+      </ul>
+    </div>
+    <div class="dialog-themes">
+      <mat-chip-list>
+        <mat-chip *ngFor="let t of object.themes" selected="true" color="primary" [style.backgroundColor]="getColorForCategory(t.theme)">{{ t.theme.name }}</mat-chip>
+      </mat-chip-list>
+    </div>
+    <div class="dialog-people" *ngIf="object.peopleOrganizations.length">
+      <mat-accordion>
+        <mat-expansion-panel hideToggle="false">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon>account_circle</mat-icon>
+            <span style="padding-top: 0.25em; padding-left:1em;">Related People/Organizations:</span>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <div>
+          <mat-list dense>
+            <mat-list-item *ngFor="let p of object.peopleOrganizations">
+              <mat-icon matListIcon>account_circle</mat-icon>
+              <a href="javascript:void(0)" [title]="p.personOrganization.name" (click)="goToPerson(p.personOrganization)" matLine>{{ p.personOrganization.name }}</a>
+              <p matLine>{{ p.relationship }}</p>
+            </mat-list-item>
+          </mat-list>
         </div>
-      </div>
-      </mat-expansion-panel>
-    </mat-accordion>
-  </div>
-  <div class="dialog-events" *ngIf="event.events.length > 0">
-    <mat-accordion>
-      <mat-expansion-panel hideToggle="false">
-      <mat-expansion-panel-header>
-        <mat-panel-title>
-          <mat-icon>event</mat-icon>
-          <span style="padding-top: 0.25em; padding-left:1em;">Related Events:</span>
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-      <div>
-        <mat-list dense>
-          <mat-list-item *ngFor="let event of event.events">
-            <mat-icon matListIcon>event</mat-icon>
-            <a href="javascript:void(0)" [title]="event.event.name" (click)="goToEvent(event.event)" matLine>{{ event.event.name }}</a>
-            <p matLine>{{ event.relationship }}</p>
-          </mat-list-item>
-        </mat-list>
-      </div>
-      </mat-expansion-panel>
-    </mat-accordion>
-  </div>
-  <div class="dialog-locations"*ngIf="event.locations.length">
-    <mat-accordion>
-      <mat-expansion-panel hideToggle="false">
-      <mat-expansion-panel-header>
-        <mat-panel-title>
-          <mat-icon>place</mat-icon>
-          <span style="padding-top: 0.25em; padding-left:1em;">Related Locations:</span>
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-      <div>
-        <app-minimap [location]="event.geodata"></app-minimap>
-        <div *ngFor="let l of event.locations">
-          <a href="javascript:void(0)" (click)="goToLocation(l)">{{ l.name }}</a>
+        </mat-expansion-panel>
+      </mat-accordion>
+    </div>
+    <div class="dialog-events" *ngIf="object.events.length > 0">
+      <mat-accordion>
+        <mat-expansion-panel hideToggle="false">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon>event</mat-icon>
+            <span style="padding-top: 0.25em; padding-left:1em;">Related Events:</span>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <div>
+          <mat-list dense>
+            <mat-list-item *ngFor="let e of object.events">
+              <mat-icon matListIcon>event</mat-icon>
+              <a href="javascript:void(0)" [title]="e.event.name" (click)="goToEvent(e.event)" matLine>{{ e.event.name }}</a>
+              <p matLine>{{ e.relationship }}</p>
+            </mat-list-item>
+          </mat-list>
         </div>
-      </div>
-      </mat-expansion-panel>
-    </mat-accordion>
-  </div>
-  <div class="dialog-sources" *ngIf="event.sources.length">
-    <mat-accordion>
-      <mat-expansion-panel hideToggle="false">
-      <mat-expansion-panel-header>
-        <mat-panel-title>
-          <mat-icon>collections</mat-icon>
-          <span style="padding-top: 0.25em; padding-left:1em;">Related Media:</span>
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-      <div>
-        <div *ngFor="let s of event.sources">
-          <div *ngIf="displaySource(s.source)">
-            <h3>{{ s.source.name }}</h3>
-            <mat-list class="sources-list" dense>
-              <div *ngFor="let si of s.source.identifiers">
-                <mat-list-item *ngIf="hasHost(si.url)">
-                  <mat-icon matListIcon>{{ getIconForSource(si) }}</mat-icon>
-                  <a [href]="si.url" target="_blank" [title]="getHost(si.url)" matLine>{{ si.title }}</a>
-                  <p matLine>{{ getHost(si.url) }} &copy; {{ si.copyright }}</p>
-                </mat-list-item>
-              </div>
-            </mat-list>
+        </mat-expansion-panel>
+      </mat-accordion>
+    </div>
+    <div class="dialog-locations"*ngIf="object.locations.length">
+      <mat-accordion>
+        <mat-expansion-panel hideToggle="false">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon>place</mat-icon>
+            <span style="padding-top: 0.25em; padding-left:1em;">Related Locations:</span>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <div>
+          <app-minimap [location]="object.geodata"></app-minimap>
+          <mat-list dense>
+            <mat-list-item *ngFor="let l of object.locations">
+              <mat-icon matListIcon>place</mat-icon>
+              <a href="javascript:void(0)" [title]="l.location.name" (click)="goToLocation(l.location)" matLine>{{ l.location.name }}</a>
+              <p matLine>{{ l.relationship }}</p>
+            </mat-list-item>
+          </mat-list>
+        </div>
+        </mat-expansion-panel>
+      </mat-accordion>
+    </div>
+    <div class="dialog-sources" *ngIf="object.sources.length">
+      <mat-accordion>
+        <mat-expansion-panel hideToggle="false">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon>collections</mat-icon>
+            <span style="padding-top: 0.25em; padding-left:1em;">Related Media:</span>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <div>
+          <div *ngFor="let s of object.sources">
+            <div *ngIf="displaySource(s.source)">
+              <h3>{{ s.source.name }}</h3>
+              <mat-list class="sources-list" dense>
+                <div *ngFor="let si of s.source.identifiers">
+                  <mat-list-item *ngIf="hasHost(si.url)">
+                    <mat-icon matListIcon>{{ getIconForSource(si) }}</mat-icon>
+                    <a [href]="si.url" target="_blank" [title]="getHost(si.url)" matLine>{{ si.title }}</a>
+                    <p matLine>{{ getHost(si.url) }} &copy; {{ si.copyright }}</p>
+                  </mat-list-item>
+                </div>
+              </mat-list>
+            </div>
           </div>
         </div>
-      </div>
-      </mat-expansion-panel>
-    </mat-accordion>
+        </mat-expansion-panel>
+      </mat-accordion>
+    </div>
+  </div>
+  <!-- People/Organizations -->
+  <div *ngIf="object.objectType === 'Person' || object.objectType === 'Organization'">
+    <h2>{{ object.name }}</h2>
+    <p>{{ getStartAndEndDates(object.dates, object.objectType) }}</p> <!-- Birth and Death or Founding and Liquidation-->
+
+    <div class="dialog-people" *ngIf="object.peopleOrganizations.length">
+      <mat-accordion>
+        <mat-expansion-panel hideToggle="false">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon>account_circle</mat-icon>
+            <span style="padding-top: 0.25em; padding-left:1em;">Related People/Organizations:</span>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <div>
+          <mat-list dense>
+            <mat-list-item *ngFor="let p of object.peopleOrganizations">
+              <mat-icon matListIcon>account_circle</mat-icon>
+              <a href="javascript:void(0)" [title]="p.personOrganization.name" (click)="goToPerson(p.personOrganization)" matLine>{{ p.personOrganization.name }}</a>
+              <p matLine>{{ p.relationship }}</p>
+            </mat-list-item>
+          </mat-list>
+        </div>
+        </mat-expansion-panel>
+      </mat-accordion>
+    </div>
+  </div>
+  <!-- Locations -->
+  <div *ngIf="object.objectType === 'Location'">
+    <h2>{{ object.name }}</h2>
+
+  </div>
+  <!-- HistoricEvents -->
+  <div *ngIf="object.objectType === 'HistoricEvent'">
+    <h2>{{ object.name }}</h2>
+    <p>{{ prettyPrintDate(object.startDate, false) }}{{ prettyPrintDate(object.endDate, true) }}</p>
+
+  </div>
+  <!-- Locations -->
+  <div *ngIf="object.objectType === 'Location'">
+    <h2>{{ object.name }}</h2>
+
+    <div class="dialog-locations"*ngIf="object.locations.length">
+      <mat-accordion>
+        <mat-expansion-panel hideToggle="false">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon>place</mat-icon>
+            <span style="padding-top: 0.25em; padding-left:1em;">Related Locations:</span>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <div>
+          <!-- <app-minimap [location]="object.geodata"></app-minimap> -->
+          <mat-list dense>
+            <mat-list-item *ngFor="let l of object.locations">
+              <mat-icon matListIcon>place</mat-icon>
+              <a href="javascript:void(0)" [title]="l.location.name" (click)="goToLocation(l.location)" matLine>{{ l.location.name }}</a>
+              <p matLine>{{ l.relationship }}</p>
+            </mat-list-item>
+          </mat-list>
+        </div>
+        </mat-expansion-panel>
+      </mat-accordion>
+    </div>
+
+  </div>
+  <!-- Sources -->
+  <div *ngIf="object.objectType === 'Source'">
+    <h2>{{ object.name }}</h2>
+
   </div>
 </div>
