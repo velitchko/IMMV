@@ -85,7 +85,18 @@ export class PreviewComponent {
   }
 
   goToSource(s: Source): void {
-    this.objects.push(s);
+    this.db.getAsSource(s).then((success: any) => {
+      this.objects.push(success);
+      this.object = this.objects[this.objects.length - 1];
+      // TODO: Get sources related to people / organziations somehow?
+        // update sources
+        this.objectMedia = new Source();
+        this.object.sources.forEach((s: any) => {
+          s.source.identifiers.forEach((m: any) => {
+            this.objectMedia.identifiers.push(m);
+          });
+        });
+    });
   }
 
   goBack(): void {
