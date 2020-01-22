@@ -77,7 +77,11 @@ export class PreviewComponent {
   }
 
   goToLocation(l: Location): void {
-    this.objects.push(l);
+    this.db.getAsLocation(l).then((success: any) => {
+      this.objects.push(success);
+      this.object = this.objects[this.objects.length - 1];
+      // TODO: Get sources related to people / organziations somehow?
+    });
   }
 
   goToSource(s: Source): void {
