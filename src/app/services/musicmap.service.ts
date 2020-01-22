@@ -54,7 +54,7 @@ export class MusicMapService {
   
   /**
    * Updates the time interval that the user is looking at
-   @param dates - a date array index 0 is the minimum date, index 1 is the maximum date
+    @param dates - a date array index 0 is the minimum date, index 1 is the maximum date
    */
   updateEventInterval(dates: Array<Date>): void {
     this.eventInterval.next(dates);
