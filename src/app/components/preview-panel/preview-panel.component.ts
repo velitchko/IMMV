@@ -40,13 +40,13 @@ export class PreviewComponent {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes && this.event) {
-      this.objects.push(this.event);
-      this.eventLoaded = true;
-      this.eventMedia = new Source();
-      this.event.sources.forEach((s: any) => {
+    if (changes && this.object) {
+      this.objects.push(this.object);
+      this.objectLoaded = true;
+      this.objectMedia = new Source();
+      this.object.sources.forEach((s: any) => {
         s.source.identifiers.forEach((m: any) => {
-          this.eventMedia.identifiers.push(m);
+          this.objectMedia.identifiers.push(m);
         });
       });
     }
