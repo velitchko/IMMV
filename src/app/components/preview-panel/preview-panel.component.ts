@@ -25,13 +25,6 @@ export class PreviewComponent {
 
   objects: Array<any>;
 
-  loadingLocation = true;
-  loadingOrganization = true;
-  loadingPeople = true;
-  loadingEvent = true;
-  loadingSource = true;
-  loadingTheme = true;
-
   constructor(private ts: ThemeService, 
               private db: DatabaseService,
               public lightbox: MatDialog) {
