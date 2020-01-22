@@ -20,6 +20,8 @@ import * as moment from 'moment';
 
 export class PreviewComponent {
   @Input() object: any | (Event & PersonOrganization & Location & Theme & Source & HistoricEvent);
+  objectLoaded: boolean = false;
+  objectMedia: Source;
 
   objects: Array<any>;
 
