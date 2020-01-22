@@ -52,9 +52,12 @@ export class PreviewComponent {
     }
   }
 
-
   goToPerson(p: PersonOrganization): void {
-    this.objects.push(p);
+    this.db.getAsPersonOrganization(p).then((success: any) => {
+      this.objects.push(success);
+      this.object = this.objects[this.objects.length - 1];
+      // TODO: Get sources related to people / organziations somehow?
+    });
   }
 
   goToEvent(event: Event): void {
