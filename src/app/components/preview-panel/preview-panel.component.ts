@@ -65,12 +65,12 @@ export class PreviewComponent {
     this.db.getAsEvent(event).then((success: any) => {
       // update event object
       this.objects.push(success);
-      this.event = this.objects[this.objects.length - 1];
+      this.object = this.objects[this.objects.length - 1];
       // update sources
-      this.eventMedia = new Source();
-      this.event.sources.forEach((s: any) => {
+      this.objectMedia = new Source();
+      this.object.sources.forEach((s: any) => {
         s.source.identifiers.forEach((m: any) => {
-          this.eventMedia.identifiers.push(m);
+          this.objectMedia.identifiers.push(m);
         });
       });
     });
