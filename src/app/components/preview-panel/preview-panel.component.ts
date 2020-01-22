@@ -5,10 +5,12 @@ import { Event } from '../../models/event';
 import { Location } from '../../models/location';
 import { Source } from '../../models/source';
 import { Theme } from '../../models/theme';
+import { HistoricEvent } from '../../models/historic.event';
 import * as URL from 'url';
 import { LightboxComponent } from '../lightbox/lightbox.component';
 import { ThemeService } from '../../services/theme.service';
 import { DatabaseService } from 'src/app/services/db.service';
+import * as moment from 'moment';
 
 @Component({
   selector: 'app-previewpanel',
