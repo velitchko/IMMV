@@ -44,7 +44,7 @@ export class NetworkComponent implements AfterViewInit {
   searchCtrl = new FormControl();
   filteredItems: Observable<any>;
   selectedNode: any;
-  eventToBeDisplayed: Event;
+  objectToBeDisplayed: any | (Event & PersonOrganization & Location & Theme & Source & HistoricEvent);
 
   startDate: any;
   endDate: any;
@@ -157,12 +157,12 @@ export class NetworkComponent implements AfterViewInit {
       let found = this.db.getEventById(event);
       if(found) {
         this.db.getAsEvent(found).then((success: Event) => {
-          this.eventToBeDisplayed = success;
+          this.objectToBeDisplayed = success;
           this.previewdrawer.toggle();
         });
       } else {
         this.db.getEvent(event).then((success: Event) => {
-          this.eventToBeDisplayed = success;
+          this.objectToBeDisplayed = success;
           this.previewdrawer.toggle();
         });
       }
@@ -306,7 +306,7 @@ export class NetworkComponent implements AfterViewInit {
   }
 
   closePreviewDrawer(): void {
-    this.eventToBeDisplayed = null;
+    this.objectToBeDisplayed = null;
     this.mms.setSelectedEvent(null);
     this.previewdrawer.toggle();
   }
@@ -907,13 +907,14 @@ export class NetworkComponent implements AfterViewInit {
     });
 
     this.network.on('click', ($event: any) => {
-      let node = this.nodes.get($event.nodes[0]);
+      let node: any = this.nodes.get($event.nodes[0]);
       
       if(!node) return;
-
+      console.log(node);
       // TODO: Open detail panel and populate with node details
       // If node details are not available (i.e., node is related to something we were looking for)
         // look up the node details (db.services)
+      if(node.objectType === 'event') this.mms.setSelectedEvent(node.objectId);
       
     });
 
