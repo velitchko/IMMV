@@ -41,7 +41,7 @@ export class MusicMapComponent implements AfterViewInit {
   ];
   // colors: Array<string>;
   selectedEntries: Array<any>;
-  eventToBeDisplayed: Event;
+  objectToBeDisplayed: Event;
   themeSelected: boolean;
 
   constructor(private db: DatabaseService, 
@@ -65,7 +65,7 @@ export class MusicMapComponent implements AfterViewInit {
 
     this.selectedEntries = new Array<any>();
 
-    this.eventToBeDisplayed = null;
+    this.objectToBeDisplayed = null;
   }
 
   ngAfterViewInit(): void {
@@ -74,12 +74,12 @@ export class MusicMapComponent implements AfterViewInit {
       let found = this.db.getEventById(event);
       if(found) {
         this.db.getAsEvent(found).then((success: Event) => {
-          this.eventToBeDisplayed = success;
+          this.objectToBeDisplayed = success;
           this.previewdrawer.toggle();
         });
       } else {
         this.db.getEvent(event).then((success: Event) => {
-          this.eventToBeDisplayed = success;
+          this.objectToBeDisplayed = success;
           this.previewdrawer.toggle();
         });
       }
@@ -165,7 +165,7 @@ export class MusicMapComponent implements AfterViewInit {
    * Clears the selected element and closes the preview drawer
    */
   closePreviewDrawer(): void {
-    this.eventToBeDisplayed = null;
+    this.objectToBeDisplayed = null;
     this.mms.setSelectedEvent(null);
     this.previewdrawer.toggle();
   }
