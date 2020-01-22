@@ -1,5 +1,5 @@
-<div class="preview-carousel" *ngIf="eventLoaded">
-    <app-carousel [source]="eventMedia" [height]="400"></app-carousel>
+<div class="preview-carousel" *ngIf="objectLoaded && objectMedia">
+    <app-carousel [source]="objectMedia" [height]="400"></app-carousel>
 </div>
 <div class="previewpanel-container" *ngIf="eventLoaded && event">
   <div class="back-button">
