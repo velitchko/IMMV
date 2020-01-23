@@ -1,6 +1,7 @@
 import { Component, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { Event } from '../../models/event';
 import { HistoricEvent } from '../../models/historic.event';
+import { Theme } from '../../models/theme';
 import { MusicMapService } from '../../services/musicmap.service';
 import { DatabaseService } from '../../services/db.service';
 import { ThemeService } from '../../services/theme.service';
