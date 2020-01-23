@@ -178,6 +178,7 @@ export class PreviewComponent {
    */
   prettyPrintDate(date: Date, separator?: boolean): string {
     if (date === null) return '';
+    date = new Date(date); // incase a string gets passed
     if(isNaN(date.getTime())) return '';
     return (separator ? ' - ' : '') + date.getDate() + '/' + (date.getMonth() + 1) + '/' + date.getFullYear();
   }
