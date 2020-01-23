@@ -97,12 +97,8 @@ export class MusicMapComponent implements AfterViewInit {
     
     if(this.themeID) {
       this.db.getTheme(this.themeID).then((success: any) => {
-        console.log('got theme');
         let theme = success;
-        console.log(theme);
         this.db.getEventsByTheme(theme).then((success: Array<Event>) => {
-          console.log('got events');
-          console.log(success);
           this.events = success; 
           this.loading = false;
         }, (error) => { console.log(error); });
