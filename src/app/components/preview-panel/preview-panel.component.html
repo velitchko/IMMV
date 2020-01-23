@@ -187,7 +187,9 @@
   <!-- Locations -->
   <div *ngIf="object.objectType === 'Location'">
     <h2>{{ object.name }}</h2>
-
+    <mat-chip-list>
+      <mat-chip *ngFor="let l of object.locationTypes">{{ l }}</mat-chip>
+    </mat-chip-list>
     <div class="dialog-locations"*ngIf="object.locations.length">
       <mat-accordion>
         <mat-expansion-panel hideToggle="false">
