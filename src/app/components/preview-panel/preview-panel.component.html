@@ -119,9 +119,45 @@
   <div *ngIf="object.objectType === 'Person' || object.objectType === 'Organization'">
     <h2>{{ object.name }}</h2>
     <p>{{ getStartAndEndDates(object.dates, object.objectType) }}</p> <!-- Birth and Death or Founding and Liquidation-->
-
+    <mat-chip-list>
+      <mat-chip *ngFor="let r of object.roles">{{ r }}</mat-chip>
+    </mat-chip-list>
+    <p>{{ object.bio }}</p>
+  
     <div class="dialog-people" *ngIf="object.peopleOrganizations.length">
       <mat-accordion>
+        <mat-expansion-panel opened="false" *ngIf="object.dates.length > 0">
+          <mat-expansion-panel-header>
+              <mat-panel-title>Dates</mat-panel-title>
+              <mat-panel-description>
+                  Dates
+                  <mat-icon>account_circle</mat-icon>
+              </mat-panel-description>
+          </mat-expansion-panel-header>
+          <mat-list>
+              <mat-list-item *ngFor="let date of object.dates">
+                  <mat-icon mat-list-icon>account_circle</mat-icon>
+                  <h4 mat-line>{{ date.dateName }}</h4>
+                  <p mat-line>{{ prettyPrintDate(date.date) }}</p>
+              </mat-list-item>
+          </mat-list>
+      </mat-expansion-panel>
+      <mat-expansion-panel opened="false" *ngIf="object.functions.length > 0">
+              <mat-expansion-panel-header>
+                  <mat-panel-title>Dates</mat-panel-title>
+                  <mat-panel-description>
+                      Functions
+                      <mat-icon>account_circle</mat-icon>
+                  </mat-panel-description>
+              </mat-expansion-panel-header>
+              <mat-list>
+                  <mat-list-item *ngFor="let function of object.functions">
+                      <mat-icon mat-list-icon>account_circle</mat-icon>
+                      <h4 mat-line>{{ function.dateName }}</h4>
+                      <p mat-line>{{ prettyPrintDate(function.startDate) }} {{ prettyPrintDate(function.endDate, true) }}</p>
+                  </mat-list-item>
+              </mat-list>
+          </mat-expansion-panel>
         <mat-expansion-panel hideToggle="false">
         <mat-expansion-panel-header>
           <mat-panel-title>
