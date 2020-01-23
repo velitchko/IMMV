@@ -31,8 +31,16 @@ export class ThemeService {
         });
     }
 
-    getThemes(): void {
-
+    getThemes(): Array<{ theme: Theme, color: string}> {
+        let result = new Array<{ theme: Theme, color: string }>();
+        this.colors.forEach((v: string, k: string) => {
+            let theme = this.mainThemes.find((t: Theme) => { return t.objectId === k; });
+            result.push({
+                theme: theme,
+                color: v
+            })
+        })
+        return result;
     }
 
     isMainTheme(id: string): boolean {
