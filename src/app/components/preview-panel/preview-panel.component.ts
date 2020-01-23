@@ -226,6 +226,17 @@ export class PreviewComponent {
     return URL.parse(url).hostname ? true : false;
   }
 
+  // TODO: Should we actually just display duplicate information?
+  checkIfExternalSources(object: any): boolean {
+    let show = false;
+    if(object.sources) {
+      object.sources.forEach((s: { source: Source, relationship: string}) => { 
+        show = this.displaySource(s.source);
+      });
+    }
+    return show;
+  }
+
   displaySource(source: Source): boolean {
     // if at least one indentifier points to an external url
     let show = false;
