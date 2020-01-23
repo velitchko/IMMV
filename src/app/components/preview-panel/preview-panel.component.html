@@ -86,7 +86,7 @@
         </mat-expansion-panel>
       </mat-accordion>
     </div>
-    <div class="dialog-sources" *ngIf="object.sources.length">
+    <div class="dialog-sources" *ngIf="checkIfExternalSources(object)">
       <mat-accordion>
         <mat-expansion-panel hideToggle="false">
         <mat-expansion-panel-header>
