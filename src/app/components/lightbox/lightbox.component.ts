@@ -4,7 +4,7 @@ import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { ChangeDetectorRef } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
+
 @Component({
   selector: 'app-lightbox',
   templateUrl: './lightbox.component.html',
@@ -30,22 +30,9 @@ export class LightboxComponent {
               private ref: ChangeDetectorRef,
               private http: HttpClient) {
     this.isBrowser = isPlatformBrowser(this._platformId);
-    if(this.isBrowser) {
-      this.lbHeight = (this.window.innerHeight - this.window.innerHeight*5/100); // remove 15 of height because we are not useing whole viewport
-      // for(let d of this.data) {
-      //   console.log('constructor');
-      //   console.log(d);
-      //   if(this.isPDF(d.type)) {
-      //     let r = this.getPDFUrl(d.url);
-      //     console.log(r);
-      //   }
-      // }
-    }
-    // get client dimensions to calculate height lightbox should have
   }
 
   getHeight(): number {
-    //console.log('got height');
     return this.lbHeight;
   }
 
