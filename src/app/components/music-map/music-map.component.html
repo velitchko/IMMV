@@ -24,13 +24,12 @@
     <mat-sidenav-content>
       <app-map [items]="events" class="music-map"></app-map>
       <app-timeline [items]="events" class="music-timeline"></app-timeline>
-      <!-- <mat-chip-list aria-label="Theme Selection" class="theme-legend">
-        <mat-chip *ngFor="let theme of getMainThemes()" [style.backgroundColor]="theme[1]"
-          (selectionChange)="selectTheme(theme[0])">
-          {{ theme[0] }}
+      <mat-chip-list aria-label="Theme Selection" class="theme-legend">
+        <mat-chip *ngFor="let theme of mainThemes" [style.backgroundColor]="theme.color">
+          {{ theme.theme.name }}
           <mat-icon matChipRemove *ngIf="themeSelected" (click)="deselectTheme()">cancel</mat-icon>
         </mat-chip>
-      </mat-chip-list> -->
+      </mat-chip-list>
       <!--- TIMELINE OPTIONS -->
       <div [ngClass]="{ 'open' : showTLOptions }" class="timeline-controls">
         <mat-form-field> <input matInput [(ngModel)]="selectedStartDate" (dateChange)="updateSelectedInterval()"
