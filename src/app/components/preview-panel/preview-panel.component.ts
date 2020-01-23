@@ -207,7 +207,7 @@ export class PreviewComponent {
         return d.dateName === 'Liquidation';
       });
 
-      displayDates = this.prettyPrintDate(moment(founding.date).toDate());
+      if(founding) displayDates = this.prettyPrintDate(moment(founding.date).toDate());
       if(liquidation) displayDates += this.prettyPrintDate(moment(liquidation.date).toDate(), true);
     }
 
