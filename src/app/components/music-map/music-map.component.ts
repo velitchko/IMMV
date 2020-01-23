@@ -21,6 +21,7 @@ export class MusicMapComponent implements AfterViewInit {
   // Internal data structures
   events: Array<Event>;
   historicEvents: Array<HistoricEvent>;
+  mainThemes: Array<{ theme: Theme, color: string }>;
 
   loading = true;
   
@@ -99,6 +100,7 @@ export class MusicMapComponent implements AfterViewInit {
       this.db.getTheme(this.themeID).then((success: any) => {
         let theme = success;
         this.db.getEventsByTheme(theme).then((success: Array<Event>) => {
+          this.mainThemes = this.ts.getThemes();
           this.events = success; 
           this.loading = false;
         }, (error) => { console.log(error); });
@@ -106,12 +108,14 @@ export class MusicMapComponent implements AfterViewInit {
     } else {
       if(this.db.getEvents().length === 0) {
         this.db.getAllEvents().then((success: Array<Event>) => { 
+          this.mainThemes = this.ts.getThemes();
           this.events = success; 
           this.loading = false;
         }, (error) => { console.log(error); });
       } else {
         // else we gucci
         this.events = this.db.getEvents();
+        this.mainThemes = this.ts.getThemes();
         this.loading = false;
       }
     }
@@ -127,10 +131,6 @@ export class MusicMapComponent implements AfterViewInit {
 
   deselectTheme(): void {
     this.themeSelected = false;
-  }
-
-  getMainThemes(): any {
-    return [...this.ts.colors];
   }
 
   /**
