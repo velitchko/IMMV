@@ -1,71 +1,69 @@
 #lightbox-previous {
-    position: absolute;
-    color: #f4f1f1;
-    top: calc(50% - 37px);
-    left: 20%;
-    transform: scale(2.5);
-    background: none;
-    transition: color 0.2s ease-in-out;
-    user-select: none;
-  }
+  position: absolute;
+  color: #f4f1f1;
+  top: calc(50% - 37px);
+  left: 20%;
+  transform: scale(2.5);
+  background: none;
+  transition: color 0.2s ease-in-out;
+  user-select: none;
+}
   
-  #lightbox-next {
-    position: absolute;
-    color: #f4f1f1;
-    top: calc(50% - 37px);
-    right: 20%;
-    transform: scale(2.5);
-    background: none;
-    transition: color 0.2s ease-in-out;
-    user-select: none;
-  }
-  
-  #lightbox-previous:hover,
-  #lightbox-previous:focus,
-  #lightbox-next:hover,
-  #lightbox-next:focus {
-    outline: none;
-    color: #b9b9b9;
-  }
-  
-  #lightbox-close {
-    position: absolute;
-    top: 2%;
-    right: 1%;
-    transform: scale(1.5);
-    color: white;
-    user-select: none;
-  }
-  
-  #lightbox-close:hover,
-  #lightbox-close:focus {
-    color: #b9b9b9;
-  }
-  
-//   .lightbox-wrapper {
-//   }
-  
-  .lightbox-content {
-    height: inherit;
-    padding: 0px;
-    max-height: 95% !important;
-  }
-  .lightbox-element {
-    width: 100%;
-    height: auto;
-    object-fit: contain;
-  }
-  
-  .lightbox-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    margin: 0;
-    padding: 0;
-    background-color: darkgray;
-    opacity: 0.35;
-    height: 100%;
-    width: 100%;
-    z-index: -1;
-  }
-  
+#lightbox-next {
+  position: absolute;
+  color: #f4f1f1;
+  top: calc(50% - 37px);
+  right: 20%;
+  transform: scale(2.5);
+  background: none;
+  transition: color 0.2s ease-in-out;
+  user-select: none;
+}
+
+#lightbox-previous:hover,
+#lightbox-previous:focus,
+#lightbox-next:hover,
+#lightbox-next:focus {
+  outline: none;
+  color: #b9b9b9;
+}
+
+#lightbox-close {
+  position: absolute;
+  top: 2%;
+  right: 1%;
+  transform: scale(1.5);
+  color: white;
+  user-select: none;
+}
+
+#lightbox-close:hover,
+#lightbox-close:focus {
+  color: #b9b9b9;
+}
+
+.lightbox-wrapper {
+  padding: 0;
+  margin: 0;
+  height: auto;
+  max-height: 95vh;
+}
+
+.lightbox-element {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.lightbox-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  background-color: black;
+  opacity: 0.35;
+  height: 100%;
+  width: 100%;
+  z-index: -1;
+}
