@@ -8,7 +8,7 @@
 <div *ngIf="!loading" class="music-map-wrapper">
   <!-- very special drawer - need to set zindex correctly depending on opened or closed -->
   <!-- otherwise drawer overlaps map and tl and cannot select or interact -->
-  <app-search></app-search>
+  <app-search (itemSelected)="update($event)"></app-search>
 
   <mat-sidenav-container>
     <mat-sidenav #previewdrawer mode="side" class="preview-drawer-content">
