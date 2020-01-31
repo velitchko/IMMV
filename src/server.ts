@@ -26,7 +26,7 @@ if (environment.production) {
 }
 
 
-export const PORT = process.env.PORT || 4200;
+export const PORT = process.env.PORT || 4000;
 export const BROWSER_DIST_PATH = join(__dirname, '..', 'browser');
 
 export const getNgRenderMiddlewareOptions: () => NgSetupOptions = () => ({
