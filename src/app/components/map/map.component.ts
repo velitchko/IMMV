@@ -7,7 +7,6 @@ import * as D3 from 'd3';
 import { environment } from '../../../environments/environment';
 import { Event } from '../../models/event';
 import { MusicMapService } from '../../services/musicmap.service';
-import { ModalDialogComponent } from '../modal/modal.component';
 import { Geodata } from '../../models/location';
 import { MapClusterTooltipComponent } from '../map-cluster-tooltip/map-cluster-tooltip.component';
 import { DatabaseService } from '../../services/db.service';
@@ -251,19 +250,6 @@ export class MapComponent implements AfterViewInit, OnChanges {
    */
   findEvent(objectId: string): Event {
     return this.items.find((e: Event) => { return objectId === e.objectId; });
-  }
-
-  /**
-   * Opens a modal (dialog)
-   * @param e - event with data that we will display in the modal
-   */
-  openDialog(e: Event): void {
-    if (!e) return;
-    let dialogRef = this.dialog.open(ModalDialogComponent, {
-      width: '50%',
-      data: e
-    });
-    dialogRef.afterClosed().subscribe((result: any) => { });
   }
 
   unhighlightMarkers(): void {
