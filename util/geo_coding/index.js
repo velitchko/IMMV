@@ -84,7 +84,6 @@ async function geocode(location, objectID, geodataID = null) {
 function findEvents() {
     //  name: { $regex: 'festwochen', $options: 'i' }, geodata: {$exists: true}
     EventSchema.find({}, function (err, events) {
-        console.log(events);
         let queued = events.length;
         progressBar.start(queued, 0);
         if (err) {
