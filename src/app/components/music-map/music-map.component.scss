@@ -97,7 +97,6 @@
   overflow-y: hidden !important;
 }
 
-.drawer-container,
 .preview-drawer-container {
   flex: 1;
   width: 100%;
@@ -105,39 +104,11 @@
   background-color: transparent;
 }
 
-.drawer-entry {
-  line-height: 22px;
-  text-decoration: none;
-  color: #5a5a5a;
-  margin-left: 2em !important;
-}
-
-.drawertypes-container {
-  display: flex;
-  padding-right:2em;
-  flex: 1;
-}
-
-.drawertypes-entry a {
-  color: #d9d9d9;
-  font-size: 1.25em;
-  display: flex;
-  text-decoration: none;
-  outline: none;
-  justify-content: center;
-  align-content: center;
-  flex-direction: row;
-}
-
-.drawertypes-entry:hover {
-  background-color: #f2f2f2;
-}
 .selected {
   color: #5a5a5a !important;
 }
 
-.preview-drawer-button,
-.drawer-button {
+.preview-drawer-button {
   position: absolute;
   display: flex;
   z-index: 2;
@@ -154,26 +125,6 @@
   top: 0.75em;
   right: 0.5em;
 }
-
-.drawer-button {
-  top: 1em;
-  right: 1em;
-}
-
-.drawer-sidenav {
-  transition: width 2s ease-in-out;
-  min-width: 250px;
-  max-width: 450px;
-  padding: 10px;
-}
-
-.drawer-entry {
-  outline: none;
-}
-
-//   .drawer-list {
-
-//   }
 
 .open {
   left: 0em;
