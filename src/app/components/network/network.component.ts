@@ -913,9 +913,8 @@ export class NetworkComponent implements AfterViewInit {
       
       if(!node) return;
       console.log(node);
-      // TODO: Open detail panel and populate with node details
-      // If node details are not available (i.e., node is related to something we were looking for)
-        // look up the node details (db.services)
+      // TODO: Setup service to work with other object types
+      // look up the node details (db.services)
       if(node.objectType === 'event') this.mms.setSelectedEvent(node.objectId);
       
     });
@@ -1055,6 +1054,7 @@ export class NetworkComponent implements AfterViewInit {
       });
 
       this.highlightInNetwork(event);
+      this.mms.setSelectedEvent($event.item);
     });
 
     this.timelineInitialized = true;
@@ -1066,13 +1066,13 @@ export class NetworkComponent implements AfterViewInit {
   highlightInTimeline(node: any): void {
     // if(!node || node.objectType !== 'event' || node.objectId !== 'historicevent') return;
     if (!node) return;
-
+    // TODO: Consider graying out / lowering opacity of nodes not matching request
     this.timeline.focus(node.objectId);
   }
 
   highlightInNetwork(node: any): void {
     if (!node) return;
-
+    // TODO: Consider graying out / lowering opacity of nodes not matching request
     this.network.focus(node.id, { animation: { duration: 250, easingFunction: 'easeInOutCubic' } });
   }
 }
