@@ -44,6 +44,12 @@ export class PreviewComponent {
       });
     }
   }
+
+  getTitle(title: string): string {
+    if(title && title !== '') return title;
+    return 'Link';
+  }
+
   // TODO: goToHistoricEvent() ? 
   // TODO: goToTheme() ?
 
