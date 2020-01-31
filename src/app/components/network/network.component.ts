@@ -307,8 +307,7 @@ export class NetworkComponent implements AfterViewInit {
   }
 
   update(data: any): void {
-    console.log(data);
-    console.log('updating network');
+    if(!this.isBrowser) return;
     if (!this.networkInitialized) {
       this.setupData(data);
       this.initNetwork();
@@ -1024,6 +1023,7 @@ export class NetworkComponent implements AfterViewInit {
   }
 
   getMinMaxDate(): void {
+    if(!this.timeline) return;
     let minMax = this.timeline.getItemRange();
     this.startDate = moment(minMax.min).year();
     this.endDate = moment(minMax.max).year();
