@@ -200,7 +200,7 @@ export class PreviewComponent {
         return d.dateName === 'Death';
       });
 
-      displayDates = this.prettyPrintDate(moment(bday.date).toDate());
+      if(bday) displayDates = this.prettyPrintDate(moment(bday.date).toDate());
       if(dday) displayDates += this.prettyPrintDate(moment(dday.date).toDate(), true);
     }
 
