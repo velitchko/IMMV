@@ -594,18 +594,19 @@ export class MapComponent implements AfterViewInit, OnChanges {
    * @param cssClass          - css class to be added to the SVG
    * @return string           - the SVG as string
    */
-  getSVGClusterIcon(childClusterCount: number = 0, cssClass: string = ''): string {
+  getSVGClusterIcon(childClusterCount: Array<any> = [], cssClass: string = ''): string {
     // add tooltip
-    let data = new Array<any>();
-    let width = 35; // in pixels
-    let height = 35; // in pixels
-    let thickness = 7; // in pixels
+    let data = childClusterCount;
+    
+    let width = 32; // in pixels
+    let height = 32; // in pixels
+    let thickness = 6; // in pixels
 
     let radius = Math.min(width, height) / 2;
 
     let svg = D3.select('body').append('svg')
       .remove() // remove it after creating so we can create the icon and then return the HTML as a string to L
-      .attr('class', 'custom-cluster-icon')
+      // .attr('class', 'custom-cluster-icon')
       .attr('width', width)
       .attr('height', height)
 
@@ -615,11 +616,11 @@ export class MapComponent implements AfterViewInit, OnChanges {
     // the cluster marker only appears as a gray circle
     // so we do 2 circles one outer, one inner
     // outerone gets covered by the donut chart if there are themes
-    g.append("circle") //background circle fill
-      .attr("cx", 0)
-      .attr("cy", 0)
-      .attr("r", radius)
-      .attr("fill", "#afafaf");
+    // g.append("circle") //background circle fill
+    //   .attr("cx", 0)
+    //   .attr("cy", 0)
+    //   .attr("r", radius)
+    //   .attr("fill", "#afafaf");
     g.append("circle") //background circle fill
       .attr("cx", 0)
       .attr("cy", 0)
@@ -629,9 +630,22 @@ export class MapComponent implements AfterViewInit, OnChanges {
     let arc = D3.arc()
       .innerRadius(radius - thickness)
       .outerRadius(radius);
+    
+    let pie = D3.pie().value((d: any) => { return d[1]; });
+    
+    let themeMap = new Map<string, number>();
+    data.forEach((d: any) => {
+      d.themes.forEach((t: any) => {
+        if(!this.ts.isMainTheme(t.theme)) return;
+        if(themeMap.get(t.theme)) {
+          themeMap.set(t.theme, themeMap.get(t.theme) + 1);
+          return;
+        }
 
-    let pie = D3.pie();
-    let values = data.map(m => { return m[1]; });
+        themeMap.set(t.theme, 1);
+      });
+    });
+    let values: any[] = [...themeMap];
 
     let path = g.selectAll('path')
       .data(pie(values))
@@ -639,11 +653,14 @@ export class MapComponent implements AfterViewInit, OnChanges {
       .append('g')
       .append('path')
       .attr('d', <any>arc)
-      .attr('fill', (d, i) => {
-        return this.currentColorAssignment.get(data[i][0]);
+      .attr('fill', (d: any) => {
+        return this.ts.getColorForTheme(d.data[0]);
       })
+      // .attr('stroke', '#353535')
+      // .attr('stroke-width', 1)
+      // .attr('stroke-opacity', .5)
       .transition()
-      .delay((d, i) => { return i * 500; })
+      .delay((d: any, i: number) => { return i * 500; })
       .duration(500)
       .attrTween('d', (d: any) => {
         var i = D3.interpolate(d.startAngle + 0.1, d.endAngle);
@@ -652,14 +669,14 @@ export class MapComponent implements AfterViewInit, OnChanges {
           return arc(d);
         }
       });
-    if (childClusterCount) {
+    if (childClusterCount.length) {
       g.append('text')
-        .text(childClusterCount)
+        .text(childClusterCount.length)
         .attr('text-anchor', 'middle')
         .attr('fill', '#5a5a5a')
         .attr('dy', '.35em');
     }
-    return `<svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" viewBox="0 0 35 35">${svg.html()}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" viewBox="0 0 36 36">${svg.html()}</svg>`;
   }
 
   /**
