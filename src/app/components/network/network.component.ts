@@ -76,6 +76,8 @@ export class NetworkComponent implements AfterViewInit {
               private ts: ThemeService) {
     this.selectedNodeType = '';
 
+    this.themeID = this.route.snapshot.queryParamMap.get('themeID');
+
     this.isBrowser = isPlatformBrowser(this._platformId);
     
     this.loading = false;
