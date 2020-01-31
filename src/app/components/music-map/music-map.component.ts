@@ -189,17 +189,6 @@ export class MusicMapComponent implements AfterViewInit {
   }
 
   /**
-   * Sets the contents of the drawer to the selected type
-   * @param stype - type of drawer contents 'themes', 'people', 'locations'
-   */
-  setDrawerType(stype: string): void {
-    for(let dT of this.drawerTypes) {
-      dT.selected = (dT.value === stype) ? true : false;
-    }
-    this.currentDrawerType = stype;
-  }
-
-  /**
    * Highlight entries in the side-panel drawer
    * @param $event - the click event
    * @param id - the id of the element in the list
