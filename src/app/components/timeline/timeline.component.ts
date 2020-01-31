@@ -180,20 +180,16 @@ export class TimelineComponent implements AfterViewInit, OnChanges {
     // range meaning interval default unless we detect otherwise
     this.items.forEach((i: Event) => {
       // if its a subevent we do not want to display an entry in the timeline
-      if (!i.startDate) return;
+      if (!i.startDate) {
+        return;
+      }
 
-      let color;
-      i.themes.forEach((t: any) => {
-        if (this.ts.isMainTheme(t.theme)) {
-          color = this.ts.getColorForTheme(t.theme);
-        }
-      });
-  
+      let color = this.ts.getThemeColorForEvent(i);
+
       let type = 'point';
       let dateDiff = this.dateDifference(i.startDate, i.endDate);
 
       type = !i.endDate || i.startDate.valueOf() === i.endDate.valueOf() || dateDiff <= 1 ? 'point' : 'range';
-
       let dataitem = {
         group: 0,
         id: i.objectId,
@@ -209,11 +205,14 @@ export class TimelineComponent implements AfterViewInit, OnChanges {
         locations: i.locations,
         color: color,
         style: `
-          color: ${color};
-          border-color: ${color};
+          color: ${color ? color : '#afafaf'};
+          border-color: ${color ? color : '#afafaf'};
+          background-color: ${type === 'range' ? (color ? color : '#afafaf') : ''};
+          border-width: 8px !important;
+          border-radius: 8px !important;
+          height: 6px;
+          opacity: 0.5;
           `
-          // TODO: Conditionally set background-color property based on type of event
-          // 'point' vs 'range'
       };
       if (i.endDate) dataitem['end'] = i.endDate;
       this.eventsDataSet.add(dataitem);
