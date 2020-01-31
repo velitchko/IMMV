@@ -424,14 +424,19 @@ export function createNgRenderMiddleware(distPath: string, ngSetup: NgSetupOptio
             console.log(err);
             res.status(500).json({ "message": "ERROR", "error": err });
           }
-          let relCnt = 0;
-          relCnt += result.events.length;
-          relCnt += result.historicEvents.length;
-          relCnt += result.peopleOrganizations.length;
-          relCnt += result.sources.length;
-          relCnt += result.locations.length;
-          relCnt += result.themes.length;
-          res.status(200).json({ "message": "OK", results: relCnt})
+          if(result) {
+            let relCnt = 0;
+            relCnt += result.events.length;
+            relCnt += result.historicEvents.length;
+            relCnt += result.peopleOrganizations.length;
+            relCnt += result.sources.length;
+            relCnt += result.locations.length;
+            relCnt += result.themes.length;
+            res.status(200).json({ "message": "OK", results: relCnt})
+          } else {
+            res.status(404).json({ "message": "ERROR", results: `${objectType} with ID: ${objectId} does not exist.` });
+          }
+
         });
         break;
       // all three cases together
