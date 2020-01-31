@@ -38,12 +38,12 @@ function findLocations() {
             let location = locations[i];
             throttle(async function () {
                 if (location.geodata) {
-                    
                     for(let j = 0; j < location.geodata.length; j++) {
                         let geodata = location.geodata[j];
-                        // if(geodata.lat !== 0 && geodata.lng !== 0) continue;
-                        let result = await geocode(geodata, location._id.toString(), geodata._id.toString());
-                        results.push(result);
+                        if((!geodata.lat || !geodata.lng) && (geodata.lat === 0 || geodata.lng === 0)) {
+                            let result = await geocode(geodata, location._id.toString(), geodata._id.toString());
+                            results.push(result);
+                        }
                     }
                 }
                 // console.log('result pushed');
@@ -97,9 +97,11 @@ function findEvents() {
             let event = events[i];
 
             throttle(async function () {
-                // console.log(event.geodata);
-                // console.log(event.geodata);
-                if (event.geodata && event.geodata.streetName) {
+                // If we have geodata with a streetname and lat / lng doesnt exist or is 0
+                if (event.geodata && 
+                    event.geodata.streetName && 
+                    ((!event.geodata.lat || !event.geodata.lng) || 
+                    (event.geodata.lat === 0 || event.geodata.lng === 0))) {
                     let result = await geocode(event.geodata, event._id.toString());
                     if (result) {
                         results.push(result);
