@@ -14,7 +14,7 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dial
   styleUrls: ['./timeline.component.scss']
 })
 
-export class TimelineComponent implements OnChanges {
+export class TimelineComponent implements AfterViewInit, OnChanges {
   @Input() items: Array<Event>;
   @ViewChild('detailtimeline', { static: true }) detailtimeline: ElementRef
   isBrowser: boolean;
@@ -57,53 +57,78 @@ export class TimelineComponent implements OnChanges {
     this.isBrowser = isPlatformBrowser(this._platformId);
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes) {
-      if (this.isBrowser) {
-        this.setupData();
-        this.createTimeline();
+  ngAfterViewInit(): void {
+    if (this.isBrowser) {
+      this.setupData();
+      this.createTimeline();
 
-        this.mms.currentlySelectedEvent.subscribe((event: string) => {
-        });
+      this.mms.currentlySelectedTheme.subscribe((theme: string) => {
+        !theme ? this.resetFilterMarkers() : this.filterMarkers(theme);
+      });
 
-        this.mms.currentAggregationItem.subscribe((type: string) => {
-          if (!type) return;
-          this.aggregationType = type;
-          this.window.requestAnimationFrame(() => {
-            this.updateOverviewTL();
-          });
-        });
+      this.mms.currentlySelectedEvent.subscribe((event: string) => {
+      });
 
-        // subscribe to changes of the currently highlighted item
-        this.mms.currentlyHighlightedItem.subscribe((highlight: any) => {
-          this.highlightedItem = highlight;
-          if (this.timeline) {
-            this.highlightItem();
-          }
+      this.mms.currentAggregationItem.subscribe((type: string) => {
+        if (!type) return;
+        this.aggregationType = type;
+        this.window.requestAnimationFrame(() => {
+          this.updateOverviewTL();
         });
-        // subscribe to changes in currently selected items
-        this.mms.currentlySelectedEvents.subscribe((events: Array<any>) => {
-          this.currentlySelectedItems = events;
+      });
 
-          if (this.timeline) {
-            this.updateEvents();
-          }
-        });
-        // subscribe to changes of the time interval
-        this.mms.currentEventInterval.subscribe((dates: Array<Date>) => {
-          if (!dates) return;
-          if (dates[0]) {
-            this.currentEventInterval[0] = dates[0];
-          }
-          if (dates[1]) {
-            this.currentEventInterval[1] = dates[1];
-          }
-          if (this.timeline) {
-            this.timeline.setWindow(this.currentEventInterval[0], this.currentEventInterval[1]);
-          }
-        });
-      }
+      // subscribe to changes of the currently highlighted item
+      this.mms.currentlyHighlightedItem.subscribe((highlight: any) => {
+        this.highlightedItem = highlight;
+        if (this.timeline) {
+          this.highlightItem();
+        }
+      });
+      // subscribe to changes in currently selected items
+      this.mms.currentlySelectedEvents.subscribe((events: Array<any>) => {
+        this.currentlySelectedItems = events;
+
+        if (this.timeline) {
+          this.updateEvents();
+        }
+      });
+      // subscribe to changes of the time interval
+      this.mms.currentEventInterval.subscribe((dates: Array<Date>) => {
+        if (!dates) return;
+        if (dates[0]) {
+          this.currentEventInterval[0] = dates[0];
+        }
+        if (dates[1]) {
+          this.currentEventInterval[1] = dates[1];
+        }
+        if (this.timeline) {
+          this.timeline.setWindow(this.currentEventInterval[0], this.currentEventInterval[1]);
+        }
+      });
     }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if(changes.items.previousValue && changes.items.currentValue) {
+      // change has happened need to update markers
+      this.eventsDataSet.clear();
+      this.groupsDataSet.clear();
+      this.items = changes.items.currentValue;
+      this.setupData();
+      // redraw timeline
+      this.timeline.setItems(this.eventsDataSet);
+      this.timeline.setGroups(this.groupsDataSet);
+      this.timeline.redraw();
+    }
+  }
+
+  resetFilterMarkers(): void {
+    this.removedEventsDataSet.forEach((d: any) => {
+      this.eventsDataSet.add(d);
+    });
+
+    this.removedEventsDataSet.clear();
+    // this.timeline.redraw();
   }
 
   updateEvents(): void {
