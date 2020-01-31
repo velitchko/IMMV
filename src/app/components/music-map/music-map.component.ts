@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, AfterViewInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { Event } from '../../models/event';
 import { HistoricEvent } from '../../models/historic.event';
 import { Theme } from '../../models/theme';
