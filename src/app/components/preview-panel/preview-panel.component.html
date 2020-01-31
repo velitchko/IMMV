@@ -111,7 +111,7 @@
                   <div *ngFor="let si of s.source.identifiers">
                     <mat-list-item *ngIf="hasHost(si.url)">
                       <mat-icon matListIcon>{{ getIconForSource(si) }}</mat-icon>
-                      <a [href]="si.url" target="_blank" [title]="getHost(si.url)" matLine>{{ si.title }}</a>
+                      <a [href]="si.url" target="_blank" [title]="getHost(si.url)" matLine>{{ getTitle(si.title) }}</a>
                       <p matLine>{{ getHost(si.url) }} &copy; {{ si.copyright }}</p>
                     </mat-list-item>
                   </div>
@@ -178,7 +178,7 @@
           <mat-list class="sources-list" dense>
             <mat-list-item *ngFor="let i of object.identifiers">
               <mat-icon matListIcon>link</mat-icon>
-              <a [href]="i.url" target="_blank" [title]="getHost(i.url)" matLine>{{ i.title }}</a>
+              <a [href]="i.url" target="_blank" [title]="getHost(i.url)" matLine>{{ getTitle(i.title) }}</a>
               <p matLine>{{ getHost(i.url) }} &copy; {{ i.copyright }}</p>
             </mat-list-item>
           </mat-list>
@@ -229,7 +229,7 @@
           <mat-list class="sources-list" dense>
             <mat-list-item *ngFor="let i of object.identifiers">
               <mat-icon matListIcon>link</mat-icon>
-              <a [href]="i.url" target="_blank" [title]="getHost(i.url)" matLine>{{ i.title }}</a>
+              <a [href]="i.url" target="_blank" [title]="getHost(i.url)" matLine>{{ getTitle(i.title) }}</a>
               <p matLine>{{ getHost(i.url) }} &copy; {{ i.copyright }}</p>
             </mat-list-item>
           </mat-list>
