@@ -444,6 +444,45 @@ export class MapComponent implements AfterViewInit, OnChanges {
     }
   }
 
+  resetFilterMarkers(): void {
+    this.temporaryMarkerGroup = L.layerGroup();
+    this.map.removeLayer(this.temporaryMarkerGroup);
+    this.map.addLayer(this.mainMarkerGroup);
+  }
+
+  filterMarkersByEvent(eventID: string): void {
+    if(!eventID) return;
+    // populate backbuffer marker layer
+    let flyToPosition: L.LatLng;
+    this.markers.forEach((m: any) => { 
+      if(m.objectId === eventID){
+        this.temporaryMarkerGroup.addLayer(m);
+        flyToPosition = new L.LatLng(m._latlng.lat, m._latlng.lng);
+      }
+    });
+    
+    // TODO: Either filter out or gray out 
+    // swap layers
+    this.map.removeLayer(this.markerLayerGroup);
+    this.map.addLayer(this.temporaryMarkerGroup);
+
+    this.map.panTo(flyToPosition);
+  }
+
+  filterMarkers(themeID: string): void {
+    if(!themeID) return;
+    // populate backbuffer marker layer
+    this.markers.forEach((m: any) => { 
+      if(m.themes.map((t: any) => { return t.theme; }).includes(themeID)) {
+        this.temporaryMarkerGroup.addLayer(m);
+      }
+    });
+
+    // swap layers
+    this.map.removeLayer(this.markerLayerGroup);
+    this.map.addLayer(this.temporaryMarkerGroup);
+  }
+
   /**
    * Creates a detail view of an events locations
    * @param event - the clicked or selected event
