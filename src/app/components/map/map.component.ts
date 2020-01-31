@@ -24,14 +24,15 @@ declare var L: any;
 export class MapComponent implements AfterViewInit, OnChanges {
 
   @Input() items: Event[];
-
+  
   map: any;
   compRef: ComponentRef<any>;
 
   initialized: boolean = false;
   isBrowser: boolean;
   isMarkerSelected: boolean;
-  mapLegendReady: boolean = false;
+
+  // Paths
   routerPath: any;
 
   // layer groups
@@ -50,7 +51,6 @@ export class MapComponent implements AfterViewInit, OnChanges {
   currentlySelectedEvents: Array<string>;
   currentlyHighlightedEvent: any;
 
-  currentColorAssignment: Map<string, string>;
   selectedCluster: any;
 
   constructor(@Inject(PLATFORM_ID) private _platformId: Object,
@@ -65,7 +65,6 @@ export class MapComponent implements AfterViewInit, OnChanges {
     private http: HttpClient) {
     // have to check if we are client
     // else window is not defined errors
-    console.log('Map Component');
     this.isBrowser = isPlatformBrowser(this._platformId);
 
     if (this.isBrowser) {
@@ -80,14 +79,12 @@ export class MapComponent implements AfterViewInit, OnChanges {
 
     this.currentEventInterval = new Array<Date>();
     this.currentlySelectedEvents = new Array<any>();
-    this.currentColorAssignment = new Map<string, string>();
   }
 
   ngAfterViewInit(): void {
     // only initiate map on browser side
     this.isMarkerSelected = false;
     if (this.isBrowser) {
-      console.log('initializing map');
       this.createMap();
       this.createMarkers();
       this.createHeatMap();
@@ -169,6 +166,7 @@ export class MapComponent implements AfterViewInit, OnChanges {
       this.createMarkers(changes.items.currentValue);
     }
   }
+
 
   createMap(): void {
     let options = {
@@ -722,6 +720,7 @@ export class MapComponent implements AfterViewInit, OnChanges {
       }
     }
     this.mainMarkerGroup.addTo(this.map);
+    
   }
 
   /**
