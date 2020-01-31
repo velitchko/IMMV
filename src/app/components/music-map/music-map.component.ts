@@ -35,8 +35,6 @@ export class MusicMapComponent implements AfterViewInit {
   
   resultMap: Map<string, number>;
   
-  currentDrawerType: string;
-  drawerTypes: any;
   aggregationOptions = [
     'Yearly',
     'Monthly',
@@ -54,13 +52,7 @@ export class MusicMapComponent implements AfterViewInit {
     this.themeID = this.route.snapshot.queryParamMap.get('themeID');
     this.events = new Array<Event>();
     this.historicEvents = new Array<HistoricEvent>();
-    this.themeSelected = false;
-    this.currentDrawerType = 'themes';
     // this.colors = new Array<string>();
-    this.drawerTypes = new Array<any>();
-    this.drawerTypes.push({ value: 'themes', displayValue: 'Themes', icon: 'donut_large', selected: true });
-    this.drawerTypes.push({ value: 'peopleOrganizations', displayValue: 'People', icon: 'account_circle', selected: false});
-    this.drawerTypes.push({ value: 'locations', displayValue: 'Places', icon: 'place', selected: false});
 
     this.currentEventInterval = new Array<Date>();
 
@@ -235,18 +227,18 @@ export class MusicMapComponent implements AfterViewInit {
    * @param name - the value of the attribute we are looking for (category, people, location)
    */
   findEvents(name: string, id?: number, $event?: any): void {
-    console.log(name, id, $event);
-    let results = new Array<string>();
-    let eArr = new Array<Event>();
-    for(let e of this.events) {
-      for(let t of e[this.currentDrawerType]) {
-        if(t.name === name) {
-          results.push(e.objectId);
-          eArr.push(e);
-        }
-      }
-    }
-    this.mms.setSelectedEvents(results);
+    // console.log(name, id, $event);
+    // let results = new Array<string>();
+    // let eArr = new Array<Event>();
+    // for(let e of this.events) {
+    //   for(let t of e[this.currentDrawerType]) {
+    //     if(t.name === name) {
+    //       results.push(e.objectId);
+    //       eArr.push(e);
+    //     }
+    //   }
+    // }
+    // this.mms.setSelectedEvents(results);
   }
 
   /**
