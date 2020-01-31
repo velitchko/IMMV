@@ -122,8 +122,26 @@ export class MusicMapComponent implements AfterViewInit {
     }
   }
 
-  selectTheme(id: string): void {
-    this.themeSelected = true;
+  update($event: any): void {
+    // Update the data create new and pass to map and timeline
+    switch($event.objectType) {
+      case 'Event':
+        break;
+      case 'Theme':
+        this.getEventsByTheme($event);
+        break;
+      default:
+        break; 
+    }
+  }
+
+  getEventsByTheme(theme: Theme): void {
+    this.db.getEventsByTheme(theme).then((success: any) => {
+      console.log('got new events - updating');
+      console.log(success);
+      this.events = success;
+      this.cd.detectChanges();
+    });
   }
 
   getColor(item: any): string {
