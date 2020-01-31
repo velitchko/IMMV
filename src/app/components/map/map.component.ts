@@ -221,7 +221,7 @@ export class MapComponent implements AfterViewInit, OnChanges {
       '<span class=\"layer-control-item\">Event markers</span>': this.markerLayerGroup,
       '<span class=\"layer-control-item\">Music markers</span>': this.musicLayerGroup,
       '<span class=\"layer-control-item\">Heatmap</span>': this.heatmapLayerGroup,
-      '<span class=\"layer-control-item\">Tagcloud</span>': this.tagCloudLayerGroup,
+      '<span class=\"layer-control-item\">Cluster</span>': this.clusterLayerGroup
     };
     this.markerLayerGroup.addTo(this.map);
     // add tiles
@@ -230,7 +230,7 @@ export class MapComponent implements AfterViewInit, OnChanges {
       attribution: '', //'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
       id: 'mapbox.light', // mapbox://styles/velitchko/cjefo9eu118qd2rodaoq3cpj1
       accessToken: environment.MAPBOX_API_KEY,
-      layers: [this.markerLayerGroup, this.musicLayerGroup, this.heatmapLayerGroup, this.tagCloudLayerGroup]
+      layers: [this.markerLayerGroup, this.musicLayerGroup, this.heatmapLayerGroup, this.clusterLayerGroup]
     }).addTo(this.map);
 
     // add control for layers to the map
