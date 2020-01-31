@@ -131,10 +131,21 @@ export class TimelineComponent implements AfterViewInit, OnChanges {
     // this.timeline.redraw();
   }
 
+  filterMarkers(themeID: string): void {
+    this.eventsDataSet.forEach((d: any) => {
+      if (!d.themes.map((t: any) => { return t.theme; }).includes(themeID)) {
+        this.removedEventsDataSet.add(d);
+        this.eventsDataSet.remove(d.id);
+      }
+    });
+    // this.timeline.redraw();
+  }
+
   updateEvents(): void {
     if (this.currentlySelectedItems.length === 0) return;
 
     let removed = new Array<string>();
+
     this.eventsDataSet.forEach((event: any) => {
       if (!this.currentlySelectedItems.includes(event.id)) {
         removed.push(event.id);
