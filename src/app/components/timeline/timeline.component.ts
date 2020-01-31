@@ -6,7 +6,6 @@ import { ThemeService } from '../../services/theme.service';
 import { Event } from '../../models/event';
 import * as d3 from 'd3';
 import { Timeline, DataSet } from 'vis';
-import { ModalDialogComponent } from '../modal/modal.component';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 @Component({
@@ -287,21 +286,6 @@ export class TimelineComponent implements OnChanges {
     // FIXME: this.themeDistributions calculated after scales are made
     // should calculate it before and pass max y (count of themes)
     this.y.domain([0, 4]); //d3.max(this.distribution, (d: any) => {return d.count;})]);
-  }
-
-  /**
-   * Opens a modal (dialog)
-   * @param e - event with data that we will display in the modal
-   */
-  openDialog(e: Event): void {
-    if (!e) return;
-    let dialogRef = this.dialog.open(ModalDialogComponent, {
-      width: '50%',
-      data: e
-    });
-    dialogRef.afterClosed().subscribe((result) => {
-      //console.log(result);
-    });
   }
 
   /**
