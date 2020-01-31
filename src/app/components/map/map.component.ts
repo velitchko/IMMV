@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Inject, SimpleChanges, ComponentFactoryResolver, Injector, ApplicationRef, ComponentRef, AfterViewChecked, AfterViewInit } from '@angular/core';
+import { Component, OnInit, Input, Inject, OnChanges, SimpleChanges, ComponentFactoryResolver, Injector, ApplicationRef, ComponentRef, AfterViewChecked, AfterViewInit } from '@angular/core';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -12,6 +12,7 @@ import { Geodata } from '../../models/location';
 import { MapClusterTooltipComponent } from '../map-cluster-tooltip/map-cluster-tooltip.component';
 import { DatabaseService } from '../../services/db.service';
 import { ThemeService } from '../../services/theme.service';
+import { Theme } from '../../models/theme';
 
 declare var L: any;
 
