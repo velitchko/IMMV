@@ -92,6 +92,12 @@ export class MapComponent implements AfterViewInit, OnChanges {
       this.createMarkers();
       this.createHeatMap();
 
+      // Theme Selected 
+      this.mms.currentlySelectedTheme.subscribe((theme: string) => {
+        this.resetFilterMarkers();
+        this.filterMarkers(theme);
+      });
+
       // Event Selected 
       this.mms.currentlySelectedEvent.subscribe((ev: string) => {
         this.resetFilterMarkers();
