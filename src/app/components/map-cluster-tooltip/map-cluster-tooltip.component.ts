@@ -3,7 +3,9 @@ import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { Event } from '../../models/event';
 import { MusicMapService } from '../../services/musicmap.service';
+import { ThemeService } from '../../services/theme.service';
 import * as d3 from 'd3';
+import { Theme } from 'src/app/models/theme';
 
 @Component({
   selector: 'app-map-cluster-tooltip',
@@ -19,6 +21,7 @@ export class MapClusterTooltipComponent {
   dataProcessed:boolean = false;
   constructor(@Inject(PLATFORM_ID) private _platformId: Object,
               private mms: MusicMapService,
+              private ts: ThemeService,
               private cd: ChangeDetectorRef) {
     this.isBrowser = isPlatformBrowser(this._platformId);
     // this.currentColorAssignment = new Map<string, string>();
@@ -29,16 +32,23 @@ export class MapClusterTooltipComponent {
   }
 
   ngAfterViewInit(): void {
-    this.events.forEach( (event: any) => {
+    this.events.forEach((event: Event) => {
       let themeMap = new Map<string, number>();
-      for(let t of event.themes) {
-        themeMap.set(t.theme.name, 1); // one theme should not occurr multiple times in same event
-      }
+      event.themes.forEach((t: any) => {
+        if(!this.ts.isMainTheme(t.theme)) return;
+        if(themeMap.get(t.theme)) {
+          themeMap.set(t.theme, themeMap.get(t.theme) + 1);
+          return;
+        }
+        themeMap.set(t.theme, 1);
+      });
+
       this.eventsOut.push({
         event: event,
         svg: this.generateSVGIcon(themeMap)
       });
     });
+
     this.sortByDate(this.eventsOut);
     this.dataProcessed = true;
     this.cd.detectChanges();
@@ -61,11 +71,9 @@ export class MapClusterTooltipComponent {
    */
   generateSVGIcon(themeMap: Map<string, number>): string {
     // add tooltip
-    let data = Array.from(themeMap);
     let width = 35; // in pixels
     let height = 35; // in pixels
     let thickness = 7; // in pixels
-
     let radius = Math.min(width, height) / 2;
 
     let svg = d3.select('body').append('svg')
@@ -95,21 +103,19 @@ export class MapClusterTooltipComponent {
     .innerRadius(radius - thickness)
     .outerRadius(radius);
 
-    let pie = d3.pie();
-    let values = data.map( m => { return m[1]; });
-
+    let pie = d3.pie().value((d: any) => { return d[1]; });
+    let values: any[] = [...themeMap];
     let path = g.selectAll('path')
       .data(pie(values))
       .enter()
       .append('g')
       .append('path')
       .attr('d', <any>arc)
-      .attr('fill', (d, i) => {
-        return 'black';
-        // return this.currentColorAssignment.get(data[i][0]);
+      .attr('fill', (d: any) => {
+        return this.ts.getColorForTheme(d.data[0]);
       })
       .transition()
-      .delay((d, i) => { return i * 500; })
+      .delay((d: any, i: number) => { return i * 500; })
       .duration(500)
       .attrTween('d', (d: any) => {
           var i = d3.interpolate(d.startAngle+0.1, d.endAngle);
@@ -127,6 +133,7 @@ export class MapClusterTooltipComponent {
    * @param e - the event and its attributes
    */
   openPreviewPanel(e: Event): void {
+    console.log(e);
     this.mms.setSelectedEvent(e.objectId);
   }
 }
