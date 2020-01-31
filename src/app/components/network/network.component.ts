@@ -3,6 +3,7 @@ import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { FormControl } from '@angular/forms';
 import { DatabaseService } from '../../services/db.service';
+import { ThemeService } from '../../services/theme.service';
 import { PersonOrganization } from '../../models/person.organization';
 import { Location } from '../../models/location';
 import { Event } from '../../models/event';
@@ -70,9 +71,8 @@ export class NetworkComponent implements AfterViewInit {
               private snackBar: MatSnackBar,
               @Inject(PLATFORM_ID) private _platformId: Object, 
               private route: ActivatedRoute,
-              private mms: MusicMapService) {
-    
-      this.themeID = this.route.snapshot.queryParamMap.get('themeID');
+              private mms: MusicMapService,
+              private ts: ThemeService) {
 
     this.isBrowser = isPlatformBrowser(this._platformId);
     
