@@ -45,6 +45,7 @@ export class NetworkComponent implements AfterViewInit {
   searchCtrl = new FormControl();
   filteredItems: Observable<any>;
   selectedNode: any;
+  selectedNodeType: string;
   objectToBeDisplayed: any | (Event & PersonOrganization & Location & Theme & Source & HistoricEvent);
 
   startDate: any;
@@ -73,6 +74,7 @@ export class NetworkComponent implements AfterViewInit {
               private route: ActivatedRoute,
               private mms: MusicMapService,
               private ts: ThemeService) {
+    this.selectedNodeType = '';
 
     this.isBrowser = isPlatformBrowser(this._platformId);
     
@@ -178,6 +180,8 @@ export class NetworkComponent implements AfterViewInit {
   }
 
   highlightNodeType($event: string): void {
+    this.selectedNodeType = $event;
+
     this.clearHighlightedNodesLinks();
     this.typeSelected = true;
     this.openSnackBar(`Highlighting ${$event} nodes`);
