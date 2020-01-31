@@ -24,12 +24,9 @@ import { from } from 'rxjs';
 export class SearchComponent {
   @Output('itemSelected') itemSelected: EventEmitter<any>;
   searchCtrl: FormControl;
-  filteredItems: Observable<Array<any>>;
-
-  items: Array<any>;
+  filteredItems: Array<any>;
 
   objectTypes: Map<string, string>;
-  results: Array<string>;
 
   showSearch: boolean = false;
   displayClear: boolean = false;
@@ -38,10 +35,9 @@ export class SearchComponent {
 
   constructor(private db: DatabaseService, private mms: MusicMapService) {
     this.itemSelected = new EventEmitter<any>();
-    this.items = new Array<any>();
-    this.results = new Array<string>();
     this.objectTypes = new Map<string, string>();
 
+    this.filteredItems = new Array<any>();
 
     this.objectTypes.set('event', 'event');
     this.objectTypes.set('historicevent', 'history');
@@ -68,7 +64,7 @@ export class SearchComponent {
         )
       ).subscribe(results => {
         let grouped = this.groupBy(results, 'objectType');
-        let groupedArr = [];
+        let groupedArr = new Array<any>();
 
         if(grouped['Event']) {
           groupedArr.push({
@@ -133,16 +129,11 @@ export class SearchComponent {
           });
         }
         this.loadingResults = false;
-        this.results = groupedArr;
+        this.filteredItems = groupedArr;
       });
-    // this.filteredItems = this.searchCtrl.valueChanges
-    //   .pipe(
-    //     startWith(''),
-    //     map((item: any) => {
-    //       return item ? this.filterItems(item) : this.items.slice();
-    //     })
-    //   );
   }
+
+  clearSearch(): void {}
 
   groupBy(objectArray: Array<any>, property: string): Object {
     return objectArray.reduce((acc: Array<any>, obj: any) => {
