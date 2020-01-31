@@ -23,6 +23,8 @@ import { PreviewComponent } from './components/preview-panel/preview-panel.compo
 import { SearchComponent } from './components/search/search.component';
 import { ThemeComponent } from './components/themes/themes.component';
 import { TimelineComponent } from './components/timeline/timeline.component';
+import { AboutComponent } from './components/about.component/about.component';
+import { InfoComponent } from './components/info.component/info.component';
 import { PeopleTimelineComponent } from './components/people-timeline/people-timeline.component';
 import { BiographicalComponent } from './components/biographical.component/biographical.component';
 // Pipes
@@ -75,6 +77,8 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 @NgModule({
   declarations: [
     AppComponent,
+    AboutComponent,
+    InfoComponent,
     NotFoundComponent,
     DashboardComponent,
     CarouselComponent,
