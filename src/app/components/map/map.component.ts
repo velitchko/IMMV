@@ -40,13 +40,14 @@ export class MapComponent implements AfterViewInit, OnChanges {
   markerLayerGroup: any;
   musicLayerGroup: any;
   heatmapLayerGroup: any;
-  tagCloudLayerGroup: any;
+  clusterLayerGroup: any;
+
   // marker groups
   markers: Array<any>; //all markers
   mainMarkerGroup: any; // main events
   temporaryMarkerGroup: any; // backbuffer with markers - we swap between mainMarkerGroup and temporaryMarkerGroup
   heatmapMarkerGroup: any; // holds our heatmap
-  // observables
+  clusterMarkerGroup: any; // cluster group
 
   currentEventInterval: Array<Date>;
   currentlySelectedEvents: Array<string>;
@@ -180,8 +181,10 @@ export class MapComponent implements AfterViewInit, OnChanges {
     };
 
     this.map = L.map('map', options).setView([48.213939, 16.377285], 13);
-    this.map.invalidateSize();
-    this.mainMarkerGroup = L.markerClusterGroup({ //https://github.com/Leaflet/Leaflet.markercluster#options
+
+    // this.map.invalidateSize();
+    // TODO: Clustering as parameter ? - enable / disable
+    this.clusterMarkerGroup = L.markerClusterGroup({ //https://github.com/Leaflet/Leaflet.markercluster#options
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
       zoomToBoundsOnClick: false,
@@ -191,9 +194,9 @@ export class MapComponent implements AfterViewInit, OnChanges {
       removeOutsideVisibleBounds: true,
       iconCreateFunction: (cluster: any) => {
         return L.divIcon({
-          iconSize: [35, 35], // size of the icon
+          iconSize: [36, 36], // size of the icon
           className: 'cluster-map-marker',
-          html: this.getSVGClusterIcon(cluster.getAllChildMarkers().length)
+          html: this.getSVGClusterIcon(cluster.getAllChildMarkers())
         });
       }
       //disableClusteringAtZoom: 17,
@@ -201,16 +204,16 @@ export class MapComponent implements AfterViewInit, OnChanges {
 
     // setup groups
     this.temporaryMarkerGroup = L.layerGroup();
-
-    this.mainMarkerGroup.on('clusterclick', this.handleClusterClick());
-    this.mainMarkerGroup.on('clustermouseover', this.handleClusterMouseOver());
-    this.mainMarkerGroup.on('clustermouseout', this.handleClusterMouseOut());
+    this.mainMarkerGroup = L.layerGroup();
+    this.clusterMarkerGroup.on('clusterclick', this.handleClusterClick());
+    this.clusterMarkerGroup.on('clustermouseover', this.handleClusterMouseOver());
+    this.clusterMarkerGroup.on('clustermouseout', this.handleClusterMouseOut());
 
     // layer groups that contain marker/heatmap/tagcloud layers
     this.markerLayerGroup = L.layerGroup([this.mainMarkerGroup]);
+    this.clusterLayerGroup = L.layerGroup([this.clusterMarkerGroup]);
     this.musicLayerGroup = L.layerGroup([]);
     this.heatmapLayerGroup = L.layerGroup([]);
-    this.tagCloudLayerGroup = L.layerGroup([]);
 
     // control layers for map
     let baseLayers = {
@@ -714,10 +717,12 @@ export class MapComponent implements AfterViewInit, OnChanges {
         marker.fromSearch = false;
         marker.startDate = i.startDate;
         marker.endDate = i.endDate ? i.endDate : i.startDate;
+        marker.themes = i.themes;
         // marker.setOpacity(0.75);
         // marker.themes = i.themes; // need to add this so our cluster icon can compute the donut chart
         this.markers.push(marker);
         this.mainMarkerGroup.addLayer(marker);
+        this.clusterMarkerGroup.addLayer(marker);
       }
     }
     this.mainMarkerGroup.addTo(this.map);
