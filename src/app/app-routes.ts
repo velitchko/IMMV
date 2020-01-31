@@ -7,6 +7,8 @@ import { MusicMapComponent }    from './components/music-map/music-map.component
 import { NetworkComponent } from './components/network/network.component';
 import { PeopleTimelineComponent } from './components/people-timeline/people-timeline.component';
 import { BiographicalComponent } from './components/biographical.component/biographical.component';
+import { AboutComponent } from './components/about.component/about.component';
+import { InfoComponent } from './components/info.component/info.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'dashboard', component: DashboardComponent },
@@ -17,6 +19,8 @@ export const APP_ROUTES: Routes = [
   { path: 'biographical/:preset', component: BiographicalComponent },
   { path: 'biographical', component: BiographicalComponent },
   { path: 'chrono', component: PeopleTimelineComponent },
+  { path: 'about', component: AboutComponent },
+  { path: 'info', component: InfoComponent },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
   { path: '**', component: NotFoundComponent },
 ];
