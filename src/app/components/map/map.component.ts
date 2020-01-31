@@ -21,7 +21,7 @@ declare var L: any;
   styleUrls: ['./map.component.scss']
 })
 
-export class MapComponent implements AfterViewInit {
+export class MapComponent implements AfterViewInit, OnChanges {
 
   @Input() items: Event[];
 
@@ -152,6 +152,15 @@ export class MapComponent implements AfterViewInit {
     }
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if(changes.items.previousValue && changes.items.currentValue) {
+      // change has happened need to update markers
+      this.mainMarkerGroup.clearLayers();
+      this.markers = new Array<any>();
+      this.items = changes.items.currentValue;
+      this.createMarkers(changes.items.currentValue);
+    }
+  }
 
   createMap(): void {
     let options = {
