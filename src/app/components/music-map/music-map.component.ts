@@ -48,6 +48,7 @@ export class MusicMapComponent implements AfterViewInit {
 
   constructor(private db: DatabaseService, 
               private ts: ThemeService, 
+              private cd: ChangeDetectorRef,
               private mms: MusicMapService, 
               private route: ActivatedRoute) {
     this.themeID = this.route.snapshot.queryParamMap.get('themeID');
