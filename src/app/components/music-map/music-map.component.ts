@@ -44,7 +44,7 @@ export class MusicMapComponent implements AfterViewInit {
   // colors: Array<string>;
   selectedEntries: Array<any>;
   objectToBeDisplayed: Event;
-  themeSelected: boolean;
+  selectedThemeId: string;
 
   constructor(private db: DatabaseService, 
               private ts: ThemeService, 
