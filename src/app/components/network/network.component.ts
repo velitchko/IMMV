@@ -337,6 +337,9 @@ export class NetworkComponent implements AfterViewInit {
     return this.events.get(id);
   }
 
+  // TODO: Icons for the nodes -> Requires the node type to be set to icon
+  // TODO: Can also embed images in nodes -> https://almende.github.io/vis/docs/network/nodes.html
+
   async setupData(data: Event & PersonOrganization & Location & HistoricEvent & Source & Theme): Promise<any> {
     // ALL NODES (everything related to the ego node)
     if (!this.checkIfNodeExists(data.objectId)) {
@@ -345,7 +348,7 @@ export class NetworkComponent implements AfterViewInit {
       root['id'] = data.objectId;
       let count = await this.getTotalRelationshipCount(data);
       root['label'] = `${data.name} (${count})`;
-      root['color'] = this.colors.get(data.objectType.toLowerCase());
+      root['color'] = this.ts.getThemeColorForEvent(data); //this.colors.get(data.objectType.toLowerCase());
       root['hidden'] = false;
 
       if (root.objectType === 'person') {
@@ -372,7 +375,7 @@ export class NetworkComponent implements AfterViewInit {
           id: root.objectId,
           type: this.getTimeType(root.startDate, root.endDate),
           className: 'event',
-          style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
+          style: `background-color: ${root['color']}; border-radius: 20px;`
         });
       }
     }
@@ -544,14 +547,14 @@ export class NetworkComponent implements AfterViewInit {
 
   async updateData(data: Event & PersonOrganization & Location & HistoricEvent & Source & Theme): Promise<any> {
     if(!data) return;
-    console.log('updating data');
+
     if (!this.checkIfNodeExists(data.objectId)) {
       let root = data;
-      root['objectType'] = 'event';
+      root['objectType'] = data.objectType.toLowerCase();
       root['id'] = root.objectId;
       let count = await this.getTotalRelationshipCount(root);
-      root['label'] = `${root.name} ${count})`;
-      root['color'] = this.colors.get('event');
+      root['label'] = `<mat-icon>event</mat-icon>${root.name} ${count})`;
+      root['color'] =  this.ts.getThemeColorForEvent(data); //this.colors.get('event');
       root['shape'] = 'box';
       root['hidden'] = false;
       this.nodes.add(root);
@@ -564,7 +567,7 @@ export class NetworkComponent implements AfterViewInit {
           content: root.name,
           type: this.getTimeType(root.startDate, root.endDate),
           className: 'event',
-          style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
+          style: `background-color: ${root['color']}; border-radius: 20px;`
         });
       }
     }
@@ -697,7 +700,7 @@ export class NetworkComponent implements AfterViewInit {
       root['id'] = root.objectId;
       let count = await this.getTotalRelationshipCount(root);
       root['label'] = `${root.name} (${count})`;
-      root['color'] = this.colors.get('event');
+      root['color'] = this.ts.getThemeColorForEvent(event);
       root['shape'] = 'box';
       root['hidden'] = false;
       this.nodes.add(root);
@@ -710,7 +713,7 @@ export class NetworkComponent implements AfterViewInit {
           content: root.name,
           type: this.getTimeType(root.startDate, root.endDate),
           className: 'event',
-          style: `background-color: ${this.colors.get('event')}; border-radius: 20px;`
+          style: `background-color: ${root['color']}; border-radius: 20px;`
         });
       }
     }
@@ -729,7 +732,7 @@ export class NetworkComponent implements AfterViewInit {
       target: event,
       to: event.objectId,
       label: label ? label.relationship : '',
-      color: this.colors.get('theme'),
+      color: '#e7e7e7', // TODO: Link color by something?
       hidden: false,
       font: {
         align: 'middle'
@@ -749,7 +752,7 @@ export class NetworkComponent implements AfterViewInit {
       node['id'] = data[type].objectId;
       let count = await this.getTotalRelationshipCount(data[type]);
       node['label'] = `${data[type].name} (${count})`;
-      node['color'] = this.colors.get(type.toLowerCase());
+      node['color'] = type.toLowerCase() === 'event' ? this.ts.getThemeColorForEvent(data[type]) : '#e7e7e7'; //this.colors.get(type.toLowerCase());
       node['hidden'] = false;
       this.nodes.update(node);
 
@@ -762,7 +765,7 @@ export class NetworkComponent implements AfterViewInit {
           id: node.objectId,
           content: node.name,
           type: (node.objectType === 'event') ? 'point' : 'background',
-          style: (node.objectType === 'event') ? `background-color: ${this.colors.get(type.toLowerCase())}; border-radius: 20px;` : `background-color: ${this.colors.get(type.toLowerCase())}0D;`
+          style: (node.objectType === 'event') ? `background-color: ${node['color']}; border-radius: 20px;` : `background-color: ${node['color']}0D;`
         });
         // update everytime we get a new event
         if(this.timeline) this.timeline.fit();
@@ -777,7 +780,7 @@ export class NetworkComponent implements AfterViewInit {
         target: data[type],
         to: data[type].objectId,
         label: data.relationship,
-        color: this.colors.get(type.toLowerCase()),
+        color: '#e7e7e7e', // TODO: Link color?
         hidden: false,
         font: {
           align: 'middle'
