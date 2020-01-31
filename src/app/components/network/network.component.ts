@@ -52,8 +52,7 @@ export class NetworkComponent implements AfterViewInit {
   nodes: DataSet<any>;
   links: DataSet<any>;
   events: DataSet<any>;
-  colors: Map<string, string>;
-  legendColor: Array<any>;
+  legend: Array<any>;
   selectedNodes: Set<any>;
 
   network: Network;
@@ -79,24 +78,14 @@ export class NetworkComponent implements AfterViewInit {
     
     this.loading = false;
 
-    this.colors = new Map<string, string>();
-    this.colors.set('location', '#01aef2');
-    // all 3 possibilities
-    this.colors.set('personorganization', '#8ff161');
-    this.colors.set('person', '#8ff161');
-    this.colors.set('organization', '#8ff161');
-    this.colors.set('event', '#fff400');
-    this.colors.set('theme', '#fa4c71');
-    this.colors.set('source', '#ffb400');
-    this.colors.set('historicevent', '#c000ff');
+    this.legend = new Array<any>();
 
-    this.legendColor = new Array<any>();
-    this.legendColor.push({ display: 'Event', color: '#fff400' });
-    this.legendColor.push({ display: 'Person Organization', color: '#8ff161' });
-    this.legendColor.push({ display: 'Location', color: '#01aef2' });
-    this.legendColor.push({ display: 'Theme', color: '#fa4c71' });
-    this.legendColor.push({ display: 'Source', color: '#ffb400' });
-    this.legendColor.push({ display: 'Historic Event', color: '#c000ff' });
+    this.legend.push({ display: 'Event', icon: 'event' });
+    this.legend.push({ display: 'Person/Organization', icon: 'account_circle' });
+    this.legend.push({ display: 'Location', icon: 'place' });
+    this.legend.push({ display: 'Theme', icon: 'donut_large' });
+    this.legend.push({ display: 'Source', icon: 'collections' });
+    this.legend.push({ display: 'Historic Event', icon: 'history' });
 
     this.nodes = new DataSet();
     this.links = new DataSet();
@@ -741,6 +730,11 @@ export class NetworkComponent implements AfterViewInit {
         align: 'middle'
       }
     });
+  }
+
+  deselect(): void {
+    this.selectedNodeType = '';
+    this.clearHighlightedNodesLinks();
   }
 
   async addDataItems(parent: any, data: any, type: string): Promise<any> {

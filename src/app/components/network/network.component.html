@@ -19,8 +19,11 @@
                 <app-search (itemSelected)="update($event)"></app-search>
                 <div id="legend">
                         <mat-chip-list>
-                            <mat-chip *ngFor="let c of legendColor" selected="true" [style.backgroundColor]="c.color" (click)="highlightNodeType(c.display)">{{ c.display }}</mat-chip>
-                            <mat-chip [style.backgroundColor]="'#515151'" (click)="clearHighlightedNodesLinks()" selected="true"><mat-icon>close</mat-icon></mat-chip>
+                            <mat-chip *ngFor="let c of legend" selected="true" (click)="highlightNodeType(c.display)" style="background-color: #afafaf">
+                                <mat-icon>{{ c.icon }} </mat-icon>
+                                {{ c.display }}
+                                <mat-icon matChipRemove *ngIf="selectedNodeType === c.display" (click)="deselect()">cancel</mat-icon>
+                            </mat-chip>
                         </mat-chip-list>
                     </div>
             </div>
