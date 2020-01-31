@@ -84,6 +84,10 @@ export class MusicMapService {
     this.selectedEvents.next(events);
   }
 
+  filterByTheme(id: string): void {
+    this.selectedTheme.next(id);
+  }
+
   /**
    * Sets the currently selected items by index and highlights
    * @param highlight - highlight.idx - the index of the event (objectId)
