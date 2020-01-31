@@ -144,12 +144,15 @@ export class MusicMapComponent implements AfterViewInit {
     });
   }
 
-  getColor(item: any): string {
-    return '#e7e7e7';
+  selectTheme(theme: Theme): void {
+    this.selectedThemeId = theme.objectId;
+
+    this.mms.filterByTheme(this.selectedThemeId);
   }
 
   deselectTheme(): void {
-    this.themeSelected = false;
+    this.selectedThemeId = '';
+    this.mms.filterByTheme(null);
   }
 
   /**
