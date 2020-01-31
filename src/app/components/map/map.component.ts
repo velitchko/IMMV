@@ -172,7 +172,7 @@ export class MapComponent implements AfterViewInit, OnChanges {
 
   createMap(): void {
     let options = {
-      maxBounds: L.latLngBounds(L.latLng(48.121040, 16.183696), L.latLng(48.323600, 16.541306)),
+      // maxBounds: L.latLngBounds(L.latLng(48.121040, 16.183696), L.latLng(48.323600, 16.541306)),
       maxZoom: 18,
       minZoom: 11,
       zoom: 12,
@@ -216,6 +216,7 @@ export class MapComponent implements AfterViewInit, OnChanges {
     this.heatmapLayerGroup = L.layerGroup([]);
 
     // control layers for map
+    // TODO: Music markers -> Sources on map?
     let baseLayers = {
       '<span class=\"layer-control-item\">Event markers</span>': this.markerLayerGroup,
       '<span class=\"layer-control-item\">Music markers</span>': this.musicLayerGroup,
@@ -423,14 +424,14 @@ export class MapComponent implements AfterViewInit, OnChanges {
   handleMouseOver(): (e: any) => void {
     return (e: any) => {
       e.target.openPopup();
-      this.mms.setHighlight(e.target.objectId);
+      // this.mms.setHighlight(e.target.objectId);
     }
   }
 
   handleMouseOut(): (e: any) => void {
     return (e: any) => {
       e.target.closePopup();
-      this.mms.setHighlight(null);
+      // this.mms.setHighlight(null);
     }
   }
 
