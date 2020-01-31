@@ -1,4 +1,4 @@
-import { Component, Input, Inject, OnChanges, SimpleChanges, ElementRef, ViewChild } from '@angular/core';
+import { Component, Input, Inject, OnChanges, AfterViewInit, SimpleChanges, ElementRef, ViewChild } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { MusicMapService } from '../../services/musicmap.service';
