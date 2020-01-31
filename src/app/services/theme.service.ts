@@ -47,8 +47,24 @@ export class ThemeService {
         return this.mainThemes.map((t: Theme) => { return t.objectId; }).includes(id);
     }
 
+    // TODO: How to color people/sources/locations/historicevents?
+    getThemeColorForEvent(event: any): string {
+        let color: string = '#e7e7e7';
+        if(event.themeTypes) {
+            color = this.getColorForTheme(event.objectId);
+        } else {
+            event.themes.forEach((t: any) => {
+                if(this.isMainTheme(t.theme)) {
+                    color = t.theme.objectId ? this.getColorForTheme(t.theme.objectId) : this.getColorForTheme(t.theme);
+                }
+            });
+        }
+        return color;
+    }
+
 
     getColorForTheme(id: string): string {
-        return this.colors.get(id);
+        let color = this.colors.get(id);
+        return color ? color : '#e7e7e7';
     }
 }
