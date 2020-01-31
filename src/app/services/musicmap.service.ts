@@ -25,6 +25,9 @@ export class MusicMapService {
   private selectedEvent = new BehaviorSubject<string>('');
   currentlySelectedEvent = this.selectedEvent.asObservable();
 
+  private selectedTheme = new BehaviorSubject<string>('');
+  currentlySelectedTheme = this.selectedTheme.asObservable();
+
   /**
    * Currently selected interval (time - start and end date) from timeline
    */
