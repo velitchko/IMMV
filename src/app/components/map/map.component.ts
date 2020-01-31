@@ -667,9 +667,10 @@ export class MapComponent implements AfterViewInit, OnChanges {
    * @return string - SVG of a marker as string
    */
   getSVGIcon(color?: string): string {
+    // stroke="#353535" stroke-width="1" stroke-opacity="0.5" 
     let svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25">
-        <circle cx="10" cy="10" r="10" fill="${color ? color : 'black'}">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 26">
+        <circle cx="12" cy="12" r="10"fill-opacity="0.5" fill="${color ? color : '#e7e7e7'}">
       </svg>
     `;
     return svg;
