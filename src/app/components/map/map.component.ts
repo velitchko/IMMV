@@ -94,49 +94,51 @@ export class MapComponent implements AfterViewInit, OnChanges {
 
       // Event Selected 
       this.mms.currentlySelectedEvent.subscribe((ev: string) => {
-        if (!ev) {
-          this.map.removeLayer(this.mainMarkerGroup);
-          this.map.removeLayer(this.musicLayerGroup);
-          this.map.removeLayer(this.heatmapLayerGroup);
-          this.map.removeLayer(this.tagCloudLayerGroup);
-          this.map.removeLayer(this.temporaryMarkerGroup);
+        this.resetFilterMarkers();
+        this.filterMarkersByEvent(ev);
+        // if (!ev) {
+        //   this.map.removeLayer(this.mainMarkerGroup);
+        //   this.map.removeLayer(this.musicLayerGroup);
+        //   this.map.removeLayer(this.heatmapLayerGroup);
+        //   this.map.removeLayer(this.tagCloudLayerGroup);
+        //   this.map.removeLayer(this.temporaryMarkerGroup);
 
-          this.temporaryMarkerGroup = L.featureGroup();
+        //   this.temporaryMarkerGroup = L.featureGroup();
 
-          this.map.addLayer(this.mainMarkerGroup);
-          // we are good to set the isMarkerSelected to false now
-          this.isMarkerSelected = false;
-        }
-        // should run once if a marker is clicked
-        if (ev && !this.isMarkerSelected) {
-          // if event is passed and we have a map
-          // this means a marker was clicked to see details
-          this.isMarkerSelected = true;
+        //   this.map.addLayer(this.mainMarkerGroup);
+        //   // we are good to set the isMarkerSelected to false now
+        //   this.isMarkerSelected = false;
+        // }
+        // // should run once if a marker is clicked
+        // if (ev && !this.isMarkerSelected) {
+        //   // if event is passed and we have a map
+        //   // this means a marker was clicked to see details
+        //   this.isMarkerSelected = true;
 
-          this.map.removeLayer(this.mainMarkerGroup);
-          this.map.removeLayer(this.musicLayerGroup);
-          this.map.removeLayer(this.heatmapLayerGroup);
-          this.map.removeLayer(this.tagCloudLayerGroup);
+        //   this.map.removeLayer(this.mainMarkerGroup);
+        //   this.map.removeLayer(this.musicLayerGroup);
+        //   this.map.removeLayer(this.heatmapLayerGroup);
+        //   this.map.removeLayer(this.tagCloudLayerGroup);
 
-          this.createDetailMarkers(ev);
-        }
+        //   this.createDetailMarkers(ev);
+        // }
       });
 
-      // Event Highlighted
-      this.mms.currentlyHighlightedItem.subscribe((highlight: any) => {
-        this.currentlyHighlightedEvent = highlight;
-        this.currentlyHighlightedEvent ? this.highlightMarkers() : this.unhighlightMarkers();
-        // if its a singular item i.e. from timeline or something
-        // just use the this.currentlyHighlightedEvent within the function
-      });
+      // // Event Highlighted
+      // this.mms.currentlyHighlightedItem.subscribe((highlight: any) => {
+      //   this.currentlyHighlightedEvent = highlight;
+      //   this.currentlyHighlightedEvent ? this.highlightMarkers() : this.unhighlightMarkers();
+      //   // if its a singular item i.e. from timeline or something
+      //   // just use the this.currentlyHighlightedEvent within the function
+      // });
 
       // comes from search
-      this.mms.currentlySelectedEvents.subscribe((events: Array<any>) => {
-        this.currentlySelectedEvents = events;
-        this.currentlySelectedEvents ? this.highlightMarkers(this.currentlySelectedEvents) : this.unhighlightMarkers();
-        // if there are multiple events pass the array to the 
-        // following function for highlighting
-      });
+      // this.mms.currentlySelectedEvents.subscribe((events: Array<any>) => {
+      //   this.currentlySelectedEvents = events;
+      //   this.currentlySelectedEvents ? this.highlightMarkers(this.currentlySelectedEvents) : this.unhighlightMarkers();
+      //   // if there are multiple events pass the array to the 
+      //   // following function for highlighting
+      // });
 
       // comes from timeline
       this.mms.currentEventInterval.subscribe((dates: Array<Date>) => {
