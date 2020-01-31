@@ -17,7 +17,6 @@ import { LightboxComponent } from './components/lightbox/lightbox.component';
 import { MapComponent } from './components/map/map.component';
 import { MapClusterTooltipComponent } from './components/map-cluster-tooltip/map-cluster-tooltip.component';
 import { MiniMapComponent } from './components/minimap/minimap.component';
-import { ModalDialogComponent } from './components/modal/modal.component';
 import { MusicMapComponent } from './components/music-map/music-map.component';
 import { NetworkComponent } from './components/network/network.component';
 import { PreviewComponent } from './components/preview-panel/preview-panel.component';
@@ -83,7 +82,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     MapComponent,
     MapClusterTooltipComponent,
     MiniMapComponent,
-    ModalDialogComponent, 
     MusicMapComponent,
     NetworkComponent,
     PreviewComponent,
@@ -151,7 +149,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
   ],
   bootstrap: [ AppComponent ],
   entryComponents: [
-    // ModalDialogComponent,
     // LightboxComponent,
     // MapClusterTooltipComponent
   ]
