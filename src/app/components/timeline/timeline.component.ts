@@ -16,6 +16,8 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dial
 
 export class TimelineComponent implements AfterViewInit, OnChanges {
   @Input() items: Array<Event>;
+  @Input() themeID: string;
+  
   @ViewChild('detailtimeline', { static: true }) detailtimeline: ElementRef
   isBrowser: boolean;
 
@@ -136,6 +138,18 @@ export class TimelineComponent implements AfterViewInit, OnChanges {
       if (!d.themes.map((t: any) => { return t.theme; }).includes(themeID)) {
         this.removedEventsDataSet.add(d);
         this.eventsDataSet.remove(d.id);
+      } else {
+          let color = this.ts.getColorForTheme(themeID);
+          this.eventsDataSet.update({
+            id: d.id,
+            style: `color: ${color ? color : '#afafaf'};
+            border-color: ${color ? color : '#afafaf'};
+            background-color: ${d.type === 'range' ? (color ? color : '#afafaf') : ''};
+            border-width: 8px !important;
+            border-radius: 8px !important;
+            height: 6px;
+            opacity: 0.5;`
+          })
       }
     });
     // this.timeline.redraw();
@@ -185,6 +199,8 @@ export class TimelineComponent implements AfterViewInit, OnChanges {
       }
 
       let color = this.ts.getThemeColorForEvent(i);
+
+      if(this.themeID) color = this.ts.getColorForTheme(this.themeID);
 
       let type = 'point';
       let dateDiff = this.dateDifference(i.startDate, i.endDate);
