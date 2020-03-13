@@ -11,6 +11,7 @@ import { LightboxComponent } from '../lightbox/lightbox.component';
 import { ThemeService } from '../../services/theme.service';
 import { DatabaseService } from 'src/app/services/db.service';
 import * as moment from 'moment';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-previewpanel',
@@ -25,15 +26,21 @@ export class PreviewComponent {
 
   objects: Array<any>;
 
+  loading: boolean;
+
   constructor(private ts: ThemeService, 
               private db: DatabaseService,
               public lightbox: MatDialog) {
     this.objectMedia = new Source();
     this.objects = new Array<any>();
+    setTimeout(() => {
+      this.loading = false;
+    }, 500);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes && this.object) {
+      this.loading = true;
       this.objects.push(this.object);
       this.objectLoaded = true;
       this.objectMedia = new Source();
@@ -42,6 +49,9 @@ export class PreviewComponent {
           this.objectMedia.identifiers.push(m);
         });
       });
+      setTimeout(() => {
+        this.loading = false;
+      }, 500);
     }
   }
 
@@ -54,15 +64,19 @@ export class PreviewComponent {
   // TODO: goToTheme() ?
 
   goToPerson(p: PersonOrganization): void {
+    this.loading = true;
     this.db.getAsPersonOrganization(p).then((success: any) => {
       this.objects.push(success);
       this.object = this.objects[this.objects.length - 1];
+      setTimeout(() => {
+        this.loading = false;
+      }, 500);
       // TODO: Get sources related to people / organziations somehow?
     });
   }
 
   goToEvent(event: Event): void {
-    // TODO: Loading indicator
+    this.loading = true;
     this.db.getAsEvent(event).then((success: any) => {
       // update event object
       this.objects.push(success);
@@ -74,18 +88,26 @@ export class PreviewComponent {
           this.objectMedia.identifiers.push(m);
         });
       });
+      setTimeout(() => {
+        this.loading = false;
+      }, 500);
     });
   }
 
   goToLocation(l: Location): void {
+    this.loading = true;
     this.db.getAsLocation(l).then((success: any) => {
       this.objects.push(success);
       this.object = this.objects[this.objects.length - 1];
+      setTimeout(() => {
+        this.loading = false;
+      }, 500);
       // TODO: Get sources related to people / organziations somehow?
     });
   }
 
   goToSource(s: Source): void {
+    this.loading = true;
     this.db.getAsSource(s).then((success: any) => {
       this.objects.push(success);
       this.object = this.objects[this.objects.length - 1];
@@ -97,6 +119,9 @@ export class PreviewComponent {
             this.objectMedia.identifiers.push(m);
           });
         });
+        setTimeout(() => {
+          this.loading = false;
+        }, 500);
     });
   }
 
@@ -220,20 +245,25 @@ export class PreviewComponent {
     return displayDates;
   }
 
+  getURL(url: string): string {
+    let host = URL.parse(url).hostname;
+    return host ? url : `${environment.API_URL}${url}`;
+  }
+
   /**
    * Returns host name from a URL
    * @param url - URL string
    * @return string - the hostname of the URL e.g., example.com
    */
   getHost(url: string): string {
-    return URL.parse(url).hostname.replace('www.', '');
+    let host = URL.parse(url).hostname;
+    return host ? host.replace('www.', '') : `IMMV`;
   }
 
   hasHost(url: string): boolean {
     return URL.parse(url).hostname ? true : false;
   }
 
-  // TODO: Should we actually just display duplicate information?
   checkIfExternalSources(object: any): boolean {
     let show = false;
     if(object.sources) {
