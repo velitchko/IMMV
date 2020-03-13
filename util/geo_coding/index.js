@@ -22,8 +22,8 @@ mongoose.connect(`mongodb://localhost:27017/${db.collectionName}`, function (err
         console.log(err);
         return;
     }
-    // findEvents();
-    findLocations();
+    findEvents();
+    // findLocations();
 });
 
 function findLocations() {
@@ -100,7 +100,9 @@ function findEvents() {
                 if (event.geodata && 
                     event.geodata.streetName && 
                     ((!event.geodata.lat || !event.geodata.lng) || 
-                    (event.geodata.lat === 0 || event.geodata.lng === 0))) {
+                    (event.geodata.lat === 0 || event.geodata.lng === 0) ||
+                    (event.geodata.lat === '0' || event.geodata.lng === '0'))
+                    ) {
                     let result = await geocode(event.geodata, event._id.toString());
                     if (result) {
                         results.push(result);
