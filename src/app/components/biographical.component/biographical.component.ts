@@ -2090,6 +2090,12 @@ export class BiographicalComponent implements OnInit {
               <p>${moment(d.startDate).format('DD/MM/YYYY')} ${moment(d.endDate).diff(moment(d.startDate), 'days') > 2 ? `- ${moment(d.endDate).format('DD/MM/YYYY')}` : ''}</p>
             `;
         this.handleMouseover(d.dateName, d.dateID, d.personID, d.person, true); // from rad
+
+
+        // TODO: Draw lines to other related events?
+        console.log(d);
+        // svg.select(data-dateid="d.dateID) 
+
       })
       .on('mouseout', (d: any, i: number, n: any) => {
         this.tooltip.nativeElement.style.display = 'none';
