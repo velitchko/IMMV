@@ -27,10 +27,10 @@ export class DashboardComponent implements OnInit {
     this.loading = false;
     this.isBrowser = isPlatformBrowser(this._platformId);
     this.mainThemes = new Array<Theme>();
-    this.db.getSource('5bc86b6ce8a0d9011630e271').then((success: any) => {
-      this.source = success;
-      this.sourceLoaded = true;
-    });
+    // this.db.getSource('5bc86b6ce8a0d9011630e271').then((success: any) => {
+    //   this.source = success;
+    //   this.sourceLoaded = true;
+    // });
   }
 
   ngOnInit() {
