@@ -4,5 +4,6 @@ export const environment = {
   GMAPS_API_KEY: 'AIzaSyD0b5xJBAt5-SchLgwQ83YHzLo51ZfEvCA',
   GPLACES_API_KEY: 'AIzaSyAZJmjLUv7d5SB1XbL96t-7cNd2eZKBd5Y',
   API_URL: 'https://immv-app.cvast.tuwien.ac.at/api/v1/',
-  APP_URL: 'https://immv-app.cvast.tuwien.ac.at/'
+  APP_URL: 'https://immv-app.cvast.tuwien.ac.at/',
+  UPLOAD_URL: 'https://immv-app.cvast.tuwien.ac.at/api/v1/uploads/'
 };

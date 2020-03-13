@@ -9,7 +9,8 @@ export const environment = {
   GMAPS_API_KEY: 'AIzaSyD0b5xJBAt5-SchLgwQ83YHzLo51ZfEvCA',
   GPLACES_API_KEY: 'AIzaSyAZJmjLUv7d5SB1XbL96t-7cNd2eZKBd5Y',
   API_URL: 'http://localhost:4000/api/v1/',
-  APP_URL: 'http://localhost:4000/'
+  APP_URL: 'http://localhost:4000/',
+  UPLOAD_URL: 'http://localhost:4000/api/v1/uploads/'
 };
 
 /*
