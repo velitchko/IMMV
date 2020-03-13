@@ -252,24 +252,38 @@ export class DatabaseService {
                 switch (s.type) {
                     case 'themes':
                         event.themes.push({ theme: s.entry, relationship: s.relationship });
-                        return;
+                        break;
                     case 'peopleorganizations':
-                        event.peopleOrganizations.push({ personOrganization: s.entry, relationship: s.relationship, role: s.role })
-                        if (s.relationship === 'isContributor') event.contributor.push({ personOrganization: s.entry, role: 'Contributor' });
-                        if (s.relationship === 'isCreator') event.creator.push({ personOrganization: s.entry, role: 'Creator' });
-                        return;
+                        if (s.relationship === 'isContributor') {
+                            if(!event.contributor.map((c: any) => { return c.personOrganization.objectId; }).includes(s.entry.objectId)) { 
+                                event.contributor.push({ personOrganization: s.entry, role: 'Contributor' });
+                            }
+                        }
+                        
+                        if (s.relationship === 'isCreator') {
+                            if(!event.creator.map((c: any) => { return c.personOrganization.objectId; }).includes(s.entry.objectId)) {
+                                event.creator.push({ personOrganization: s.entry, role: 'Creator' });
+                            }
+                        }
+
+                        if(s.relationship !== 'isCreator' && s.relationship !== 'isContributor') {
+                            if(!event.peopleOrganizations.map((c: any) => { return c.personOrganization.objectId; }).includes(s.entry.objectId)) {
+                                event.peopleOrganizations.push({ personOrganization: s.entry, relationship: s.relationship });
+                            }
+                        }
+                        break;
                     case 'locations':
                         event.locations.push({ location: s.entry, relationship: s.relationship });
-                        return;
+                        break;
                     case 'sources':
                         event.sources.push({ source: s.entry, relationship: s.relationship });
-                        return;
+                        break;
                     case 'events':
                         event.events.push({ event: s.entry, relationship: s.relationship });
-                        return;
+                        break;
                     case 'historicevents':
                         event.historicEvents.push({ historicEvent: s.entry, relationship: s.relationship });
-                        return;
+                        break;
                 }
             });
             return event;
