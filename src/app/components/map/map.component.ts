@@ -24,7 +24,8 @@ declare var L: any;
 export class MapComponent implements AfterViewInit, OnChanges {
 
   @Input() items: Event[];
-  
+  @Input() themeID: string;
+
   map: any;
   compRef: ComponentRef<any>;
 
@@ -47,6 +48,7 @@ export class MapComponent implements AfterViewInit, OnChanges {
   temporaryMarkerGroup: any; // backbuffer with markers - we swap between mainMarkerGroup and temporaryMarkerGroup
   heatmapMarkerGroup: any; // holds our heatmap
   clusterMarkerGroup: any; // cluster group
+  temporaryClusterMarkerGroup: any; // backbuffer for cluster markers
 
   currentEventInterval: Array<Date>;
   currentlySelectedEvents: Array<string>;
@@ -182,8 +184,25 @@ export class MapComponent implements AfterViewInit, OnChanges {
     this.map = L.map('map', options).setView([48.213939, 16.377285], 13);
 
     // this.map.invalidateSize();
-    // TODO: Clustering as parameter ? - enable / disable
     this.clusterMarkerGroup = L.markerClusterGroup({ //https://github.com/Leaflet/Leaflet.markercluster#options
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      zoomToBoundsOnClick: false,
+      animate: true,
+      animateAddingMarkers: true,
+      //spiderfyDistanceMultiplier: 1.5,
+      removeOutsideVisibleBounds: true,
+      iconCreateFunction: (cluster: any) => {
+        return L.divIcon({
+          iconSize: [36, 36], // size of the icon
+          className: 'cluster-map-marker',
+          html: this.getSVGClusterIcon(cluster.getAllChildMarkers())
+        });
+      }
+      //disableClusteringAtZoom: 17,
+    });
+
+    this.temporaryClusterMarkerGroup = L.markerClusterGroup({ //https://github.com/Leaflet/Leaflet.markercluster#options
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
       zoomToBoundsOnClick: false,
@@ -238,7 +257,7 @@ export class MapComponent implements AfterViewInit, OnChanges {
     this.map.on('popupopen', this.handlePopUpOpen.bind(this));
     this.map.on('click', this.handleMapClick.bind(this));
     this.map.on('popupclose', this.handlePopUpClose.bind(this));
-    this.map.on('zoomend', () => { this.mainMarkerGroup.refreshClusters(); });
+    this.map.on('zoomend', () => { this.clusterMarkerGroup.refreshClusters(); });
 
     this.initialized = true;
   }
@@ -433,8 +452,11 @@ export class MapComponent implements AfterViewInit, OnChanges {
 
   resetFilterMarkers(): void {
     this.temporaryMarkerGroup = L.layerGroup();
+    this.temporaryClusterMarkerGroup = L.layerGroup();
     this.map.removeLayer(this.temporaryMarkerGroup);
+    this.map.removeLayer(this.temporaryClusterMarkerGroup);
     this.map.addLayer(this.mainMarkerGroup);
+    this.map.addLayer(this.temporaryClusterMarkerGroup);
   }
 
   filterMarkersByEvent(eventID: string): void {
@@ -451,7 +473,7 @@ export class MapComponent implements AfterViewInit, OnChanges {
     // TODO: Either filter out or gray out 
     // swap layers
     this.map.removeLayer(this.markerLayerGroup);
-    this.map.addLayer(this.temporaryMarkerGroup);
+    this.map.addLayer(this.temporaryMarkerGroup); 
 
     this.map.panTo(flyToPosition);
   }
@@ -459,15 +481,19 @@ export class MapComponent implements AfterViewInit, OnChanges {
   filterMarkers(themeID: string): void {
     if(!themeID) return;
     // populate backbuffer marker layer
-    this.markers.forEach((m: any) => { 
+    this.temporaryClusterMarkerGroup.clearLayers();
+    this.mainMarkerGroup.eachLayer((m: any) => { 
       if(m.themes.map((t: any) => { return t.theme; }).includes(themeID)) {
+        m.setIcon(this.getMarkerIcon(m.event, themeID));   
         this.temporaryMarkerGroup.addLayer(m);
+        this.temporaryClusterMarkerGroup.addLayer(m);
       }
     });
 
     // swap layers
-    this.map.removeLayer(this.markerLayerGroup);
+    this.map.removeLayer(this.mainMarkerGroup);
     this.map.addLayer(this.temporaryMarkerGroup);
+    this.clusterMarkerGroup = this.temporaryClusterMarkerGroup;
   }
 
   /**
@@ -719,14 +745,23 @@ export class MapComponent implements AfterViewInit, OnChanges {
     return svg;
   }
 
-  getMarkerIcon(event: Event): any {
+  getMarkerIcon(event: Event, theme?: string): L.DivIcon {
     // black magic .toString() to avoid typescript complaints
     let color: string;
-    event.themes.forEach((t: any) => {
-      if (this.ts.isMainTheme(t.theme)) {
-        color = this.ts.getColorForTheme(t.theme);
-      }
-    });
+    if(theme) { 
+      color = this.ts.getColorForTheme(theme);
+    } else {
+      event.themes.forEach((t: any) => {
+        if (this.ts.isMainTheme(t.theme)) {
+          color = this.ts.getColorForTheme(t.theme);
+        }
+      });
+    }
+
+    if(this.themeID) color = this.ts.getColorForTheme(this.themeID);
+
+    // force if we have themeID set from the URL param
+    
 
     let markerIcon = L.divIcon({
       iconSize: [25, 25], // size of the icon
@@ -762,6 +797,7 @@ export class MapComponent implements AfterViewInit, OnChanges {
         marker.startDate = i.startDate;
         marker.endDate = i.endDate ? i.endDate : i.startDate;
         marker.themes = i.themes;
+        marker.event = i;
         // marker.setOpacity(0.75);
         // marker.themes = i.themes; // need to add this so our cluster icon can compute the donut chart
         this.markers.push(marker);
