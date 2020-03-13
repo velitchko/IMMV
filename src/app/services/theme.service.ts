@@ -15,9 +15,10 @@ export class ThemeService {
         this.mainThemes = new Array<Theme>();
 
         this.colors = new Map<string, string>();
-
-        this.tableauColors = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'];
-    
+        this.tableauColors = ['#a6cee3', '#1f78b4', '#cab2d6', '#6a3d9a', '#e31a1c', '#fb9a99', '#fdbf6f', '#ff7f00', '#b2df8a', '#33a02c', '#ffff99', '#b15928'];
+        // this.tableauColors = ['#4e79a7', '#f28e2c', '#edc949', '#76b7b2', '#e15759', '#bae156', '#af7aa1', '#ff9da7', '#9c755f', '#59a14f', '#bab0ab'];
+        // For more colors check https://sashat.me/2017/01/11/list-of-20-simple-distinct-colors/ 
+        // Or google tableau 20
         
         this.db.getAllMainThemes().then((success) => {
             this.mainThemes = success;
