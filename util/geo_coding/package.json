@@ -11,7 +11,7 @@
   "dependencies": {
     "axios": "^0.18.0",
     "cli-progress": "^2.1.1",
-    "mongoose": "^5.4.7",
+    "mongoose": "^5.13.15",
     "throttled-queue": "^1.0.5"
   }
 }
